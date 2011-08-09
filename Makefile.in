@@ -40,6 +40,7 @@ installhook=@hooks@-hook-install
 uninstallhook=@hooks@-hook-uninstall
 networkmanager_dispatcher_dir=@networkmanager_dispatcher_dir@
 osx_launchagents_dir=/Library/LaunchAgents
+configfile=@configfile@
 
 # override $U variable which is used by autotools for deansification (for
 # K&R C compilers), but causes problems if $U is defined in the env).

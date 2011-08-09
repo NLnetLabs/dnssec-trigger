@@ -1,0 +1,32 @@
+#!@SHELL@
+#
+# dnssec trigger for OSX
+
+# the network state has changed, obtain a list of DHCP provided DNS servers.
+# somehow in /Library/Preferences/SystemConfiguration/
+#   com.apple.network.identification.plist  - list of configs seen
+#   preferences.plist - list of what is entered in the config panel
+
+ips="`awk -e """
+/<key>DNS<\/key>/ {
+	getline x
+	while(x !~ /<\/dict>/) {
+		if(x ~ /<array>/) {
+			getline x
+			while(x !~ /<\/array>/) {
+				if(x ~ /<string>/)
+					sub(/<string>/,"",x)
+					sub(/<\/string>/,"",x)
+					print x
+				getline x
+			}
+		}
+		getline x
+	}
+}
+/<key>Timestamp<\/key>/ {
+	exit
+}
+""" < /Library/Preferences/SystemConfiguration/com.apple.network.identification.plist | sort -u `"
+
+echo $ips
