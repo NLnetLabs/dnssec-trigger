@@ -125,7 +125,49 @@ fi
 # check after getaddrinfo for its libraries
 ACX_FUNC_IOCTLSOCKET
 
-AC_CHECK_FUNCS([fcntl])
+# see if daemon(3) exists, and if it is deprecated.
+AC_CHECK_FUNCS([daemon])
+if test $ac_cv_func_daemon = yes; then
+        ACX_FUNC_DEPRECATED([daemon], [(void)daemon(0, 0);], [
+#include <stdlib.h>
+])
+fi
+
+AC_CHECK_FUNCS([fcntl setsid])
+
+# networkmanager settings
+networkmanager_dispatcher_dir="$prefix/NetworkManager/dispatcher.d"
+AC_ARG_WITH([nm-dispatch], AC_HELP_STRING([--with-nm-dispatch],
+	[Set the networkmanager dhcp dispatcher dir, default prefix/NetworkManager/dispatcher.d]),
+	, )
+AC_SUBST(networkmanager_dispatcher_dir)
+
+AC_MSG_CHECKING([for DHCP hooks])
+if test -x "`which nmcli 2>&1`"; then
+	AC_MSG_RESULT([NetworkManager])
+	AC_MSG_CHECKING([for NetworkManager dispatch])
+	if test "$enable_nm_dispatch" != ""; then
+		networkmanager_dispatcher_dir="$enable_nm_dispatch"
+	else
+		if test -d $networkmanager_dispatcher_dir ; then
+			:
+		else if test -d /etc/NetworkManager/dispatcher.d; then
+			networkmanager_dispatcher_dir="/etc/NetworkManager/dispatcher.d"
+			fi
+		fi
+	fi
+	AC_MSG_RESULT([$networkmanager_dispatcher_dir])
+	hooks=networkmanager
+else
+	if test `uname` = "Darwin"; then
+		AC_MSG_RESULT([OSX])
+		hooks=osx;
+	else
+		hooks=none
+		AC_MSG_WARN([have no DHCP hooks, cannot detect network changes])
+	fi
+fi
+AC_SUBST(hooks)
 
 # dependencies from crypto, eventlibs for ldns, unbound.
 ACX_WITH_SSL
@@ -149,11 +191,11 @@ AC_ARG_WITH(ldns, AC_HELP_STRING([--with-ldns=PATH],
 		LIBS="$ldnsdir/lib/libldns.a $LIBS"
 	else
 		LIBS="-lldns $LIBS"
+		RUNTIME_PATH="$RUNTIME_PATH -Wl,--rpath=$withval/lib -Wl,--rpath=$withval/.libs"
 	fi
-	RUNTIME_PATH="$RUNTIME_PATH -Wl,--rpath=$withval/lib -Wl,--rpath=$withval/.libs"
 	AC_SUBST(ldnsdir)
 ])
-AC_CHECK_FUNCS([ldns_buffer_new],,[AC_ERROR([please install libldns-devel])])
+AC_CHECK_FUNCS([ldns_buffer_new],,[AC_MSG_ERROR([please install libldns-devel])])
 
 # add option to disable the evil rpath
 ACX_ARG_RPATH
@@ -280,3 +322,14 @@ AC_SUBST(DATE)
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
+
+if test "$hooks" = "none"; then
+	echo "WARNING NO DHCP HOOKS DETECTED CANNOT SETUP TRIGGER"
+fi
+[
+echo "configure completed with $hooks hooks, now you can"
+echo "	make | make all		: compile the code"
+echo "	make install 		: install files"
+echo "	make uninstall 		: uninstall files"
+]
+

@@ -33,6 +33,11 @@ datadir=@datadir@
 includedir=@includedir@
 ldnsdir=@ldnsdir@
 EXEEXT=@EXEEXT@
+hooks=@hooks@
+makehook=@hooks@-hook
+installhook=@hooks@-hook-install
+uninstallhook=@hooks@-hook-uninstall
+networkmanager_dispatcher_dir=@networkmanager_dispatcher_dir@
 
 # override $U variable which is used by autotools for deansification (for
 # K&R C compilers), but causes problems if $U is defined in the env).
@@ -97,10 +102,20 @@ $(BUILD)%.lo:    $(srcdir)/%.c
 	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
 	$Q$(COMPILE) -o $@ -c $<
 
-all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-panel$(EXEEXT)
+all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-panel$(EXEEXT) $(makehook)
 
 test:	
 	@echo test OK
+
+none-hook:
+	echo "no dhcp hooks available, need trigger script"
+
+networkmanager-hook:	01-dnssec-trigger-hook
+
+01-dnssec-trigger-hook:	01-dnssec-trigger-hook.sh.in
+	rm -f $@
+	sed -e 's?0SHELL0?$(SHELL)?' < 01-dnssec-trigger-hook.sh.in > $@
+	chmod +x $@
 
 dnssec-triggerd$(EXEEXT):	$(RIGGERD_OBJ)
 	$(INFO) Link $@
@@ -129,7 +144,7 @@ util/configparser.c util/configparser.h:  $(srcdir)/util/configparser.y
 
 clean:
 	rm -f *.o *.d *.lo *~ tags
-	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
+	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT) 01-dnssec-trigger-hook
 	rm -rf autom4te.cache build
 
 realclean: clean
@@ -152,14 +167,26 @@ strip:
 	$(STRIP) dnssec-trigger-panel$(EXEEXT)
 	$(STRIP) dnssec-triggerd$(EXEEXT)
 
-install:	all
+none-hook-install:
+	echo "no hook to install"
+
+none-hook-uninstall:
+	echo "no hook to uninstall"
+
+networkmanager-hook-install:
+	$(INSTALL) -m 755 -d 01-dnssec-trigger-hook $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger-hook
+
+networkmanager-hook-uninstall:
+	rm -f -- $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger-hook
+
+install:	all $(installhook)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(sbindir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)/man8
 	$(LIBTOOL) --mode=install cp dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-trigger-panel$(EXEEXT)
 	$(LIBTOOL) --mode=install cp dnssec-triggerd$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
 
-uninstall:
+uninstall: $(uninstallhook)
 	rm -f -- $(DESTDIR)$(sbindir)/dnssec-trigger-panel$(EXEEXT)
 	rm -f -- $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
 	@echo

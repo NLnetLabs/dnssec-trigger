@@ -598,6 +598,8 @@ DATE
 ldnsdir
 RUNTIME_PATH
 HAVE_SSL
+hooks
+networkmanager_dispatcher_dir
 WINDRES
 UB_ON_WINDOWS
 LIBOBJS
@@ -658,6 +660,7 @@ enable_option_checking
 enable_debug
 enable_static_exe
 enable_largefile
+with_nm_dispatch
 with_ssl
 with_ldns
 enable_rpath
@@ -1291,6 +1294,8 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-nm-dispatch      Set the networkmanager dhcp dispatcher dir, default
+                          prefix/NetworkManager/dispatcher.d
   --with-ssl=pathname     enable SSL (will check /usr/local/ssl /usr/lib/ssl
                           /usr/ssl /usr/pkg /usr/local /opt/local /usr/sfw
                           /usr)
@@ -6100,16 +6105,114 @@ rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 
 
-for ac_func in fcntl
+# see if daemon(3) exists, and if it is deprecated.
+for ac_func in daemon
 do :
-  ac_fn_c_check_func "$LINENO" "fcntl" "ac_cv_func_fcntl"
-if test "x$ac_cv_func_fcntl" = x""yes; then :
+  ac_fn_c_check_func "$LINENO" "daemon" "ac_cv_func_daemon"
+if test "x$ac_cv_func_daemon" = x""yes; then :
   cat >>confdefs.h <<_ACEOF
-#define HAVE_FCNTL 1
+#define HAVE_DAEMON 1
 _ACEOF
 
 fi
 done
+
+if test $ac_cv_func_daemon = yes; then
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if daemon is deprecated" >&5
+$as_echo_n "checking if daemon is deprecated... " >&6; }
+cache=`echo daemon | sed 'y%.=/+-%___p_%'`
+if eval "test \"\${cv_cc_deprecated_$cache+set}\"" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+
+echo '
+#include <stdlib.h>
+' >conftest.c
+echo 'void f(){ (void)daemon(0, 0); }' >>conftest.c
+if test -z "`$CC -c conftest.c 2>&1 | grep deprecated`"; then
+eval "cv_cc_deprecated_$cache=no"
+else
+eval "cv_cc_deprecated_$cache=yes"
+fi
+rm -f conftest conftest.o conftest.c
+
+fi
+
+if eval "test \"`echo '$cv_cc_deprecated_'$cache`\" = yes"; then
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define DEPRECATED_DAEMON 1
+_ACEOF
+
+:
+
+else
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+:
+
+fi
+
+fi
+
+for ac_func in fcntl setsid
+do :
+  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+if eval test \"x\$"$as_ac_var"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+done
+
+
+# networkmanager settings
+networkmanager_dispatcher_dir="$prefix/NetworkManager/dispatcher.d"
+
+# Check whether --with-nm-dispatch was given.
+if test "${with_nm_dispatch+set}" = set; then :
+  withval=$with_nm_dispatch;
+fi
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for DHCP hooks" >&5
+$as_echo_n "checking for DHCP hooks... " >&6; }
+if test -x "`which nmcli 2>&1`"; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: NetworkManager" >&5
+$as_echo "NetworkManager" >&6; }
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for NetworkManager dispatch" >&5
+$as_echo_n "checking for NetworkManager dispatch... " >&6; }
+	if test "$enable_nm_dispatch" != ""; then
+		networkmanager_dispatcher_dir="$enable_nm_dispatch"
+	else
+		if test -d $networkmanager_dispatcher_dir ; then
+			:
+		else if test -d /etc/NetworkManager/dispatcher.d; then
+			networkmanager_dispatcher_dir="/etc/NetworkManager/dispatcher.d"
+			fi
+		fi
+	fi
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $networkmanager_dispatcher_dir" >&5
+$as_echo "$networkmanager_dispatcher_dir" >&6; }
+	hooks=networkmanager
+else
+	if test `uname` = "Darwin"; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: OSX" >&5
+$as_echo "OSX" >&6; }
+		hooks=osx;
+	else
+		hooks=none
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: have no DHCP hooks, cannot detect network changes" >&5
+$as_echo "$as_me: WARNING: have no DHCP hooks, cannot detect network changes" >&2;}
+	fi
+fi
 
 
 # dependencies from crypto, eventlibs for ldns, unbound.
@@ -6499,8 +6602,8 @@ if test "${with_ldns+set}" = set; then :
 		LIBS="$ldnsdir/lib/libldns.a $LIBS"
 	else
 		LIBS="-lldns $LIBS"
+		RUNTIME_PATH="$RUNTIME_PATH -Wl,--rpath=$withval/lib -Wl,--rpath=$withval/.libs"
 	fi
-	RUNTIME_PATH="$RUNTIME_PATH -Wl,--rpath=$withval/lib -Wl,--rpath=$withval/.libs"
 
 
 fi
@@ -7835,4 +7938,15 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
+
+
+if test "$hooks" = "none"; then
+	echo "WARNING NO DHCP HOOKS DETECTED CANNOT SETUP TRIGGER"
+fi
+
+echo "configure completed with $hooks hooks, now you can"
+echo "	make | make all		: compile the code"
+echo "	make install 		: install files"
+echo "	make uninstall 		: uninstall files"
+
 

@@ -1,0 +1,19 @@
+#!0SHELL0
+#
+# NetworkManager trigger for in dispatcher.d
+# config items
+nmcli="nmcli"
+
+# implementation
+ifname="$1"
+action="$2"
+
+# debug logging
+logger "dnssec-trigger-hook $ifname $action"
+ips="`$nmcli -f IP4-DNS,IP6-DNS dev list | awk '{print $2;}'`"
+logger "dnssec-trigger-hook DNS $ips"
+
+# do something
+# TODO
+
+exit 0
