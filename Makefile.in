@@ -39,6 +39,7 @@ makehook=@hooks@-hook
 installhook=@hooks@-hook-install
 uninstallhook=@hooks@-hook-uninstall
 networkmanager_dispatcher_dir=@networkmanager_dispatcher_dir@
+osx_launchagents_dir=/Library/LaunchAgents
 
 # override $U variable which is used by autotools for deansification (for
 # K&R C compilers), but causes problems if $U is defined in the env).
@@ -193,11 +194,13 @@ networkmanager-hook-uninstall:
 	rm -f -- $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger-hook
 
 osx-hook-install:
-	$(INSTALL) -m 644 -d dnssec-trigger-hook.plist $(DESTDIR)/Library/LaunchAgents/dnssec-trigger-hook.plist
-	$(INSTALL) -m 755 -d dnssec-trigger-osx.sh $(DESTDIR)$(libexecdir)dnssec-trigger-osx.sh
+	$(INSTALL) -m 755 -d $(DESTDIR)$(osx_launchagents_dir)
+	$(INSTALL) -m 755 -d $(DESTDIR)$(libexecdir)
+	$(INSTALL) -m 644 -d dnssec-trigger-hook.plist $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-hook.plist
+	$(INSTALL) -m 755 -d dnssec-trigger-osx.sh $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
 
 osx-hook-uninstall:
-	rm -f -- $(DESTDIR)/Library/LaunchAgents/dnssec-trigger-hook.plist
+	rm -f -- $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-hook.plist
 	rm -f -- $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
 
 install:	all $(installhook)
