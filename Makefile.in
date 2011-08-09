@@ -1,0 +1,180 @@
+# Copyright 2007 NLnet Labs
+# See the file LICENSE for the license
+
+debug_enabled=@debug_enabled@
+ifeq "$(QUIET)" ""
+ifeq ($(debug_enabled),yes)
+  QUIET=yes
+else
+  QUIET=no
+endif
+endif
+
+ifeq "$(QUIET)" "yes"
+  Q=@
+  INFO=@echo
+else
+  Q=
+  INFO=@:
+endif
+
+SHELL=@SHELL@
+VERSION=@PACKAGE_VERSION@
+srcdir=@srcdir@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+sbindir=@sbindir@
+mandir=@mandir@
+libdir=@libdir@
+# datarootdir is here to please some checkers, use datadir.
+datarootdir=@datarootdir@
+datadir=@datadir@
+includedir=@includedir@
+doxygen=@doxygen@
+libtool=@libtool@
+ldnsdir=@ldnsdir@
+staticexe=@staticexe@
+EXEEXT=@EXEEXT@
+configfile=@ub_conf_file@
+UNBOUND_RUN_DIR=@UNBOUND_RUN_DIR@
+CHECKLOCK_SRC=@CHECKLOCK_SRC@
+UB_ON_WINDOWS=@UB_ON_WINDOWS@
+
+# override $U variable which is used by autotools for deansification (for
+# K&R C compilers), but causes problems if $U is defined in the env).
+U=
+
+SWIG=@SWIG@
+YACC=@YACC@
+LEX=@LEX@
+STRIP=@STRIP@
+CC=@CC@
+CPPFLAGS=-I. @CPPFLAGS@
+ifneq "$(srcdir)" "."
+  CPPFLAGS:=-I$(srcdir) $(CPPFLAGS)
+endif
+CPPFLAGS:=$(strip $(CPPFLAGS))
+CFLAGS=@CFLAGS@
+LDFLAGS=@LDFLAGS@
+LIBS=$(strip @LIBS@)
+LIBOBJS=@LIBOBJS@
+RUNTIME_PATH=@RUNTIME_PATH@
+DEPFLAG=@DEPFLAG@
+DATE=$(shell date +%Y%m%d)
+BUILD=build/
+
+WINDRES=@WINDRES@
+LINT=splint
+LINTFLAGS=+quiet -weak -warnposix -unrecog -Din_addr_t=uint32_t -Du_int=unsigned -Du_char=uint8_t -preproc -Drlimit=rlimit64 -D__gnuc_va_list=va_list
+#-Dglob64=glob -Dglobfree64=globfree
+# compat with openssl linux edition.
+LINTFLAGS+="-DBN_ULONG=unsigned long" -Dkrb5_int32=int "-Dkrb5_ui_4=unsigned int" -DPQ_64BIT=uint64_t -DRC4_INT=unsigned -fixedformalarray -D"ENGINE=unsigned" -D"RSA=unsigned" -D"DSA=unsigned" -D"EVP_PKEY=unsigned" -D"EVP_MD=unsigned" -D"SSL=unsigned" -D"SSL_CTX=unsigned" -D"X509=unsigned" -D"RC4_KEY=unsigned" -D"EVP_MD_CTX=unsigned"
+# compat with NetBSD
+ifeq "$(shell uname)" "NetBSD"
+LINTFLAGS+="-D__RENAME(x)=" -D_NETINET_IN_H_
+endif
+# compat with OpenBSD
+LINTFLAGS+="-Dsigset_t=long"
+# FreeBSD8
+LINTFLAGS+="-D__uint16_t=uint16_t"
+
+INSTALL=$(srcdir)/install-sh
+
+COMMON_SRC=util.c
+COMMON_OBJ=$(addprefix $(BUILD),$(COMMON_SRC:.c=.lo))
+COMPAT_SRC=$(addprefix compat/,$(LIBOBJS:.o=.c))
+COMPAT_OBJ=$(addprefix $(BUILD)compat/,$(LIBOBJS:.o=.lo))
+
+PANEL_SRC=panel.c
+PANEL_OBJ=$(addprefix $(BUILD),$(PANEL_SRC:.c=.lo)) $(COMPAT_OBJ)
+
+ALL_SRC=$(sort $(COMMON_SRC) $(PANEL_SRC)
+ALL_OBJ=$(addprefix $(BUILD),$(ALL_SRC:.c=.lo) \
+	$(addprefix compat/,$(LIBOBJS:.o=.lo))) $(COMPAT_OBJ)
+
+COMPILE=$(CC) $(CPPFLAGS) $(CFLAGS)
+LINK=$(strip $(CC) $(staticexe) $(RUNTIME_PATH) $(CFLAGS) $(LDFLAGS))
+
+.PHONY:	clean realclean doc lint all install uninstall test strip 
+
+$(BUILD)%.lo:    $(srcdir)/%.c 
+	$(INFO) Build $<
+	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
+	$Q$(COMPILE) -o $@ -c $<
+
+all:	$(COMMON_OBJ) panel$(EXEEXT)
+
+test:	
+	@echo test OK
+
+panel$(EXEEXT):	$(PANEL_OBJ)
+	$(INFO) Link $@
+	$Q$(LINK) -o $@ $(sort $(PANEL_OBJ)) $(LIBS)
+
+util/config_file.c:	util/configparser.h
+util/configlexer.c:  $(srcdir)/util/configlexer.lex util/configparser.h
+	$(INFO) Lex $<
+ifeq "$(strip $(LEX))" ":"
+	$Qecho "rebuild lexer, but no lex program, skipped"
+else
+	@-if test ! -d util; then $(INSTALL) -d util; fi
+	$Qecho "#include \"config.h\"" > $@
+	$Qecho "#include \"util/configyyrename.h\"" >> $@
+	$Q$(LEX) -t $< >> $@
+endif
+
+util/configparser.c util/configparser.h:  $(srcdir)/util/configparser.y
+	$(INFO) Yacc $<
+	@-if test ! -d util; then $(INSTALL) -d util; fi
+	$Q$(YACC) -d -o util/configparser.c $<
+
+clean:
+	rm -f *.o *.d *.lo *~ tags
+	rm -f panel$(EXEEXT)
+	rm -rf autom4te.cache .libs build doc/html doc/xml
+
+realclean: clean
+	rm -f config.status config.log config.h.in config.h
+	rm -f configure config.sub config.guess ltmain.sh aclocal.m4 libtool
+	rm -f util/configlexer.c util/configparser.c util/configparser.h
+	rm -f Makefile 
+
+$(BUILD)%.lint:    $(srcdir)/%.c 
+	$(INFO) Lint $<
+	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
+	$Q$(LINT) $(LINTFLAGS) -I. -I$(srcdir) -I$(ldnsdir)/include $<
+	$Qtouch $@
+
+lint:	$(addprefix $(BUILD),$(filter-out util/configparser.lint,$(filter-out util/configlexer.lint,$(sort $(ALL_SRC:.c=.lint)))))
+
+tags:	$(srcdir)/*.[ch] $(srcdir)/*/*.[ch]
+	ctags  -f $(srcdir)/tags $(srcdir)/*.[ch] $(srcdir)/*/*.[ch]
+
+strip:
+	$(STRIP) panel$(EXEEXT)
+
+install:	all
+	$(INSTALL) -m 755 -d $(DESTDIR)$(sbindir)
+	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)
+	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)/man8
+	$(LIBTOOL) --mode=install cp unbound$(EXEEXT) $(DESTDIR)$(sbindir)/panel$(EXEEXT)
+
+uninstall:
+	rm -f -- $(DESTDIR)$(sbindir)/panel$(EXEEXT)
+	@echo
+	@echo "You still need to remove "`dirname $(DESTDIR)$(configfile)`" , $(DESTDIR)$(configfile) by hand"
+
+# Automatic dependencies.
+$(BUILD)%.d: $(srcdir)/%.c
+	$(INFO) Depend $<
+	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
+	$Q$(SHELL) -ec '$(CC) $(DEPFLAG) $(CPPFLAGS) $(CFLAGS) $< | sed '\''s!\(.*\)\.o[ :]*!$(dir $@)\1.lo $@ : !g'\'' > $@; [ -s $@ ] || rm -f $@'
+
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),realclean)
+ifeq ($(debug_enabled),yes)
+-include $(addprefix $(BUILD),$(ALL_SRC:.c=.d) $(COMPAT_SRC:.c=.d))
+endif
+endif
+endif
