@@ -8,10 +8,13 @@ nmcli="nmcli"
 ifname="$1"
 action="$2"
 
-# debug logging
-logger "dnssec-trigger-hook $ifname $action"
+# get ips from NetworkManager
 ips="`$nmcli -f IP4-DNS,IP6-DNS dev list | awk '{print $2;}'`"
-logger "dnssec-trigger-hook DNS $ips"
+# fix whitespace
+ips=`echo $ips`
+
+# debug logging
+logger "dnssec-trigger-hook $ifname $action DNS $ips"
 
 # do something
 # TODO
