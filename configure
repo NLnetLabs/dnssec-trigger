@@ -601,7 +601,6 @@ HAVE_SSL
 WINDRES
 UB_ON_WINDOWS
 LIBOBJS
-staticexe
 STRIP
 debug_enabled
 DEPFLAG
@@ -657,7 +656,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_debug
-enable_staticexe
+enable_static_exe
 enable_largefile
 with_ssl
 with_ldns
@@ -1285,7 +1284,7 @@ Optional Features:
   --enable-debug          Enable debug warnings, asserts,
                           makefile-dependencies
   --enable-static-exe     enable to compile executables statically against
-                          libs, for debug purposes
+                          ldns and crypto libs
   --disable-largefile     omit support for large files
   --disable-rpath         disable hardcoded rpath (default=enabled)
 
@@ -5142,15 +5141,14 @@ fi
 
 
 # set static linking if requested
-
-staticexe=""
-# Check whether --enable-staticexe was given.
-if test "${enable_staticexe+set}" = set; then :
-  enableval=$enable_staticexe;
+staticexe="no"
+# Check whether --enable-static-exe was given.
+if test "${enable_static_exe+set}" = set; then :
+  enableval=$enable_static_exe;
 fi
 
 if test x_$enable_static_exe = x_yes; then
-	staticexe="-static"
+	staticexe="yes"
 fi
 
 for ac_header in stdlib.h
@@ -6481,6 +6479,12 @@ fi
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
+if test "$staticexe" = "yes"; then
+	LIBS="`echo $LIBS | sed -e 's/ -lcrypto//'`"
+	LIBS="$ssldir/lib/libssl.a $ssldir/lib/libcrypto.a $LIBS"
+else
+	LIBS="-lssl $LIBS"
+fi
 
 # check this after all other compilation checks, since the linking of the lib
 # may break checks after this.
@@ -6490,8 +6494,12 @@ if test "${with_ldns+set}" = set; then :
   withval=$with_ldns;
 	CPPFLAGS="-I$withval/include $CPPFLAGS"
 	LDFLAGS="-L$withval -L$withval/lib $LDFLAGS"
-	LIBS="-lldns $LIBS"
 	ldnsdir="$withval"
+	if test "$staticexe" = "yes"; then
+		LIBS="$ldnsdir/lib/libldns.a $LIBS"
+	else
+		LIBS="-lldns $LIBS"
+	fi
 	RUNTIME_PATH="$RUNTIME_PATH -Wl,--rpath=$withval/lib -Wl,--rpath=$withval/.libs"
 
 

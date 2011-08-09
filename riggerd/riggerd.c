@@ -39,6 +39,8 @@
 
 #include "config.h"
 #include "log.h"
+#include "cfg.h"
+#include "svr.h"
 #include "netevent.h"
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
@@ -72,7 +74,9 @@ static RETSIGTYPE record_sigh(int sig)
 	case SIGBREAK:
 #endif
 	case SIGINT:
-		comm_base_exit(global_svr->base);
+		if(global_svr)
+			comm_base_exit(global_svr->base);
+		else fatal_exit("killed by signal %d", (int)sig);
 	break;
 #ifdef SIGPIPE
 	case SIGPIPE:
@@ -108,7 +112,7 @@ unlink_pid(char* pidfile)
 
 /** do main work of daemon */
 static void
-do_main_work(const char* cfgfile, int nodaemonize)
+do_main_work(const char* cfgfile, int nodaemonize, int verb)
 {
         struct cfg* cfg;
         struct svr* svr;
@@ -131,17 +135,19 @@ do_main_work(const char* cfgfile, int nodaemonize)
                 log_err("install sighandler: %s", strerror(errno));
         /* start daemon */
         cfg = cfg_create(cfgfile);
+	verbosity += verb;
         if(!cfg) fatal_exit("could not create config");
-        cfg_check_rlimit(cfg);
         svr = svr_create(cfg);
         if(!svr) fatal_exit("could not init server");
-        log_open(cfg->logfile);
+        log_init(cfg->logfile, cfg->use_syslog, cfg->chroot);
         if(!nodaemonize)
                 if(daemon(1, 0) != 0)
                         fatal_exit("could not daemonize: %s", strerror(errno));
         store_pid(cfg->pidfile);
+	log_info("%s start", PACKAGE_STRING);
         svr_service(svr);
         unlink_pid(cfg->pidfile);
+	log_info("%s stop", PACKAGE_STRING);
         svr_delete(svr);
         cfg_delete(cfg);
 }
@@ -161,7 +167,9 @@ int main(int argc, char *argv[])
 {
         int c;
         const char* cfgfile = NULL;
-        int nodaemonize = 0;
+        int nodaemonize = 0, verb = 0;
+	log_ident_set("dnssec-triggerd");
+	log_init(NULL, 0, NULL);
         while( (c=getopt(argc, argv, "c:dhv")) != -1) {
                 switch(c) {
                 case 'c':
@@ -169,6 +177,7 @@ int main(int argc, char *argv[])
                         break;
                 case 'v':
                         verbosity++;
+			verb++;
                         break;
                 case 'd':
                         nodaemonize=1;
@@ -184,9 +193,9 @@ int main(int argc, char *argv[])
         if(argc != 0) {
                 usage();
                 return 1;
-        }
+	}
 
-        do_main_work(cfgfile, nodaemonize);
+        do_main_work(cfgfile, nodaemonize, verb);
 
 	return 0;
 }

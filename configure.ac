@@ -90,13 +90,12 @@ AC_SEARCH_LIBS([inet_pton], [nsl])
 AC_SEARCH_LIBS([socket], [socket])
 
 # set static linking if requested
-AC_SUBST(staticexe)
-staticexe=""
-AC_ARG_ENABLE(staticexe, AC_HELP_STRING([--enable-static-exe],
-	[ enable to compile executables statically against libs, for debug purposes ]), 
+staticexe="no"
+AC_ARG_ENABLE(static-exe, AC_HELP_STRING([--enable-static-exe],
+	[ enable to compile executables statically against ldns and crypto libs ]), 
 	, )
 if test x_$enable_static_exe = x_yes; then
-	staticexe="-static"
+	staticexe="yes"
 fi
 
 AC_FUNC_MALLOC
@@ -131,6 +130,12 @@ AC_CHECK_FUNCS([fcntl])
 # dependencies from crypto, eventlibs for ldns, unbound.
 ACX_WITH_SSL
 ACX_LIB_SSL
+if test "$staticexe" = "yes"; then
+	LIBS="`echo $LIBS | sed -e 's/ -lcrypto//'`"
+	LIBS="$ssldir/lib/libssl.a $ssldir/lib/libcrypto.a $LIBS"
+else
+	LIBS="-lssl $LIBS"
+fi
 
 # check this after all other compilation checks, since the linking of the lib
 # may break checks after this.
@@ -139,8 +144,12 @@ AC_ARG_WITH(ldns, AC_HELP_STRING([--with-ldns=PATH],
 	[
 	CPPFLAGS="-I$withval/include $CPPFLAGS"
 	LDFLAGS="-L$withval -L$withval/lib $LDFLAGS"
-	LIBS="-lldns $LIBS"
 	ldnsdir="$withval"
+	if test "$staticexe" = "yes"; then
+		LIBS="$ldnsdir/lib/libldns.a $LIBS"
+	else
+		LIBS="-lldns $LIBS"
+	fi
 	RUNTIME_PATH="$RUNTIME_PATH -Wl,--rpath=$withval/lib -Wl,--rpath=$withval/.libs"
 	AC_SUBST(ldnsdir)
 ])
