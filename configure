@@ -6505,6 +6505,19 @@ if test "${with_ldns+set}" = set; then :
 
 fi
 
+for ac_func in ldns_buffer_new
+do :
+  ac_fn_c_check_func "$LINENO" "ldns_buffer_new" "ac_cv_func_ldns_buffer_new"
+if test "x$ac_cv_func_ldns_buffer_new" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LDNS_BUFFER_NEW 1
+_ACEOF
+
+else
+  as_fn_error $? "please install libldns-devel" "$LINENO" 5
+fi
+done
+
 
 # add option to disable the evil rpath
 

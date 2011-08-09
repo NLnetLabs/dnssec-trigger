@@ -153,6 +153,7 @@ AC_ARG_WITH(ldns, AC_HELP_STRING([--with-ldns=PATH],
 	RUNTIME_PATH="$RUNTIME_PATH -Wl,--rpath=$withval/lib -Wl,--rpath=$withval/.libs"
 	AC_SUBST(ldnsdir)
 ])
+AC_CHECK_FUNCS([ldns_buffer_new],,[AC_ERROR([please install libldns-devel])])
 
 # add option to disable the evil rpath
 ACX_ARG_RPATH

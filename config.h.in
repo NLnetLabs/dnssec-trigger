@@ -45,6 +45,9 @@
 /* Define to 1 if you have the <iphlpapi.h> header file. */
 #undef HAVE_IPHLPAPI_H
 
+/* Define to 1 if you have the `ldns_buffer_new' function. */
+#undef HAVE_LDNS_BUFFER_NEW
+
 /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
    to 0 otherwise. */
 #undef HAVE_MALLOC
