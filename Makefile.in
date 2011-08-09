@@ -78,7 +78,7 @@ COMMON_OBJ=$(addprefix $(BUILD),$(COMMON_SRC:.c=.lo))
 COMPAT_SRC=$(addprefix compat/,$(LIBOBJS:.o=.c))
 COMPAT_OBJ=$(addprefix $(BUILD)compat/,$(LIBOBJS:.o=.lo))
 
-PANEL_SRC=panel.c
+PANEL_SRC=panel/panel.c
 PANEL_OBJ=$(addprefix $(BUILD),$(PANEL_SRC:.c=.lo)) $(COMPAT_OBJ)
 RIGGERD_SRC=riggerd/riggerd.c riggerd/log.c riggerd/netevent.c riggerd/rbtree.c riggerd/mini_event.c riggerd/net_help.c riggerd/winsock_event.c riggerd/fptr_wlist.c riggerd/cfg.c riggerd/svr.c
 RIGGERD_OBJ=$(addprefix $(BUILD),$(RIGGERD_SRC:.c=.lo)) $(COMPAT_OBJ)
@@ -97,7 +97,7 @@ $(BUILD)%.lo:    $(srcdir)/%.c
 	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
 	$Q$(COMPILE) -o $@ -c $<
 
-all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) panel$(EXEEXT)
+all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-panel$(EXEEXT)
 
 test:	
 	@echo test OK
@@ -106,7 +106,7 @@ dnssec-triggerd$(EXEEXT):	$(RIGGERD_OBJ)
 	$(INFO) Link $@
 	$Q$(LINK) -o $@ $(sort $(RIGGERD_OBJ)) $(LIBS)
 
-panel$(EXEEXT):	$(PANEL_OBJ)
+dnssec-trigger-panel$(EXEEXT):	$(PANEL_OBJ)
 	$(INFO) Link $@
 	$Q$(LINK) -o $@ $(sort $(PANEL_OBJ)) $(LIBS)
 
@@ -129,7 +129,7 @@ util/configparser.c util/configparser.h:  $(srcdir)/util/configparser.y
 
 clean:
 	rm -f *.o *.d *.lo *~ tags
-	rm -f panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
+	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
 	rm -rf autom4te.cache build
 
 realclean: clean
@@ -149,17 +149,18 @@ tags:	$(srcdir)/*.[ch] $(srcdir)/*/*.[ch]
 	ctags  -f $(srcdir)/tags $(srcdir)/*.[ch] $(srcdir)/*/*.[ch]
 
 strip:
-	$(STRIP) panel$(EXEEXT)
+	$(STRIP) dnssec-trigger-panel$(EXEEXT)
+	$(STRIP) dnssec-triggerd$(EXEEXT)
 
 install:	all
 	$(INSTALL) -m 755 -d $(DESTDIR)$(sbindir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)/man8
-	$(LIBTOOL) --mode=install cp panel$(EXEEXT) $(DESTDIR)$(sbindir)/panel$(EXEEXT)
+	$(LIBTOOL) --mode=install cp dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-trigger-panel$(EXEEXT)
 	$(LIBTOOL) --mode=install cp dnssec-triggerd$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
 
 uninstall:
-	rm -f -- $(DESTDIR)$(sbindir)/panel$(EXEEXT)
+	rm -f -- $(DESTDIR)$(sbindir)/dnssec-trigger-panel$(EXEEXT)
 	rm -f -- $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
 	@echo
 	@echo "You still need to remove "`dirname $(DESTDIR)$(configfile)`" , $(DESTDIR)$(configfile) by hand"
