@@ -90,14 +90,6 @@ void log_init(const char* filename, int use_syslog, const char* chrootdir);
 void log_file(FILE *f);
 
 /**
- * Init a thread (will print this number for the thread log entries).
- * Must be called from the thread itself. If not called 0 is printed.
- * @param num: number to print for this thread. Owned by caller, must
- *	continue to exist.
- */
-void log_thread_set(int* num);
-
-/**
  * Set identity to print, default is 'unbound'. 
  * @param id: string to print. Name of executable.
  */

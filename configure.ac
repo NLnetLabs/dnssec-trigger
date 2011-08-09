@@ -25,6 +25,7 @@ wnvs=`echo $PACKAGE_VERSION | sed -e 's/^[^0-9]*\([0-9]\)[^0-9]*\([0-9]\)[^0-9]*
 ]
 AC_DEFINE_UNQUOTED(RSRC_PACKAGE_VERSION, [$wnvs], [version number for resource files])
 
+ACX_DEPFLAG
 ACX_DETERMINE_EXT_FLAGS_UNBOUND
 
 AC_CHECK_HEADERS([getopt.h time.h],,, [AC_INCLUDES_DEFAULT])
@@ -57,6 +58,8 @@ ACX_CHECK_UNUSED_ATTRIBUTE
 if test "$srcdir" != "."; then
 	CPPFLAGS="$CPPFLAGS -I$srcdir"
 fi
+
+AC_CHECK_TOOL(STRIP, strip)
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -104,9 +107,26 @@ AC_FUNC_FSEEKO
 ACX_SYS_LARGEFILE
 
 ACX_CHECK_GETADDRINFO_WITH_INCLUDES
+if test "$USE_WINSOCK" = 1; then
+	AC_DEFINE(UB_ON_WINDOWS, 1, [Use win32 resources and API])
+	UB_ON_WINDOWS=yes
+	AC_SUBST(UB_ON_WINDOWS)
+	AC_CHECK_HEADERS([iphlpapi.h],,, [AC_INCLUDES_DEFAULT
+#include <windows.h>
+	])
+	AC_CHECK_TOOL(WINDRES, windres)
+	LIBS="$LIBS -liphlpapi"
+else
+	AC_DEFINE(USE_MINI_EVENT, 1, [Use builtin event system])
+fi
 if test $ac_cv_func_getaddrinfo = no; then
 AC_LIBOBJ([fake-rfc2553])
 fi
+
+# check after getaddrinfo for its libraries
+ACX_FUNC_IOCTLSOCKET
+
+AC_CHECK_FUNCS([fcntl])
 
 # dependencies from crypto, eventlibs for ldns, unbound.
 ACX_WITH_SSL
@@ -128,6 +148,9 @@ AC_ARG_WITH(ldns, AC_HELP_STRING([--with-ldns=PATH],
 # add option to disable the evil rpath
 ACX_ARG_RPATH
 AC_SUBST(RUNTIME_PATH)
+
+AC_DEFINE_UNQUOTED([MAXSYSLOGMSGLEN], [10240], [Define to the maximum message length to pass to syslog.])
+AC_DEFINE_UNQUOTED([DNS_PORT], [53], [DNS port number])
 
 AH_BOTTOM([
 #ifndef DO_DEBUG

@@ -39,11 +39,8 @@
 
 #include "config.h"
 #include "ldns/ldns.h"
-#include "util/net_help.h"
-#include "util/log.h"
-#include "util/data/dname.h"
-#include "util/module.h"
-#include "util/regional.h"
+#include "net_help.h"
+#include "log.h"
 #include <fcntl.h>
 
 /** max length of an IP address (the address portion) that we allow */
@@ -162,7 +159,7 @@ extstrtoaddr(const char* str, struct sockaddr_storage* addr,
 	socklen_t* addrlen)
 {
 	char* s;
-	int port = UNBOUND_DNS_PORT;
+	int port = DNS_PORT;
 	if((s=strchr(str, '@'))) {
 		char buf[MAX_ADDR_STRLEN];
 		if(s-str >= MAX_ADDR_STRLEN) {
@@ -240,70 +237,6 @@ int netblockstrtoaddr(const char* str, int port, struct sockaddr_storage* addr,
 		addr_mask(addr, *addrlen, *net);
 	}
 	return 1;
-}
-
-void
-log_nametypeclass(enum verbosity_value v, const char* str, uint8_t* name, 
-	uint16_t type, uint16_t dclass)
-{
-	char buf[LDNS_MAX_DOMAINLEN+1];
-	char t[12], c[12];
-	const char *ts, *cs; 
-	if(verbosity < v)
-		return;
-	dname_str(name, buf);
-	if(type == LDNS_RR_TYPE_TSIG) ts = "TSIG";
-	else if(type == LDNS_RR_TYPE_IXFR) ts = "IXFR";
-	else if(type == LDNS_RR_TYPE_AXFR) ts = "AXFR";
-	else if(type == LDNS_RR_TYPE_MAILB) ts = "MAILB";
-	else if(type == LDNS_RR_TYPE_MAILA) ts = "MAILA";
-	else if(type == LDNS_RR_TYPE_ANY) ts = "ANY";
-	else if(ldns_rr_descript(type) && ldns_rr_descript(type)->_name)
-		ts = ldns_rr_descript(type)->_name;
-	else {
-		snprintf(t, sizeof(t), "TYPE%d", (int)type);
-		ts = t;
-	}
-	if(ldns_lookup_by_id(ldns_rr_classes, (int)dclass) &&
-		ldns_lookup_by_id(ldns_rr_classes, (int)dclass)->name)
-		cs = ldns_lookup_by_id(ldns_rr_classes, (int)dclass)->name;
-	else {
-		snprintf(c, sizeof(c), "CLASS%d", (int)dclass);
-		cs = c;
-	}
-	log_info("%s %s %s %s", str, buf, ts, cs);
-}
-
-void log_name_addr(enum verbosity_value v, const char* str, uint8_t* zone, 
-	struct sockaddr_storage* addr, socklen_t addrlen)
-{
-	uint16_t port;
-	const char* family = "unknown_family ";
-	char namebuf[LDNS_MAX_DOMAINLEN+1];
-	char dest[100];
-	int af = (int)((struct sockaddr_in*)addr)->sin_family;
-	void* sinaddr = &((struct sockaddr_in*)addr)->sin_addr;
-	if(verbosity < v)
-		return;
-	switch(af) {
-		case AF_INET: family=""; break;
-		case AF_INET6: family="";
-			sinaddr = &((struct sockaddr_in6*)addr)->sin6_addr;
-			break;
-		case AF_UNIX: family="unix_family "; break;
-		default: break;
-	}
-	if(inet_ntop(af, sinaddr, dest, (socklen_t)sizeof(dest)) == 0) {
-		strncpy(dest, "(inet_ntop error)", sizeof(dest));
-	}
-	dest[sizeof(dest)-1] = 0;
-	port = ntohs(((struct sockaddr_in*)addr)->sin_port);
-	dname_str(zone, namebuf);
-	if(af != AF_INET && af != AF_INET6)
-		verbose(v, "%s <%s> %s%s#%d (addrlen %d)",
-			str, namebuf, family, dest, (int)port, (int)addrlen);
-	else	verbose(v, "%s <%s> %s%s#%d",
-			str, namebuf, family, dest, (int)port);
 }
 
 int
@@ -493,53 +426,3 @@ int addr_is_any(struct sockaddr_storage* addr, socklen_t addrlen)
 	return 0;
 }
 
-void sock_list_insert(struct sock_list** list, struct sockaddr_storage* addr,
-	socklen_t len, struct regional* region)
-{
-	struct sock_list* add = (struct sock_list*)regional_alloc(region,
-		sizeof(*add) - sizeof(add->addr) + (size_t)len);
-	if(!add) {
-		log_err("out of memory in socketlist insert");
-		return;
-	}
-	log_assert(list);
-	add->next = *list;
-	add->len = len;
-	*list = add;
-	if(len) memmove(&add->addr, addr, len);
-}
-
-void sock_list_prepend(struct sock_list** list, struct sock_list* add)
-{
-	struct sock_list* last = add;
-	if(!last) 
-		return;
-	while(last->next)
-		last = last->next;
-	last->next = *list;
-	*list = add;
-}
-
-int sock_list_find(struct sock_list* list, struct sockaddr_storage* addr,
-        socklen_t len)
-{
-	while(list) {
-		if(len == list->len) {
-			if(len == 0 || sockaddr_cmp_addr(addr, len, 
-				&list->addr, list->len) == 0)
-				return 1;
-		}
-		list = list->next;
-	}
-	return 0;
-}
-
-void sock_list_merge(struct sock_list** list, struct regional* region,
-	struct sock_list* add)
-{
-	struct sock_list* p;
-	for(p=add; p; p=p->next) {
-		if(!sock_list_find(*list, &p->addr, p->len))
-			sock_list_insert(list, &p->addr, p->len, region);
-	}
-}

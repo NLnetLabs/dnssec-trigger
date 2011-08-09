@@ -41,8 +41,8 @@
 
 #include "config.h"
 #include "log.h"
+#include "rbtree.h"
 #include "fptr_wlist.h"
-#include "util/rbtree.h"
 
 /** Node colour black */
 #define	BLACK	0

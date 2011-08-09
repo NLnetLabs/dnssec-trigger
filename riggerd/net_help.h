@@ -41,7 +41,7 @@
 
 #ifndef NET_HELP_H
 #define NET_HELP_H
-#include "util/log.h"
+#include "log.h"
 struct sock_list;
 struct regional;
 
@@ -140,17 +140,6 @@ void log_addr(enum verbosity_value v, const char* str,
 	struct sockaddr_storage* addr, socklen_t addrlen);
 
 /**
- * Prints zone name and sockaddr in readable format with log_info. Debug.
- * @param v: at what verbosity level to print this.
- * @param str: descriptive string printed with it.
- * @param zone: DNS domain name, uncompressed wireformat.
- * @param addr: the sockaddr to print. Can be ip4 or ip6.
- * @param addrlen: length of addr.
- */
-void log_name_addr(enum verbosity_value v, const char* str, uint8_t* zone, 
-	struct sockaddr_storage* addr, socklen_t addrlen);
-
-/**
  * Convert address string, with "@port" appendix, to sockaddr.
  * Uses DNS port by default.
  * @param str: the string
@@ -184,17 +173,6 @@ int ipstrtoaddr(const char* ip, int port, struct sockaddr_storage* addr,
  */
 int netblockstrtoaddr(const char* ip, int port, struct sockaddr_storage* addr,
 	socklen_t* addrlen, int* net);
-
-/**
- * Print string with neat domain name, type and class.
- * @param v: at what verbosity level to print this.
- * @param str: string of message.
- * @param name: domain name uncompressed wireformat.
- * @param type: host format RR type.
- * @param dclass: host format RR class.
- */
-void log_nametypeclass(enum verbosity_value v, const char* str, 
-	uint8_t* name, uint16_t type, uint16_t dclass);
 
 /**
  * Compare two sockaddrs. Imposes an ordering on the addresses.
@@ -284,43 +262,5 @@ int addr_is_broadcast(struct sockaddr_storage* addr, socklen_t addrlen);
  * @return true if so
  */
 int addr_is_any(struct sockaddr_storage* addr, socklen_t addrlen);
-
-/**
- * Insert new socket list item. If fails logs error.
- * @param list: pointer to pointer to first item.
- * @param addr: address or NULL if 'cache'.
- * @param len: length of addr, or 0 if 'cache'.
- * @param region: where to allocate
- */
-void sock_list_insert(struct sock_list** list, struct sockaddr_storage* addr,
-	socklen_t len, struct regional* region);
-
-/**
- * Append one list to another.  Must both be from same qstate(regional).
- * @param list: pointer to result list that is modified.
- * @param add: item(s) to add.  They are prepended to list.
- */
-void sock_list_prepend(struct sock_list** list, struct sock_list* add);
-
-/**
- * Find addr in list.
- * @param list: to search in
- * @param addr: address to look for.
- * @param len: length. Can be 0, look for 'cache entry'.
- * @return true if found.
- */
-int sock_list_find(struct sock_list* list, struct sockaddr_storage* addr,
-        socklen_t len);
-
-/**
- * Merge socklist into another socket list.  Allocates the new entries
- * freshly and copies them over, so also performs a region switchover.
- * Allocation failures are logged.
- * @param list: the destination list (checked for duplicates)
- * @param region: where to allocate
- * @param add: the list of entries to add.
- */
-void sock_list_merge(struct sock_list** list, struct regional* region,
-	struct sock_list* add);
 
 #endif /* NET_HELP_H */

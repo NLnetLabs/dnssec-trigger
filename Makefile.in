@@ -31,21 +31,14 @@ libdir=@libdir@
 datarootdir=@datarootdir@
 datadir=@datadir@
 includedir=@includedir@
-doxygen=@doxygen@
-libtool=@libtool@
 ldnsdir=@ldnsdir@
 staticexe=@staticexe@
 EXEEXT=@EXEEXT@
-configfile=@ub_conf_file@
-UNBOUND_RUN_DIR=@UNBOUND_RUN_DIR@
-CHECKLOCK_SRC=@CHECKLOCK_SRC@
-UB_ON_WINDOWS=@UB_ON_WINDOWS@
 
 # override $U variable which is used by autotools for deansification (for
 # K&R C compilers), but causes problems if $U is defined in the env).
 U=
 
-SWIG=@SWIG@
 YACC=@YACC@
 LEX=@LEX@
 STRIP=@STRIP@
@@ -57,7 +50,7 @@ endif
 CPPFLAGS:=$(strip $(CPPFLAGS))
 CFLAGS=@CFLAGS@
 LDFLAGS=@LDFLAGS@
-LIBS=$(strip @LIBS@)
+LIBS=-lssl $(strip @LIBS@)
 LIBOBJS=@LIBOBJS@
 RUNTIME_PATH=@RUNTIME_PATH@
 DEPFLAG=@DEPFLAG@
@@ -81,15 +74,17 @@ LINTFLAGS+="-D__uint16_t=uint16_t"
 
 INSTALL=$(srcdir)/install-sh
 
-COMMON_SRC=util.c
+COMMON_SRC=
 COMMON_OBJ=$(addprefix $(BUILD),$(COMMON_SRC:.c=.lo))
 COMPAT_SRC=$(addprefix compat/,$(LIBOBJS:.o=.c))
 COMPAT_OBJ=$(addprefix $(BUILD)compat/,$(LIBOBJS:.o=.lo))
 
 PANEL_SRC=panel.c
 PANEL_OBJ=$(addprefix $(BUILD),$(PANEL_SRC:.c=.lo)) $(COMPAT_OBJ)
+RIGGERD_SRC=riggerd/riggerd.c riggerd/log.c riggerd/netevent.c riggerd/rbtree.c riggerd/mini_event.c riggerd/net_help.c riggerd/winsock_event.c riggerd/fptr_wlist.c
+RIGGERD_OBJ=$(addprefix $(BUILD),$(RIGGERD_SRC:.c=.lo)) $(COMPAT_OBJ)
 
-ALL_SRC=$(sort $(COMMON_SRC) $(PANEL_SRC)
+ALL_SRC=$(sort $(COMMON_SRC) $(PANEL_SRC) $(RIGGERD_SRC))
 ALL_OBJ=$(addprefix $(BUILD),$(ALL_SRC:.c=.lo) \
 	$(addprefix compat/,$(LIBOBJS:.o=.lo))) $(COMPAT_OBJ)
 
@@ -103,10 +98,14 @@ $(BUILD)%.lo:    $(srcdir)/%.c
 	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
 	$Q$(COMPILE) -o $@ -c $<
 
-all:	$(COMMON_OBJ) panel$(EXEEXT)
+all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) panel$(EXEEXT)
 
 test:	
 	@echo test OK
+
+dnssec-triggerd$(EXEEXT):	$(RIGGERD_OBJ)
+	$(INFO) Link $@
+	$Q$(LINK) -o $@ $(sort $(RIGGERD_OBJ)) $(LIBS)
 
 panel$(EXEEXT):	$(PANEL_OBJ)
 	$(INFO) Link $@
@@ -131,14 +130,13 @@ util/configparser.c util/configparser.h:  $(srcdir)/util/configparser.y
 
 clean:
 	rm -f *.o *.d *.lo *~ tags
-	rm -f panel$(EXEEXT)
+	rm -f panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
 	rm -rf autom4te.cache .libs build doc/html doc/xml
 
 realclean: clean
 	rm -f config.status config.log config.h.in config.h
-	rm -f configure config.sub config.guess ltmain.sh aclocal.m4 libtool
 	rm -f util/configlexer.c util/configparser.c util/configparser.h
-	rm -f Makefile 
+	rm -f Makefile configure
 
 $(BUILD)%.lint:    $(srcdir)/%.c 
 	$(INFO) Lint $<
@@ -158,10 +156,12 @@ install:	all
 	$(INSTALL) -m 755 -d $(DESTDIR)$(sbindir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)/man8
-	$(LIBTOOL) --mode=install cp unbound$(EXEEXT) $(DESTDIR)$(sbindir)/panel$(EXEEXT)
+	$(LIBTOOL) --mode=install cp panel$(EXEEXT) $(DESTDIR)$(sbindir)/panel$(EXEEXT)
+	$(LIBTOOL) --mode=install cp dnssec-triggerd$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
 
 uninstall:
 	rm -f -- $(DESTDIR)$(sbindir)/panel$(EXEEXT)
+	rm -f -- $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
 	@echo
 	@echo "You still need to remove "`dirname $(DESTDIR)$(configfile)`" , $(DESTDIR)$(configfile) by hand"
 

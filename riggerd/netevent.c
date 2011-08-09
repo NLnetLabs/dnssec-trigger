@@ -40,10 +40,10 @@
  */
 #include "config.h"
 #include "ldns/wire2host.h"
-#include "util/netevent.h"
-#include "util/log.h"
-#include "util/net_help.h"
-#include "util/fptr_wlist.h"
+#include "netevent.h"
+#include "log.h"
+#include "net_help.h"
+#include "fptr_wlist.h"
 
 /* -------- Start of local definitions -------- */
 /** if CMSG_ALIGN is not defined on this platform, a workaround */
@@ -83,9 +83,9 @@
 
 #ifdef USE_MINI_EVENT
 #  ifdef USE_WINSOCK
-#    include "util/winsock_event.h"
+#    include "winsock_event.h"
 #  else
-#    include "util/mini_event.h"
+#    include "mini_event.h"
 #  endif /* USE_WINSOCK */
 #else /* USE_MINI_EVENT */
    /* we use libevent */
@@ -684,7 +684,7 @@ int comm_point_perform_accept(struct comm_point* c,
 }
 
 void 
-comm_point_tcp_accept_callback(int fd, short event, void* arg)
+comm_point_tcp_accept_callback(int ATTR_UNUSED(fd), short event, void* arg)
 {
 	struct comm_point* c = (struct comm_point*)arg, *c_hdl;
 	int new_fd;
@@ -701,7 +701,6 @@ comm_point_tcp_accept_callback(int fd, short event, void* arg)
 	}
 	/* accept incoming connection. */
 	c_hdl = c->tcp_free;
-	log_assert(fd != -1);
 	new_fd = comm_point_perform_accept(c, &c_hdl->repinfo.addr,
 		&c_hdl->repinfo.addrlen);
 	if(new_fd == -1)

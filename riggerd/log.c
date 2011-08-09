@@ -38,8 +38,7 @@
  */
 
 #include "config.h"
-#include "util/log.h"
-#include "util/locks.h"
+#include "log.h"
 #ifdef HAVE_TIME_H
 #include <time.h>
 #endif
@@ -62,10 +61,6 @@
 enum verbosity_value verbosity = 0;
 /** the file logged to. */
 static FILE* logfile = 0;
-/** if key has been created */
-static int key_created = 0;
-/** pthread key for thread ids in logfile */
-static ub_thread_key_t logkey;
 /** the identity of this executable/process */
 static const char* ident="unbound";
 #if defined(HAVE_SYSLOG_H) || defined(UB_ON_WINDOWS)
@@ -81,10 +76,6 @@ void
 log_init(const char* filename, int use_syslog, const char* chrootdir)
 {
 	FILE *f;
-	if(!key_created) {
-		key_created = 1;
-		ub_thread_key_create(&logkey, NULL);
-	}
 	if(logfile 
 #if defined(HAVE_SYSLOG_H) || defined(UB_ON_WINDOWS)
 	|| logging_to_syslog
@@ -141,11 +132,6 @@ void log_file(FILE *f)
 	logfile = f;
 }
 
-void log_thread_set(int* num)
-{
-	ub_thread_key_set(logkey, num);
-}
-
 void log_ident_set(const char* id)
 {
 	ident = id;
@@ -166,7 +152,6 @@ log_vmsg(int pri, const char* type,
 	const char *format, va_list args)
 {
 	char message[MAXSYSLOGMSGLEN];
-	unsigned int* tid = (unsigned int*)ub_thread_key_get(logkey);
 	time_t now;
 #if defined(HAVE_STRFTIME) && defined(HAVE_LOCALTIME_R) 
 	char tmbuf[32];
@@ -176,8 +161,8 @@ log_vmsg(int pri, const char* type,
 	vsnprintf(message, sizeof(message), format, args);
 #ifdef HAVE_SYSLOG_H
 	if(logging_to_syslog) {
-		syslog(pri, "[%d:%x] %s: %s", 
-			(int)getpid(), tid?*tid:0, type, message);
+		syslog(pri, "[%d] %s: %s", 
+			(int)getpid(), type, message);
 		return;
 	}
 #elif defined(UB_ON_WINDOWS)
@@ -198,8 +183,8 @@ log_vmsg(int pri, const char* type,
 			tp=MSG_GENERIC_SUCCESS;
 			wt=EVENTLOG_SUCCESS;
 		}
-		snprintf(m, sizeof(m), "[%s:%x] %s: %s", 
-			ident, tid?*tid:0, type, message);
+		snprintf(m, sizeof(m), "[%s] %s: %s", 
+			ident, type, message);
 		s = RegisterEventSource(NULL, SERVICE_NAME);
 		if(!s) return;
 		ReportEvent(s, wt, 0, tp, NULL, 1, 0, &str, NULL);
@@ -215,12 +200,12 @@ log_vmsg(int pri, const char* type,
 	if(log_time_asc && strftime(tmbuf, sizeof(tmbuf), "%b %d %H:%M:%S",
 		localtime_r(&now, &tm))%(sizeof(tmbuf)) != 0) {
 		/* %sizeof buf!=0 because old strftime returned max on error */
-		fprintf(logfile, "%s %s[%d:%x] %s: %s\n", tmbuf, 
-			ident, (int)getpid(), tid?*tid:0, type, message);
+		fprintf(logfile, "%s %s[%d] %s: %s\n", tmbuf, 
+			ident, (int)getpid(), type, message);
 	} else
 #endif
-	fprintf(logfile, "[%u] %s[%d:%x] %s: %s\n", (unsigned)now, 
-		ident, (int)getpid(), tid?*tid:0, type, message);
+	fprintf(logfile, "[%u] %s[%d] %s: %s\n", (unsigned)now, 
+		ident, (int)getpid(), type, message);
 #ifdef UB_ON_WINDOWS
 	/* line buffering does not work on windows */
 	fflush(logfile);
