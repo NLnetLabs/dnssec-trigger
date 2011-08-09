@@ -46,6 +46,7 @@
 #include <getopt.h>
 #endif
 #include <signal.h>
+#include <fcntl.h>
 
 /** print usage text */
 static void
