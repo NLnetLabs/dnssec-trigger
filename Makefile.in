@@ -27,6 +27,7 @@ bindir=@bindir@
 sbindir=@sbindir@
 mandir=@mandir@
 libdir=@libdir@
+libexecdir=@libexecdir@
 # datarootdir is here to please some checkers, use datadir.
 datarootdir=@datarootdir@
 datadir=@datadir@
@@ -121,11 +122,11 @@ osx-hook:	dnssec-trigger-hook.plist dnssec-trigger-osx.sh
 
 dnssec-trigger-hook.plist:	dnssec-trigger-hook.plist.in
 	rm -f $@
-	sed -e 's?0SHELL0?$(SHELL)?' < dnssec-trigger-hook.plist > $@
+	sed -e 's?0libexecdir0?$(libexecdir)?' < dnssec-trigger-hook.plist.in > $@
 
 dnssec-trigger-osx.sh:	dnssec-trigger-osx.sh.in
 	rm -f $@
-	sed -e 's?0SHELL0?$(SHELL)?' < dnssec-trigger-osx.sh > $@
+	sed -e 's?0SHELL0?$(SHELL)?' < dnssec-trigger-osx.sh.in > $@
 	chmod +x $@
 
 dnssec-triggerd$(EXEEXT):	$(RIGGERD_OBJ)
@@ -193,11 +194,11 @@ networkmanager-hook-uninstall:
 
 osx-hook-install:
 	$(INSTALL) -m 644 -d dnssec-trigger-hook.plist $(DESTDIR)/Library/LaunchAgents/dnssec-trigger-hook.plist
-	$(INSTALL) -m 755 -d dnssec-trigger-osx.sh $(DESTDIR)/Library/dnssec-trigger/dnssec-trigger-osx.sh
+	$(INSTALL) -m 755 -d dnssec-trigger-osx.sh $(DESTDIR)$(libexecdir)dnssec-trigger-osx.sh
 
 osx-hook-uninstall:
 	rm -f -- $(DESTDIR)/Library/LaunchAgents/dnssec-trigger-hook.plist
-	rm -f -- $(DESTDIR)/Library/dnssec-trigger/dnssec-trigger-osx.sh
+	rm -f -- $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
 
 install:	all $(installhook)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(sbindir)

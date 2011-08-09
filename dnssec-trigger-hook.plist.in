@@ -7,7 +7,7 @@
 	<string>nl.nlnetlabs.dnssec-trigger.osxhook</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>/Library/bin/dnssec-trigger-osx.sh</string>
+		<string>0libexecdir0/dnssec-trigger-osx.sh</string>
 	</array>
 	<key>WatchPaths</key>
 	<array>
