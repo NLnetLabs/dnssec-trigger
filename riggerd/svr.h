@@ -43,6 +43,10 @@
 #define SVR_H
 struct cfg;
 struct comm_base;
+struct comm_reply;
+struct sslconn;
+struct listen_list;
+struct comm_point;
 
 /**
  * The server
@@ -50,6 +54,36 @@ struct comm_base;
 struct svr {
 	struct cfg* cfg;
 	struct comm_base* base;
+
+	/** SSL context with keys */
+	SSL_CTX* ctx;
+	/** number of active commpoints that are handling remote control */
+	int active;
+	/** max active commpoints */
+	int max_active;
+	/** commpoints for accepting remote control connections */
+	struct listen_list* listen;
+	/** busy commpoints */
+	struct sslconn* busy_list;
+
+};
+
+/** list of commpoints */
+struct listen_list {
+	struct listen_list* next;
+	struct comm_point* c;
+};
+
+/** busy ssl connection */
+struct sslconn {
+	/** the next item in list */
+	struct sslconn* next;
+	/** the commpoint */
+	struct comm_point* c;
+	/** in the handshake part */
+	enum { rc_none, rc_hs_read, rc_hs_write } shake_state;
+	/** the ssl state */
+	SSL* ssl;
 };
 
 extern struct svr* global_svr;
@@ -60,5 +94,10 @@ struct svr* svr_create(struct cfg* cfg);
 void svr_delete(struct svr* svr);
 /** perform the service */
 void svr_service(struct svr* svr);
+
+int handle_ssl_accept(struct comm_point* c, void* arg, int error,
+        struct comm_reply* reply_info);
+int control_callback(struct comm_point* c, void* arg, int error,
+        struct comm_reply* reply_info);
 
 #endif /* SVR_H */

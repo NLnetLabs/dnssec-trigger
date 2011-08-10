@@ -45,6 +45,7 @@
  */
 #include "config.h"
 #include "fptr_wlist.h"
+#include "svr.h"
 #include "mini_event.h"
 
 int 
@@ -56,6 +57,8 @@ fptr_whitelist_comm_point(comm_point_callback_t *fptr)
 int 
 fptr_whitelist_comm_point_raw(comm_point_callback_t *fptr)
 {
+	if(fptr == &handle_ssl_accept) return 1;
+	else if(fptr == &control_callback) return 1;
 	return 0;
 }
 
