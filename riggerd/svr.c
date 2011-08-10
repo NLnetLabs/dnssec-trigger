@@ -50,6 +50,8 @@ struct svr* global_svr = NULL;
 static int setup_ssl_ctx(struct svr* svr);
 static int setup_listen(struct svr* svr);
 static void sslconn_delete(struct sslconn* sc);
+static int sslconn_readline(struct sslconn* sc);
+static void sslconn_command(struct sslconn* sc);
 
 /** log ssl crypto err */
 static void
@@ -232,7 +234,8 @@ static void sslconn_delete(struct sslconn* sc)
 			break;
 		}
 	}
-
+	if(sc->buffer)
+		ldns_buffer_free(sc->buffer);
 	comm_point_delete(sc->c);
 	if(sc->ssl)
 		SSL_free(sc->ssl);
@@ -304,6 +307,14 @@ int handle_ssl_accept(struct comm_point* c, void* ATTR_UNUSED(arg), int err,
                 free(sc);
                 goto close_exit;
         }
+	sc->buffer = ldns_buffer_new(65536);
+	if(!sc->buffer) {
+		log_err("out of memory");
+                SSL_free(sc->ssl);
+                comm_point_delete(sc->c);
+                free(sc);
+                goto close_exit;
+	}
         sc->next = svr->busy_list;
         svr->busy_list = sc;
         svr->active ++;
@@ -326,7 +337,7 @@ int control_callback(struct comm_point* c, void* arg, int err,
                 return 0;
         }
         /* (continue to) setup the SSL connection */
-	if(s->shake_state != rc_none) {
+	if(s->shake_state == rc_hs_read || s->shake_state == rc_hs_write) {
 		ERR_clear_error();
 		r = SSL_do_handshake(s->ssl);
 		if(r != 1) {
@@ -357,8 +368,6 @@ int control_callback(struct comm_point* c, void* arg, int err,
 				return 0;
 			}
 		}
-		s->shake_state = rc_none;
-
 		/* once handshake has completed, check authentication */
 		if(SSL_get_verify_result(s->ssl) == X509_V_OK) {
 			X509* x = SSL_get_peer_certificate(s->ssl);
@@ -376,12 +385,87 @@ int control_callback(struct comm_point* c, void* arg, int err,
 			sslconn_delete(s);
 			return 0;
 		}
+		/* set to read state */
+		s->line_state = line_read;
+		if(s->shake_state == rc_hs_write)
+			comm_point_listen_for_rw(c, 1, 0);
+		s->shake_state = rc_hs_none;
+		ldns_buffer_clear(s->buffer);
+	}
+	if(s->shake_state == rc_hs_want_write) {
+		/* we have satisfied the condition that the socket is
+		 * writable, remove the handshake state, and continue */
+		comm_point_listen_for_rw(c, 1, 0); /* back to reading */
+		s->shake_state = rc_hs_none;
 	}
 
-        /* if OK start to actually handle the request */
-        //handle_req(rc, s, s->ssl);
-
-        verbose(VERB_ALGO, "remote control operation completed");
-	sslconn_delete(s);
+	if(s->line_state == line_read) {
+		if(!sslconn_readline(s))
+			return 0;
+		/* we are done handle it */
+		sslconn_command(s);
+	}
 	return 0;
+}
+
+static int sslconn_readline(struct sslconn* sc)
+{
+        int r;
+	while(ldns_buffer_available(sc->buffer, 1)) {
+		ERR_clear_error();
+		if((r=SSL_read(sc->ssl, ldns_buffer_current(sc->buffer), 1))
+			<= 0) {
+			int want = SSL_get_error(sc->ssl, r);
+			if(want == SSL_ERROR_ZERO_RETURN) {
+				ldns_buffer_write_u8(sc->buffer, 0);
+				ldns_buffer_flip(sc->buffer);
+				return 1;
+			} else if(want == SSL_ERROR_WANT_READ) {
+				return 0;
+			} else if(want == SSL_ERROR_WANT_WRITE) {
+				sc->shake_state = rc_hs_want_write;
+				comm_point_listen_for_rw(sc->c, 0, 1);
+				return 0;
+			}
+			log_crypto_err("could not SSL_read");
+			sslconn_delete(sc);
+			return 0;
+		}
+		if(ldns_buffer_current(sc->buffer)[0] == '\n') {
+			/* return string without \n */
+			ldns_buffer_write_u8(sc->buffer, 0);
+			ldns_buffer_flip(sc->buffer);
+			return 1;
+		}
+		ldns_buffer_skip(sc->buffer, 1);
+	}
+	log_err("ssl readline too long");
+	sslconn_delete(sc);
+	return 0;
+}
+
+static void handle_submit(char* ips)
+{
+	/* TODO */
+}
+
+static void sslconn_command(struct sslconn* sc)
+{
+	char header[10];
+	char* str = (char*)ldns_buffer_begin(sc->buffer);
+	snprintf(header, sizeof(header), "DNSTRIG%d ", CONTROL_VERSION);
+	if(strncmp(str, header, strlen(header)) != 0) {
+		log_err("bad version in control connection");
+		sslconn_delete(sc);
+		return;
+	}
+	str += strlen(header);
+	verbose(VERB_ALGO, "command: %s", str);
+	if(strncmp(str, "submit ", 7) == 0) {
+		handle_submit(str+7);
+		sslconn_delete(sc);
+	} else {
+		log_err("unknown command: %s", str);
+		sslconn_delete(sc);
+	}
 }
