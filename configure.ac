@@ -143,16 +143,16 @@ if test -n "$withval"; then
 fi
 
 # hook settings
-networkmanager_dispatcher_dir="$prefix/NetworkManager/dispatcher.d"
+networkmanager_dispatcher_dir="$sysconfdir/NetworkManager/dispatcher.d"
 AC_ARG_WITH([networkmanager-dispatch], AC_HELP_STRING([--with-networkmanager-dispatch],
-	[Set the networkmanager dhcp dispatcher dir, default tests prefix/NetworkManager/dispatcher.d and /etc/NetworkManager/dispatcher.d]),
+	[Set the networkmanager dhcp dispatcher dir, default tests prefix/etc/NetworkManager/dispatcher.d and /etc/NetworkManager/dispatcher.d]),
 	, )
 with_nm_dispatch="$withval"
 AC_SUBST(networkmanager_dispatcher_dir)
 
-netconfig_dispatcher_dir="$prefix/netconfig.d"
+netconfig_dispatcher_dir="$sysconfdir/netconfig.d"
 AC_ARG_WITH([netconfig-dispatch], AC_HELP_STRING([--with-netconfig-dispatch],
-	[Set the netconfig dhcp dispatcher dir, default tests prefix/netconfig.d and /etc/netconfig.d]),
+	[Set the netconfig dhcp dispatcher dir, default tests prefix/etc/netconfig.d and /etc/netconfig.d]),
 	, )
 with_netconfig_dispatch="$withval"
 AC_SUBST(netconfig_dispatcher_dir)
@@ -209,6 +209,14 @@ fi
 if test "$hooks" = "none"; then
 	AC_MSG_WARN([have no DHCP hooks, cannot detect network changes])
 fi
+
+AC_ARG_WITH([keydir], AC_HELP_STRING([--with-keydir=path],
+[Set the directory where ssl key files are kept, read by daemon and other tools, default prefix/etc]),,)
+keydir="$sysconfdir"
+if test -n "$withval"; then
+	keydir="$withval"
+fi
+AC_SUBST(keydir)
 
 # dependencies from crypto, eventlibs for ldns, unbound.
 ACX_WITH_SSL

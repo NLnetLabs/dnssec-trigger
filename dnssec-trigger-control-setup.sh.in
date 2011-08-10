@@ -1,0 +1,214 @@
+#!0SHELL0
+#
+# dnssec-trigger-setup.sh - set up SSL certificates for dnssec-trigger
+#
+# Copyright (c) 2008, NLnet Labs. All rights reserved.
+#
+# This software is open source.
+# 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 
+# Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+# 
+# Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+# 
+# Neither the name of the NLNET LABS nor the names of its contributors may
+# be used to endorse or promote products derived from this software without
+# specific prior written permission.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+# settings:
+
+# directory for files
+DESTDIR=0keydir0
+
+# issuer and subject name for certificates
+SERVERNAME=dnssec-trigger
+CLIENTNAME=dnssec-trigger-control
+
+# validity period for certificates
+DAYS=7200
+
+# size of keys in bits
+BITS=1536
+
+# hash algorithm
+HASH=sha256
+
+# base name for server keys
+SVR_BASE=dnssec_trigger_server
+
+# base name for control keys
+CTL_BASE=dnssec_trigger_control
+
+# we want -rw-r--- access (say you run this as root: grp=yes (server), all=no).
+umask 0026
+
+# end of options
+
+# functions:
+error ( ) {
+	echo "$0 fatal error: $1"
+	exit 1
+}
+
+action="cert"
+# check arguments:
+while test $# -ne 0; do
+	case $1 in
+	-d)
+	if test $# -eq 1; then error "need argument for -d"; fi
+	DESTDIR="$2"
+	shift
+	;;
+	-s)
+	action="cert"
+	;;
+	-i)
+	action="install"
+	;;
+	-u)
+	action="uninstall"
+	;;
+	*)
+	echo "dnssec-trigger-control-setup.sh [-d dir] [-s|-i|-u]"
+	echo "	-d dir	use directory to store keys and certificates."
+	echo "		default: $DESTDIR"
+	echo "default action -s: setup SSL keys for dnssec-trigger-control"
+	echo "	-i	install config parameters in unbound.conf (destdir)"
+	echo "		This edits unbound.conf with remote-control and the "
+	echo "		root trust-anchor and starts unbound-control-setup"
+	echo "	-u	uninstall parameters installed with -i"
+	exit 1
+	;;
+	esac
+	shift
+done
+
+# go!:
+echo "setup in directory $DESTDIR"
+cd "$DESTDIR" || error "could not cd to $DESTDIR"
+
+find_unbound_config ( ) {
+	ubconf=`unbound-control -h | awk '/config file, default/ { sub(/^.*default is /,""); print}'`
+}
+find_unbound_rootkey ( ) {
+	rootkey=`unbound-anchor -h | awk '/root key file, default/ { sub(/^.*default /,""); print}'`
+}
+
+# install action
+if test "$action" = "install"; then
+	find_unbound_config
+	find_unbound_rootkey
+	echo "checking if unbound-control needs to be enabled"
+	if test "`unbound-checkconf -o control-enable $ubconf`" = "no"; then
+		echo "setup unbound control keys"
+		unbound-control-setup
+		echo "remote-control: control-enable: yes # linetag-dnssec-trigger" >> $ubconf
+	fi
+	echo "checking if root trust anchor needs to be enabled"
+	if test -z "`unbound-checkconf -o auto-trust-anchor-file $ubconf`"; then
+		echo "fetching or updating root trust anchor"
+		unbound-anchor
+		echo "server: auto-trust-anchor-file: "$rootkey" # linetag-dnssec-trigger" >> $ubconf
+	fi
+	exit 0
+fi
+# uninstall action
+if test "$action" = "uninstall"; then
+	find_unbound_config
+	grep -v "linetag-dnssec-trigger" < $ubconf >$ubconf.$$
+	mv $ubconf.$$ $ubconf
+	exit 0
+fi
+
+# create certificate keys; do not recreate if they already exist.
+if test -f $SVR_BASE.key; then
+	echo "$SVR_BASE.key exists"
+else
+	echo "generating $SVR_BASE.key"
+	openssl genrsa -out $SVR_BASE.key $BITS || error "could not genrsa"
+fi
+if test -f $CTL_BASE.key; then
+	echo "$CTL_BASE.key exists"
+else
+	echo "generating $CTL_BASE.key"
+	openssl genrsa -out $CTL_BASE.key $BITS || error "could not genrsa"
+fi
+
+# create self-signed cert for server
+cat >request.cfg <<EOF
+[req]
+default_bits=$BITS
+default_md=$HASH
+prompt=no
+distinguished_name=req_distinguished_name
+
+[req_distinguished_name]
+commonName=$SERVERNAME
+EOF
+test -f request.cfg || error "could not create request.cfg"
+
+echo "create $SVR_BASE.pem (self signed certificate)"
+openssl req -key $SVR_BASE.key -config request.cfg  -new -x509 -days $DAYS -out $SVR_BASE.pem || error "could not create $SVR_BASE.pem"
+# create trusted usage pem
+openssl x509 -in $SVR_BASE.pem -addtrust serverAuth -out $SVR_BASE"_trust.pem"
+
+# create client request and sign it, piped
+cat >request.cfg <<EOF
+[req]
+default_bits=$BITS
+default_md=$HASH
+prompt=no
+distinguished_name=req_distinguished_name
+
+[req_distinguished_name]
+commonName=$CLIENTNAME
+EOF
+test -f request.cfg || error "could not create request.cfg"
+
+echo "create $CTL_BASE.pem (signed client certificate)"
+openssl req -key $CTL_BASE.key -config request.cfg -new | openssl x509 -req -days $DAYS -CA $SVR_BASE"_trust.pem" -CAkey $SVR_BASE.key -CAcreateserial -$HASH -out $CTL_BASE.pem
+test -f $CTL_BASE.pem || error "could not create $CTL_BASE.pem"
+# create trusted usage pem
+# openssl x509 -in $CTL_BASE.pem -addtrust clientAuth -out $CTL_BASE"_trust.pem"
+
+# see details with openssl x509 -noout -text < $SVR_BASE.pem
+# echo "create $CTL_BASE""_browser.pfx (web client certificate)"
+# echo "create webbrowser PKCS#12 .PFX certificate file. In Firefox import in:"
+# echo "preferences - advanced - encryption - view certificates - your certs"
+# echo "empty password is used, simply click OK on the password dialog box."
+# openssl pkcs12 -export -in $CTL_BASE"_trust.pem" -inkey $CTL_BASE.key -name "unbound remote control client cert" -out $CTL_BASE"_browser.pfx" -password "pass:" || error "could not create browser certificate"
+
+# remove unused permissions
+chmod o-rw $SVR_BASE.pem $SVR_BASE.key $CTL_BASE.pem $CTL_BASE.key
+
+# remove crap
+rm -f request.cfg
+rm -f $CTL_BASE"_trust.pem" $SVR_BASE"_trust.pem" $SVR_BASE"_trust.srl"
+
+echo "Setup success. Certificates created."
+echo
+echo "run this script again with -i to:"
+echo "	- enable remote-control in unbound.conf"
+echo "	- start unbound-control-setup"
+echo "	- add root trust anchor to unbound.conf"
+echo "if you have not done this already"
+
+exit 0

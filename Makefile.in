@@ -42,6 +42,7 @@ networkmanager_dispatcher_dir=@networkmanager_dispatcher_dir@
 netconfig_dispatcher_dir=@netconfig_dispatcher_dir@
 osx_launchagents_dir=/Library/LaunchAgents
 configfile=@configfile@
+keydir=@keydir@
 
 # override $U variable which is used by autotools for deansification (for
 # K&R C compilers), but causes problems if $U is defined in the env).
@@ -106,10 +107,15 @@ $(BUILD)%.lo:    $(srcdir)/%.c
 	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
 	$Q$(COMPILE) -o $@ -c $<
 
-all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-panel$(EXEEXT) $(makehook)
+all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-panel$(EXEEXT) dnssec-trigger-control-setup $(makehook)
 
 test:	
 	@echo test OK
+
+dnssec-trigger-control-setup:	dnssec-trigger-control-setup.sh.in
+	rm -f $@
+	sed -e 's?0SHELL0?$(SHELL)?' -e 's?0keydir0?$(keydir)?' < dnssec-trigger-control-setup.sh.in > $@
+	chmod +x $@
 
 none-hook:
 	echo "no dhcp hooks available, need trigger script"
@@ -167,6 +173,7 @@ util/configparser.c util/configparser.h:  $(srcdir)/util/configparser.y
 clean:
 	rm -f *.o *.d *.lo *~ tags
 	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
+	rm -f dnssec-trigger-control-setup
 	rm -f 01-dnssec-trigger-hook dnssec-trigger-osx.sh dnssec-trigger-hook.plist
 	rm -rf autom4te.cache build
 
@@ -224,14 +231,17 @@ install:	all $(installhook)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(sbindir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)/man8
+	$(INSTALL) -m 755 -d $(DESTDIR)$(keydir)
 	$(INSTALL) -c -m 755 dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-trigger-panel$(EXEEXT)
+	$(INSTALL) -c -m 755 dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-trigger-control-setup
 	$(INSTALL) -c -m 755 dnssec-triggerd$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
 
 uninstall: $(uninstallhook)
 	rm -f -- $(DESTDIR)$(sbindir)/dnssec-trigger-panel$(EXEEXT)
+	rm -f -- $(DESTDIR)$(sbindir)/dnssec-trigger-control-setup
 	rm -f -- $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
 	@echo
-	@echo "You still need to remove "`dirname $(DESTDIR)$(configfile)`" , $(DESTDIR)$(configfile) by hand"
+	@echo "You still need to remove ssl keys from $(DESTDIR)$(keydir) and $(DESTDIR)$(configfile) by hand"
 
 # Automatic dependencies.
 $(BUILD)%.d: $(srcdir)/%.c

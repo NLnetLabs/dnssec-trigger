@@ -598,6 +598,7 @@ DATE
 ldnsdir
 RUNTIME_PATH
 HAVE_SSL
+keydir
 hooks
 netconfig_dispatcher_dir
 networkmanager_dispatcher_dir
@@ -664,6 +665,7 @@ enable_largefile
 with_hooks
 with_networkmanager_dispatch
 with_netconfig_dispatch
+with_keydir
 with_ssl
 with_ldns
 enable_rpath
@@ -1302,11 +1304,13 @@ Optional Packages:
                           'none'
   --with-networkmanager-dispatch
                           Set the networkmanager dhcp dispatcher dir, default
-                          tests prefix/NetworkManager/dispatcher.d and
+                          tests prefix/etc/NetworkManager/dispatcher.d and
                           /etc/NetworkManager/dispatcher.d
   --with-netconfig-dispatch
                           Set the netconfig dhcp dispatcher dir, default tests
-                          prefix/netconfig.d and /etc/netconfig.d
+                          prefix/etc/netconfig.d and /etc/netconfig.d
+  --with-keydir=path      Set the directory where ssl key files are kept, read
+                          by daemon and other tools, default prefix/etc
   --with-ssl=pathname     enable SSL (will check /usr/local/ssl /usr/lib/ssl
                           /usr/ssl /usr/pkg /usr/local /opt/local /usr/sfw
                           /usr)
@@ -6204,7 +6208,7 @@ if test -n "$withval"; then
 fi
 
 # hook settings
-networkmanager_dispatcher_dir="$prefix/NetworkManager/dispatcher.d"
+networkmanager_dispatcher_dir="$sysconfdir/NetworkManager/dispatcher.d"
 
 # Check whether --with-networkmanager-dispatch was given.
 if test "${with_networkmanager_dispatch+set}" = set; then :
@@ -6214,7 +6218,7 @@ fi
 with_nm_dispatch="$withval"
 
 
-netconfig_dispatcher_dir="$prefix/netconfig.d"
+netconfig_dispatcher_dir="$sysconfdir/netconfig.d"
 
 # Check whether --with-netconfig-dispatch was given.
 if test "${with_netconfig_dispatch+set}" = set; then :
@@ -6283,6 +6287,18 @@ if test "$hooks" = "none"; then
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: have no DHCP hooks, cannot detect network changes" >&5
 $as_echo "$as_me: WARNING: have no DHCP hooks, cannot detect network changes" >&2;}
 fi
+
+
+# Check whether --with-keydir was given.
+if test "${with_keydir+set}" = set; then :
+  withval=$with_keydir;
+fi
+
+keydir="$sysconfdir"
+if test -n "$withval"; then
+	keydir="$withval"
+fi
+
 
 # dependencies from crypto, eventlibs for ldns, unbound.
 
