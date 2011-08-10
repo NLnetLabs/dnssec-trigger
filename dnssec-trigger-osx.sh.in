@@ -12,8 +12,7 @@ prefs="/Library/Preferences/SystemConfiguration/com.apple.network.identification
 ifs=`ifconfig | awk '/^[^ 	:]*:/ { sub(/:.*$/,empty); iface=$0 } /status: active/ { print iface }'`
 ifs=`echo $ifs`
 
-echo "dnssec-trigger detected interfaces $ifs"
-
+# and the DNS servers for that
 ips=""
 for i in $ifs; do
 	ips_i=`awk "
@@ -58,7 +57,6 @@ done
 # fix whitespace
 ips=`echo $ips`
 
-echo "dnssec-trigger detected DNS $ips"
-
-# TODO do something with this
-
+logger "dnssec-trigger(osx) detected $ifs DNS $ips"
+dnssec-trigger-control submit "$ips"
+exit 0
