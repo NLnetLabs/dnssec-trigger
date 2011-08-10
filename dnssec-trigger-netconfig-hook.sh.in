@@ -12,7 +12,7 @@ netconfdir="$r/var/run/netconfig"
 # see which ifs are up
 ifs=`$ifconfig | awk '/^[a-z]/ { sub(/ .*$/,empty); iface=$0 } / UP / { print iface }'`
 ifs=`echo $ifs`
-echo "dnssec-trigger detected interfaces $ifs"
+logger "dnssec-trigger detected interfaces $ifs"
 
 # get DNS for ifs
 ips=""
@@ -25,7 +25,7 @@ for i in $ifs; do
 	fi
 done
 ips=`echo $ips`
-echo "dnssec-trigger detected DNS $ips"
+logger "dnssec-trigger detected DNS $ips"
 
 # TODO do something with this
 
