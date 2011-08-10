@@ -135,19 +135,53 @@ fi
 
 AC_CHECK_FUNCS([fcntl setsid])
 
-# networkmanager settings
+hooks="auto"
+AC_ARG_WITH([hooks], AC_HELP_STRING([--with-hooks],
+[Set the DHCP change hooks to use, default 'auto', can be 'osx', 'networkmanager', 'netconfig', or 'none']),,)
+if test -n "$withval"; then
+	hooks="$withval"
+fi
+
+# hook settings
 networkmanager_dispatcher_dir="$prefix/NetworkManager/dispatcher.d"
-AC_ARG_WITH([nm-dispatch], AC_HELP_STRING([--with-nm-dispatch],
-	[Set the networkmanager dhcp dispatcher dir, default prefix/NetworkManager/dispatcher.d]),
+AC_ARG_WITH([networkmanager-dispatch], AC_HELP_STRING([--with-networkmanager-dispatch],
+	[Set the networkmanager dhcp dispatcher dir, default tests prefix/NetworkManager/dispatcher.d and /etc/NetworkManager/dispatcher.d]),
 	, )
+with_nm_dispatch="$withval"
 AC_SUBST(networkmanager_dispatcher_dir)
 
+netconfig_dispatcher_dir="$prefix/netconfig.d"
+AC_ARG_WITH([netconfig-dispatch], AC_HELP_STRING([--with-netconfig-dispatch],
+	[Set the netconfig dhcp dispatcher dir, default tests prefix/netconfig.d and /etc/netconfig.d]),
+	, )
+with_netconfig_dispatch="$withval"
+AC_SUBST(netconfig_dispatcher_dir)
+
 AC_MSG_CHECKING([for DHCP hooks])
-if test -x "`which nmcli 2>&1`"; then
-	AC_MSG_RESULT([NetworkManager])
+if test "$hooks" != "auto"; then
+	:
+else
+	if test -x "`which nmcli 2>&1`"; then
+	hooks="networkmanager"
+	else
+		if test `uname` = "Darwin"; then
+			hooks="osx"
+		else
+			if test -x /sbin/netconfig; then
+				hooks="netconfig"
+			else
+				hooks="none"
+			fi
+		fi
+	fi
+fi
+AC_MSG_RESULT([$hooks])
+AC_SUBST(hooks)
+
+if test "$hooks" = "networkmanager"; then
 	AC_MSG_CHECKING([for NetworkManager dispatch])
-	if test "$enable_nm_dispatch" != ""; then
-		networkmanager_dispatcher_dir="$enable_nm_dispatch"
+	if test "$with_nm_dispatch" != ""; then
+		networkmanager_dispatcher_dir="$with_nm_dispatch"
 	else
 		if test -d $networkmanager_dispatcher_dir ; then
 			:
@@ -157,17 +191,24 @@ if test -x "`which nmcli 2>&1`"; then
 		fi
 	fi
 	AC_MSG_RESULT([$networkmanager_dispatcher_dir])
-	hooks=networkmanager
-else
-	if test `uname` = "Darwin"; then
-		AC_MSG_RESULT([OSX])
-		hooks=osx;
-	else
-		hooks=none
-		AC_MSG_WARN([have no DHCP hooks, cannot detect network changes])
-	fi
 fi
-AC_SUBST(hooks)
+if test "$hooks" = "netconfig"; then
+	AC_MSG_CHECKING([for netconfig.d])
+	if test "$with_netconfig_dispatch" != ""; then
+		netconfig_dispatcher_dir="$with_netconfig_dispatch"
+	else
+		if test -d $netconfig_dispatcher_dir ; then
+			:
+		else if test -d /etc/netconfig.d; then
+			netconfig_dispatcher_dir="/etc/netconfig.d"
+			fi
+		fi
+	fi
+	AC_MSG_RESULT([$netconfig_dispatcher_dir])
+fi
+if test "$hooks" = "none"; then
+	AC_MSG_WARN([have no DHCP hooks, cannot detect network changes])
+fi
 
 # dependencies from crypto, eventlibs for ldns, unbound.
 ACX_WITH_SSL

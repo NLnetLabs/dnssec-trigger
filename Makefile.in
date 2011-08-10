@@ -39,6 +39,7 @@ makehook=@hooks@-hook
 installhook=@hooks@-hook-install
 uninstallhook=@hooks@-hook-uninstall
 networkmanager_dispatcher_dir=@networkmanager_dispatcher_dir@
+netconfig_dispatcher_dir=@netconfig_dispatcher_dir@
 osx_launchagents_dir=/Library/LaunchAgents
 configfile=@configfile@
 
@@ -131,6 +132,13 @@ dnssec-trigger-osx.sh:	dnssec-trigger-osx.sh.in
 	sed -e 's?0SHELL0?$(SHELL)?' < dnssec-trigger-osx.sh.in > $@
 	chmod +x $@
 
+netconfig-hook:	dnssec-trigger-netconfig-hook
+
+dnssec-trigger-netconfig-hook:	dnssec-trigger-netconfig-hook.sh.in
+	rm -f $@
+	sed -e 's?0SHELL0?$(SHELL)?' < dnssec-trigger-netconfig-hook.sh.in > $@
+	chmod +x $@
+
 dnssec-triggerd$(EXEEXT):	$(RIGGERD_OBJ)
 	$(INFO) Link $@
 	$Q$(LINK) -o $@ $(sort $(RIGGERD_OBJ)) $(LIBS)
@@ -189,7 +197,8 @@ none-hook-uninstall:
 	echo "no hook to uninstall"
 
 networkmanager-hook-install:
-	$(INSTALL) -m 755 -d 01-dnssec-trigger-hook $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger-hook
+	$(INSTALL) -m 755 -d $(DESTDIR)$(networkmanager_dispatcher_dir)
+	$(INSTALL) -c -m 755 01-dnssec-trigger-hook $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger-hook
 
 networkmanager-hook-uninstall:
 	rm -f -- $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger-hook
@@ -197,19 +206,26 @@ networkmanager-hook-uninstall:
 osx-hook-install:
 	$(INSTALL) -m 755 -d $(DESTDIR)$(osx_launchagents_dir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(libexecdir)
-	$(INSTALL) -m 644 -d dnssec-trigger-hook.plist $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-hook.plist
-	$(INSTALL) -m 755 -d dnssec-trigger-osx.sh $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
+	$(INSTALL) -c -m 644 dnssec-trigger-hook.plist $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-hook.plist
+	$(INSTALL) -c -m 755 dnssec-trigger-osx.sh $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
 
 osx-hook-uninstall:
 	rm -f -- $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-hook.plist
 	rm -f -- $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
 
+netconfig-hook-install:
+	$(INSTALL) -m 755 -d $(DESTDIR)$(netconfig_dispatcher_dir)
+	$(INSTALL) -c -m 755 dnssec-trigger-netconfig-hook $(DESTDIR)$(netconfig_dispatcher_dir)/dnssec-trigger-netconfig-hook
+
+netconfig-hook-uninstall:
+	rm -f -- $(DESTDIR)$(netconfig_dispatcher_dir)/01-dnssec-trigger-hook
+
 install:	all $(installhook)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(sbindir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)/man8
-	$(LIBTOOL) --mode=install cp dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-trigger-panel$(EXEEXT)
-	$(LIBTOOL) --mode=install cp dnssec-triggerd$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
+	$(INSTALL) -c -m 755 dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-trigger-panel$(EXEEXT)
+	$(INSTALL) -c -m 755 dnssec-triggerd$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
 
 uninstall: $(uninstallhook)
 	rm -f -- $(DESTDIR)$(sbindir)/dnssec-trigger-panel$(EXEEXT)

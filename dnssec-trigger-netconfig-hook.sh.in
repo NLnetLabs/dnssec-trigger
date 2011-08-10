@@ -1,0 +1,31 @@
+#!0SHELL0
+#
+# dnssec trigger for netconfig
+# if we are in alternate root
+r="$ROOT"
+
+ifconfig="/sbin/ifconfig"
+# in files like /var/run/netconfig/eth0/netconfig0
+# there is DNSSERVERS='192.168.254.254 192.168.254.254'
+netconfdir="$r/var/run/netconfig"
+
+# see which ifs are up
+ifs=`$ifconfig | awk '/^[a-z]/ { sub(/ .*$/,empty); iface=$0 } / UP / { print iface }'`
+ifs=`echo $ifs`
+echo "dnssec-trigger detected interfaces $ifs"
+
+# get DNS for ifs
+ips=""
+for i in $ifs; do
+	if test -d $netconfdir/$i; then
+		for f in $netconfdir/$i/*; do
+			ips_now=`awk "/^DNSSERVERS=/ { sub(/DNSSERVERS='/,\"\"); sub(/'\$/,\"\"); print } " < $f `
+			ips="$ips $ips_now"
+		done;
+	fi
+done
+ips=`echo $ips`
+echo "dnssec-trigger detected DNS $ips"
+
+# TODO do something with this
+
