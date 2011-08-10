@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* default config file name for dnssec-trigger */
+#undef CONFIGFILE
+
 /* Whether daemon is deprecated */
 #undef DEPRECATED_DAEMON
 
@@ -147,6 +150,9 @@
 
 /* Define to 1 if you have the <ws2tcpip.h> header file. */
 #undef HAVE_WS2TCPIP_H
+
+/* directory with ssl key files for dnssec-trigger */
+#undef KEYDIR
 
 /* Define to the maximum message length to pass to syslog. */
 #undef MAXSYSLOGMSGLEN

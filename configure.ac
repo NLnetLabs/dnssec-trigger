@@ -212,11 +212,23 @@ fi
 
 AC_ARG_WITH([keydir], AC_HELP_STRING([--with-keydir=path],
 [Set the directory where ssl key files are kept, read by daemon and other tools, default prefix/etc]),,)
-keydir="$sysconfdir"
+keydir=`eval echo "$sysconfdir"`
 if test -n "$withval"; then
 	keydir="$withval"
 fi
+ACX_ESCAPE_BACKSLASH($keydir, keydir_esc)
+AC_DEFINE_UNQUOTED([KEYDIR], ["$keydir_esc"], [directory with ssl key files for dnssec-trigger])
 AC_SUBST(keydir)
+
+AC_ARG_WITH([configfile], AC_HELP_STRING([--with-configfile=path],
+[set the configfile to use, default keydir/dnssec-trigger.conf]),,)
+configfile="$keydir/dnssec-trigger.conf"
+if test -n "$withval"; then
+	configfile="$withval"
+fi
+ACX_ESCAPE_BACKSLASH($configfile, configfile_esc)
+AC_DEFINE_UNQUOTED([CONFIGFILE], ["$configfile_esc"], [default config file name for dnssec-trigger])
+AC_SUBST(configfile)
 
 # dependencies from crypto, eventlibs for ldns, unbound.
 ACX_WITH_SSL
@@ -228,8 +240,7 @@ else
 	LIBS="-lssl $LIBS"
 fi
 
-# check this after all other compilation checks, since the linking of the lib
-# may break checks after this.
+LDNSLIBS=""
 AC_ARG_WITH(ldns, AC_HELP_STRING([--with-ldns=PATH], 
 	[specify prefix of path of ldns library to use]), 
 	[
@@ -237,14 +248,16 @@ AC_ARG_WITH(ldns, AC_HELP_STRING([--with-ldns=PATH],
 	LDFLAGS="-L$withval -L$withval/lib $LDFLAGS"
 	ldnsdir="$withval"
 	if test "$staticexe" = "yes"; then
-		LIBS="$ldnsdir/lib/libldns.a $LIBS"
+		LDNSLIBS="$ldnsdir/lib/libldns.a"
 	else
-		LIBS="-lldns $LIBS"
+		LDNSLIBS="-lldns"
 		RUNTIME_PATH="$RUNTIME_PATH -Wl,--rpath=$withval/lib -Wl,--rpath=$withval/.libs"
 	fi
 	AC_SUBST(ldnsdir)
-])
-AC_CHECK_FUNCS([ldns_buffer_new],,[AC_MSG_ERROR([please install libldns-devel])])
+	AC_SUBST(LDNSLIBS)
+	], [
+	AC_CHECK_FUNCS([ldns_buffer_new],,[AC_MSG_ERROR([please install libldns-devel])])
+	])
 
 # add option to disable the evil rpath
 ACX_ARG_RPATH

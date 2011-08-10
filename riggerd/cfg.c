@@ -47,6 +47,11 @@ struct cfg* cfg_create(const char* cfgfile)
 	struct cfg* cfg = (struct cfg*)calloc(1, sizeof(*cfg));
 	if(!cfg) return NULL;
 	cfg->use_syslog = 1;
+	cfg->control_port = 8955;
+	cfg->server_key_file=strdup(KEYDIR"/dnssec_trigger_server.key");
+	cfg->server_cert_file=strdup(KEYDIR"/dnssec_trigger_server.pem");
+	cfg->control_key_file=strdup(KEYDIR"/dnssec_trigger_control.key");
+	cfg->control_cert_file=strdup(KEYDIR"/dnssec_trigger_control.pem");
 	//cfg->unbound_control = strdup("unbound-control");
 	//cfg->pidfile = strdup(PIDFILE);
 
@@ -56,7 +61,9 @@ struct cfg* cfg_create(const char* cfgfile)
 	cfg->logfile = strdup("test.log");
 	cfg->unbound_control = strdup("echo unbound-control");
 
-	if(!cfg->unbound_control || !cfg->pidfile) {
+	if(!cfg->unbound_control || !cfg->pidfile || !cfg->server_key_file ||
+		!cfg->server_cert_file || !cfg->control_key_file ||
+		!cfg->control_cert_file) {
 		cfg_delete(cfg);
 		return NULL;
 	}
@@ -74,5 +81,9 @@ void cfg_delete(struct cfg* cfg)
 	free(cfg->logfile);
 	free(cfg->chroot);
 	free(cfg->unbound_control);
+	free(cfg->server_key_file);
+	free(cfg->server_cert_file);
+	free(cfg->control_key_file);
+	free(cfg->control_cert_file);
 	free(cfg);
 }

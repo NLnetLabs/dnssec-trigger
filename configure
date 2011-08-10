@@ -595,9 +595,11 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 DATE
+LDNSLIBS
 ldnsdir
 RUNTIME_PATH
 HAVE_SSL
+configfile
 keydir
 hooks
 netconfig_dispatcher_dir
@@ -666,6 +668,7 @@ with_hooks
 with_networkmanager_dispatch
 with_netconfig_dispatch
 with_keydir
+with_configfile
 with_ssl
 with_ldns
 enable_rpath
@@ -1311,6 +1314,8 @@ Optional Packages:
                           prefix/etc/netconfig.d and /etc/netconfig.d
   --with-keydir=path      Set the directory where ssl key files are kept, read
                           by daemon and other tools, default prefix/etc
+  --with-configfile=path  set the configfile to use, default
+                          keydir/dnssec-trigger.conf
   --with-ssl=pathname     enable SSL (will check /usr/local/ssl /usr/lib/ssl
                           /usr/ssl /usr/pkg /usr/local /opt/local /usr/sfw
                           /usr)
@@ -6294,10 +6299,36 @@ if test "${with_keydir+set}" = set; then :
   withval=$with_keydir;
 fi
 
-keydir="$sysconfdir"
+keydir=`eval echo "$sysconfdir"`
 if test -n "$withval"; then
 	keydir="$withval"
 fi
+keydir_esc="`echo $keydir | sed -e 's/\\\\/\\\\\\\\/g'`"
+
+
+cat >>confdefs.h <<_ACEOF
+#define KEYDIR "$keydir_esc"
+_ACEOF
+
+
+
+
+# Check whether --with-configfile was given.
+if test "${with_configfile+set}" = set; then :
+  withval=$with_configfile;
+fi
+
+configfile="$keydir/dnssec-trigger.conf"
+if test -n "$withval"; then
+	configfile="$withval"
+fi
+configfile_esc="`echo $configfile | sed -e 's/\\\\/\\\\\\\\/g'`"
+
+
+cat >>confdefs.h <<_ACEOF
+#define CONFIGFILE "$configfile_esc"
+_ACEOF
+
 
 
 # dependencies from crypto, eventlibs for ldns, unbound.
@@ -6674,8 +6705,7 @@ else
 	LIBS="-lssl $LIBS"
 fi
 
-# check this after all other compilation checks, since the linking of the lib
-# may break checks after this.
+LDNSLIBS=""
 
 # Check whether --with-ldns was given.
 if test "${with_ldns+set}" = set; then :
@@ -6684,16 +6714,17 @@ if test "${with_ldns+set}" = set; then :
 	LDFLAGS="-L$withval -L$withval/lib $LDFLAGS"
 	ldnsdir="$withval"
 	if test "$staticexe" = "yes"; then
-		LIBS="$ldnsdir/lib/libldns.a $LIBS"
+		LDNSLIBS="$ldnsdir/lib/libldns.a"
 	else
-		LIBS="-lldns $LIBS"
+		LDNSLIBS="-lldns"
 		RUNTIME_PATH="$RUNTIME_PATH -Wl,--rpath=$withval/lib -Wl,--rpath=$withval/.libs"
 	fi
 
 
-fi
 
-for ac_func in ldns_buffer_new
+else
+
+	for ac_func in ldns_buffer_new
 do :
   ac_fn_c_check_func "$LINENO" "ldns_buffer_new" "ac_cv_func_ldns_buffer_new"
 if test "x$ac_cv_func_ldns_buffer_new" = x""yes; then :
@@ -6705,6 +6736,9 @@ else
   as_fn_error "please install libldns-devel" "$LINENO" 5
 fi
 done
+
+
+fi
 
 
 # add option to disable the evil rpath

@@ -60,6 +60,7 @@ CPPFLAGS:=$(strip $(CPPFLAGS))
 CFLAGS=@CFLAGS@
 LDFLAGS=@LDFLAGS@
 LIBS=$(strip @LIBS@)
+LDNSLIBS=@LDNSLIBS@
 LIBOBJS=@LIBOBJS@
 RUNTIME_PATH=@RUNTIME_PATH@
 DEPFLAG=@DEPFLAG@
@@ -90,10 +91,12 @@ COMPAT_OBJ=$(addprefix $(BUILD)compat/,$(LIBOBJS:.o=.lo))
 
 PANEL_SRC=panel/panel.c
 PANEL_OBJ=$(addprefix $(BUILD),$(PANEL_SRC:.c=.lo)) $(COMPAT_OBJ)
+CONTROL_SRC=dnssec-trigger-control.c riggerd/cfg.c riggerd/log.c riggerd/net_help.c
+CONTROL_OBJ=$(addprefix $(BUILD),$(CONTROL_SRC:.c=.lo)) $(COMPAT_OBJ)
 RIGGERD_SRC=riggerd/riggerd.c riggerd/log.c riggerd/netevent.c riggerd/rbtree.c riggerd/mini_event.c riggerd/net_help.c riggerd/winsock_event.c riggerd/fptr_wlist.c riggerd/cfg.c riggerd/svr.c
 RIGGERD_OBJ=$(addprefix $(BUILD),$(RIGGERD_SRC:.c=.lo)) $(COMPAT_OBJ)
 
-ALL_SRC=$(sort $(COMMON_SRC) $(PANEL_SRC) $(RIGGERD_SRC))
+ALL_SRC=$(sort $(COMMON_SRC) $(PANEL_SRC) $(RIGGERD_SRC) $(CONTROL_SRC))
 ALL_OBJ=$(addprefix $(BUILD),$(ALL_SRC:.c=.lo) \
 	$(addprefix compat/,$(LIBOBJS:.o=.lo))) $(COMPAT_OBJ)
 
@@ -107,10 +110,10 @@ $(BUILD)%.lo:    $(srcdir)/%.c
 	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
 	$Q$(COMPILE) -o $@ -c $<
 
-all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-panel$(EXEEXT) dnssec-trigger-control-setup $(makehook)
+all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-panel$(EXEEXT) dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT) $(makehook)
 
 test:	
-	@echo test OK
+	@echo done
 
 dnssec-trigger-control-setup:	dnssec-trigger-control-setup.sh.in
 	rm -f $@
@@ -147,7 +150,11 @@ dnssec-trigger-netconfig-hook:	dnssec-trigger-netconfig-hook.sh.in
 
 dnssec-triggerd$(EXEEXT):	$(RIGGERD_OBJ)
 	$(INFO) Link $@
-	$Q$(LINK) -o $@ $(sort $(RIGGERD_OBJ)) $(LIBS)
+	$Q$(LINK) -o $@ $(sort $(RIGGERD_OBJ)) $(LDNSLIBS) $(LIBS)
+
+dnssec-trigger-control$(EXEEXT):	$(CONTROL_OBJ)
+	$(INFO) Link $@
+	$Q$(LINK) -o $@ $(sort $(CONTROL_OBJ)) $(LIBS)
 
 dnssec-trigger-panel$(EXEEXT):	$(PANEL_OBJ)
 	$(INFO) Link $@
@@ -173,8 +180,8 @@ util/configparser.c util/configparser.h:  $(srcdir)/util/configparser.y
 clean:
 	rm -f *.o *.d *.lo *~ tags
 	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
-	rm -f dnssec-trigger-control-setup
-	rm -f 01-dnssec-trigger-hook dnssec-trigger-osx.sh dnssec-trigger-hook.plist
+	rm -f dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT)
+	rm -f 01-dnssec-trigger-hook dnssec-trigger-osx.sh dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook
 	rm -rf autom4te.cache build
 
 realclean: clean
@@ -196,6 +203,7 @@ tags:	$(srcdir)/*.[ch] $(srcdir)/*/*.[ch]
 strip:
 	$(STRIP) dnssec-trigger-panel$(EXEEXT)
 	$(STRIP) dnssec-triggerd$(EXEEXT)
+	$(STRIP) dnssec-trigger-control$(EXEEXT)
 
 none-hook-install:
 	echo "no hook to install"
@@ -225,7 +233,7 @@ netconfig-hook-install:
 	$(INSTALL) -c -m 755 dnssec-trigger-netconfig-hook $(DESTDIR)$(netconfig_dispatcher_dir)/dnssec-trigger-netconfig-hook
 
 netconfig-hook-uninstall:
-	rm -f -- $(DESTDIR)$(netconfig_dispatcher_dir)/01-dnssec-trigger-hook
+	rm -f -- $(DESTDIR)$(netconfig_dispatcher_dir)/dnssec-trigger-netconfig-hook
 
 install:	all $(installhook)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(sbindir)
@@ -233,12 +241,14 @@ install:	all $(installhook)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)/man8
 	$(INSTALL) -m 755 -d $(DESTDIR)$(keydir)
 	$(INSTALL) -c -m 755 dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-trigger-panel$(EXEEXT)
-	$(INSTALL) -c -m 755 dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-trigger-control-setup
+	$(INSTALL) -c -m 755 dnssec-trigger-control-setup $(DESTDIR)$(sbindir)/dnssec-trigger-control-setup
+	$(INSTALL) -c -m 755 dnssec-trigger-control$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-trigger-control$(EXEEXT)
 	$(INSTALL) -c -m 755 dnssec-triggerd$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
 
 uninstall: $(uninstallhook)
 	rm -f -- $(DESTDIR)$(sbindir)/dnssec-trigger-panel$(EXEEXT)
 	rm -f -- $(DESTDIR)$(sbindir)/dnssec-trigger-control-setup
+	rm -f -- $(DESTDIR)$(sbindir)/dnssec-trigger-control$(EXEEXT)
 	rm -f -- $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
 	@echo
 	@echo "You still need to remove ssl keys from $(DESTDIR)$(keydir) and $(DESTDIR)$(configfile) by hand"

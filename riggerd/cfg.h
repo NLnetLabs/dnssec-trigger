@@ -42,6 +42,9 @@
 #ifndef CFG_H
 #define CFG_H
 
+/* version of control proto */
+#define CONTROL_VERSION 1
+
 /**
  * The configuration options
  */
@@ -58,6 +61,17 @@ struct cfg {
 	char* chroot;
 	/** path to unbound-control */
 	char* unbound_control;
+
+	/** port number for the control port */
+	int control_port;
+	/** private key file for server */
+	char* server_key_file;
+	/** certificate file for server */
+	char* server_cert_file;
+	/** private key file for control */
+	char* control_key_file;
+	/** certificate file for control */
+	char* control_cert_file;
 };
 
 /** create config and read in */
