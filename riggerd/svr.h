@@ -67,6 +67,8 @@ struct svr {
 	/** busy commpoints */
 	struct sslconn* busy_list;
 
+	/** udp buffer */
+	struct ldns_struct_buffer* udp_buffer;
 };
 
 /** list of commpoints */

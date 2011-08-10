@@ -42,6 +42,7 @@
 #include "svr.h"
 #include "cfg.h"
 #include "log.h"
+#include "probe.h"
 #include "netevent.h"
 #include "net_help.h"
 
@@ -77,6 +78,13 @@ struct svr* svr_create(struct cfg* cfg)
 	svr->cfg = cfg;
 	svr->base = comm_base_create(0);
 	if(!svr->base) {
+		log_err("cannot create base");
+		svr_delete(svr);
+		return NULL;
+	}
+	svr->udp_buffer = ldns_buffer_new(65553);
+	if(!svr->udp_buffer) {
+		log_err("out of memory");
 		svr_delete(svr);
 		return NULL;
 	}
@@ -117,6 +125,7 @@ void svr_delete(struct svr* svr)
 	if(svr->ctx) {
 		SSL_CTX_free(svr->ctx);
 	}
+	ldns_buffer_free(svr->udp_buffer);
 	comm_base_delete(svr->base);
 	free(svr);
 }
@@ -405,6 +414,7 @@ int control_callback(struct comm_point* c, void* arg, int err,
 		/* we are done handle it */
 		sslconn_command(s);
 	}
+	/* TODO persistent connection communication with panel */
 	return 0;
 }
 
@@ -446,7 +456,8 @@ static int sslconn_readline(struct sslconn* sc)
 
 static void handle_submit(char* ips)
 {
-	/* TODO */
+	/* start probing the servers */
+	probe_start(ips);
 }
 
 static void sslconn_command(struct sslconn* sc)
