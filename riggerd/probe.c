@@ -584,6 +584,23 @@ static void probe_spawn_direct(void)
 	}
 }
 
+/* stop unfininished probes and remove them */
+static void stop_unfinished_probes(void)
+{
+	struct probe_ip* p, *prev = NULL, *np;
+	for(p = global_svr->probes; p; p = np) {
+		np = p->next;
+		if(!p->finished) {
+			if(prev) prev->next = p->next;
+			else	global_svr->probes = p->next;
+			verbose(VERB_ALGO, "stop %s: not needed", p->name);
+			probe_delete(p);
+		} else {
+			prev = p;
+		}
+	}
+}
+
 /** see if probe totally done or we have to wait more */
 static void
 probe_partial_done(struct probe_ip* p, const char* in, const char* reason)
@@ -635,9 +652,9 @@ probe_done(struct probe_ip* p)
 			/* TODO: signal unbound a working server */
 		} else if(svr->probe_direct && !svr->saw_direct_work) {
 			svr->saw_direct_work = 1;
-			probe_all_done();
 			/* no need for wait for more done */
-			/* TODO: stop others */
+			stop_unfinished_probes();
+			probe_all_done();
 			return;
 		}
 	}
@@ -663,15 +680,17 @@ probe_all_done(void)
 	}
 	if(svr->probe_direct && svr->saw_direct_work) {
 		/* set unbound to process directly */
-		verbose(VERB_ALGO, "probe done: DNSSEC to auth direct");
-
+		verbose(VERB_QUERY, "probe done: DNSSEC to auth direct");
+		/* TODO signal unbound */
 	} else if(svr->probe_direct && !svr->saw_direct_work) {
-		verbose(VERB_ALGO, "probe done: DNSSEC fails");
+		verbose(VERB_QUERY, "probe done: DNSSEC fails");
 		/* DNSSEC failure */
 		/* set unbound to dark */
 		/* see what the user wants */
+		/* TODO signal unbound */
 	} else {
-		verbose(VERB_ALGO, "probe done: DNSSEC to cache");
+		verbose(VERB_QUERY, "probe done: DNSSEC to cache");
 		/* send the working servers to unbound */
+		/* TODO signal unbound */
 	}
 }
