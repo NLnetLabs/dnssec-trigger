@@ -541,6 +541,7 @@ static void probe_spawn(const char* ip, int recurse)
 		return;
 	}
 	/* create probe structure and register it */
+	p->to_auth = !recurse;
 	p->name = strdup(ip);
 	if(!p->name) {
 		free(p);
@@ -678,19 +679,30 @@ probe_all_done(void)
 		probe_spawn_direct();
 		return;
 	}
+	if(verbosity >= VERB_DETAIL) {
+		struct probe_ip* p;
+		for(p=svr->probes; p; p=p->next)
+			verbose(VERB_DETAIL, "%s %s: %s %s", 
+				p->to_auth?"authority":"cache", p->name,
+				p->works?"OK":"error", p->reason?p->reason:"");
+	}
 	if(svr->probe_direct && svr->saw_direct_work) {
 		/* set unbound to process directly */
-		verbose(VERB_QUERY, "probe done: DNSSEC to auth direct");
+		verbose(VERB_OPS, "probe done: DNSSEC to auth direct");
 		/* TODO signal unbound */
+		/* TODO set resolv.conf to 127.0.0.1 */
 	} else if(svr->probe_direct && !svr->saw_direct_work) {
-		verbose(VERB_QUERY, "probe done: DNSSEC fails");
+		verbose(VERB_OPS, "probe done: DNSSEC fails");
 		/* DNSSEC failure */
 		/* set unbound to dark */
 		/* see what the user wants */
 		/* TODO signal unbound */
+		/* TODO: set resolv.conf to 127.0.0.1, or outq->recurse 
+		 * list if user want insecure */
 	} else {
-		verbose(VERB_QUERY, "probe done: DNSSEC to cache");
+		verbose(VERB_OPS, "probe done: DNSSEC to cache");
 		/* send the working servers to unbound */
 		/* TODO signal unbound */
+		/* TODO set resolv.conf to 127.0.0.1 */
 	}
 }

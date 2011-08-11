@@ -52,6 +52,8 @@ struct probe_ip {
 	struct probe_ip* next;
 	/* the IP address probed */
 	char* name;
+	/* to authority? */
+	int to_auth;
 
 	/* DS query, or NULL if done */
 	struct outq* ds_c;
