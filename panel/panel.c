@@ -69,7 +69,7 @@ static RETSIGTYPE record_sigh(int sig)
 #endif
 	case SIGINT:
 		printf("killed by signal %d\n", (int)sig);
-		exit(0);
+		gtk_main_quit();
 	break;
 #ifdef SIGPIPE
 	case SIGPIPE:
@@ -121,7 +121,10 @@ do_main_work(void)
 	g_object_unref(G_OBJECT(builder));
 
 	gtk_widget_show(window);       
+	gdk_threads_enter();
 	gtk_main();
+	gdk_threads_leave();
+	printf("panel stop\n");
 }
 
 
@@ -139,6 +142,9 @@ extern char* optarg;
 int main(int argc, char *argv[])
 {
         int c;
+	g_thread_init(NULL);
+	gdk_threads_init();
+	gtk_init(&argc, &argv);
         while( (c=getopt(argc, argv, "h")) != -1) {
                 switch(c) {
                 default:
@@ -155,7 +161,6 @@ int main(int argc, char *argv[])
 	}
 
 	/* show user interface */
-	gtk_init (&argc, &argv);
 	do_main_work();
 	return 0;
 }
