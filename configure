@@ -6689,6 +6689,32 @@ fi
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
+for ac_header in openssl/conf.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "openssl/conf.h" "ac_cv_header_openssl_conf_h" "$ac_includes_default
+"
+if test "x$ac_cv_header_openssl_conf_h" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_OPENSSL_CONF_H 1
+_ACEOF
+
+fi
+
+done
+
+for ac_header in openssl/engine.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "openssl/engine.h" "ac_cv_header_openssl_engine_h" "$ac_includes_default
+"
+if test "x$ac_cv_header_openssl_engine_h" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_OPENSSL_ENGINE_H 1
+_ACEOF
+
+fi
+
+done
+
 if test "$staticexe" = "yes"; then
 	LIBS="`echo $LIBS | sed -e 's/ -lcrypto//'`"
 	LIBS="$ssldir/lib/libssl.a $ssldir/lib/libcrypto.a $LIBS"

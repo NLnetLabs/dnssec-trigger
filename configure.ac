@@ -233,6 +233,8 @@ AC_SUBST(configfile)
 # dependencies from crypto, eventlibs for ldns, unbound.
 ACX_WITH_SSL
 ACX_LIB_SSL
+AC_CHECK_HEADERS([openssl/conf.h],,, [AC_INCLUDES_DEFAULT])
+AC_CHECK_HEADERS([openssl/engine.h],,, [AC_INCLUDES_DEFAULT])
 if test "$staticexe" = "yes"; then
 	LIBS="`echo $LIBS | sed -e 's/ -lcrypto//'`"
 	LIBS="$ssldir/lib/libssl.a $ssldir/lib/libcrypto.a $LIBS"

@@ -54,8 +54,6 @@ static void outq_delete(struct outq* outq);
 static int outq_settimeout_and_send(struct outq* outq);
 /* send outq over tcp */
 static void outq_send_tcp(struct outq* outq);
-/* add timeval without overflow */
-static void timeval_add(struct timeval* d, const struct timeval* add);
 /* a query is done, check probe to see if failed, succeed or wait */
 static void probe_partial_done(struct probe_ip* p, const char* in,
 	const char* reason);
@@ -64,30 +62,20 @@ static void probe_done(struct probe_ip* p);
 /* all probes are done */
 static void probe_all_done(void);
 
-/** add timers and the values do not overflow or become negative */
-static void
-timeval_add(struct timeval* d, const struct timeval* add)
-{
-#ifndef S_SPLINT_S
-	d->tv_sec += add->tv_sec;
-	d->tv_usec += add->tv_usec;
-	if(d->tv_usec > 1000000) {
-		d->tv_usec -= 1000000;
-		d->tv_sec++;
-	}
-#endif
-}
-
 void probe_start(char* ips)
 {
 	char* next;
 	struct svr* svr = global_svr;
 	if(svr->probes) {
-		/* clear existing probe list : the DHCP changes are
-		 * coming in too fast ! */
+		/* clear existing probe list */
 		probe_list_delete(svr->probes);
 		svr->probes = NULL;
-		verbose(VERB_QUERY, "probes cancelled due to new DHCP change"); 
+		if(svr->num_probes_done < svr->num_probes) {
+			verbose(VERB_QUERY, "probes cancelled due to fast "
+				"net change"); 
+		}
+		svr->num_probes_done = 0;
+		svr->num_probes = 0;
 	}
 
 	/* spawn a probe for every IP address in the list */
@@ -96,9 +84,13 @@ void probe_start(char* ips)
 	svr->probe_direct = 0;
 	while(*ips == ' ')
 		ips++;
-	while( *ips && (next=strchr(ips, ' ')) != NULL) {
-		*next++ = 0;
-		probe_spawn(ips, 0);
+	while(ips && *ips) {
+		if((next = strchr(ips, ' ')) != NULL) {
+			*next++ = 0;
+			while(*next == ' ')
+				next++;
+		}
+		probe_spawn(ips, 1);
 		ips = next;
 	}
 	/* (if no resulting probes), check result now */
@@ -236,7 +228,7 @@ outq_check_packet(struct outq* outq, uint8_t* wire, size_t len)
 	/* does DNS work? */
 	if(ldns_pkt_get_rcode(p) != LDNS_RCODE_NOERROR) {
 		char* r = ldns_pkt_rcode2str(ldns_pkt_get_rcode(p));
-		snprintf(reason, sizeof(reason), "no answer, %s\n",
+		snprintf(reason, sizeof(reason), "no answer, %s",
 			r?r:"(out of memory)");
 		outq_done(outq, reason);
 		LDNS_FREE(r);
@@ -294,10 +286,12 @@ int outq_handle_udp(struct comm_point* c, void* my_arg, int error,
 	}
 	/* quick sanity check */
 	if(len < LDNS_HEADER_SIZE || LDNS_ID_WIRE(wire) != outq->qid) {
+		log_info("%4.4x wire, qid %4.4x", LDNS_ID_WIRE(wire), outq->qid);
 		/* wait for the real reply */
 		verbose(VERB_ALGO, "ignored bad reply (tooshort or wrong qid)");
 		return 0;
 	}
+	comm_timer_disable(outq->timer);
 	outq_check_packet(outq, wire, len);
 	return 0;
 }
@@ -316,7 +310,6 @@ create_probe_query(struct outq* outq, ldns_buffer* buffer)
 	}
 	ldns_pkt_set_edns_do(pkt, 1);
 	ldns_pkt_set_edns_udp_size(pkt, 4096);
-	outq->qid = (uint16_t)ldns_get_random();
 	ldns_pkt_set_id(pkt, outq->qid);
 	ldns_buffer_clear(buffer);
 	status = ldns_pkt2buffer_wire(buffer, pkt);
@@ -326,6 +319,7 @@ create_probe_query(struct outq* outq, ldns_buffer* buffer)
 		ldns_pkt_free(pkt);
 		return 0;
 	}
+	ldns_buffer_flip(buffer);
 	ldns_pkt_free(pkt);
 	return 1;
 }
@@ -344,6 +338,7 @@ outq_create(const char* ip, int tp, const char* domain, int recurse,
 	outq->qname = domain;
 	outq->probe = p;
 	outq->qtype = (uint16_t)tp;
+	outq->qid = (uint16_t)ldns_get_random();
 	outq->recurse = recurse;
 
 	if(!ipstrtoaddr(ip, DNS_PORT, &outq->addr, &outq->addrlen)) {
@@ -394,12 +389,9 @@ static void outq_delete(struct outq* outq)
 
 static void outq_settimer(struct outq* outq)
 {
-	struct timeval tv, now;
-	/* add timeofday */
+	struct timeval tv;
 	tv.tv_sec = outq->timeout/1000;
 	tv.tv_usec = (outq->timeout%1000)*1000;
-	gettimeofday(&now, NULL);
-	timeval_add(&tv, &now);
 	comm_timer_set(outq->timer, &tv);
 }
 
@@ -425,8 +417,9 @@ static int outq_settimeout_and_send(struct outq* outq)
 void outq_timeout(void* arg)
 {
 	struct outq* outq = (struct outq*)arg;
-	verbose(VERB_ALGO, "%s: UDP timeout after %d msec",
-		outq->probe->name, outq->timeout);
+	verbose(VERB_ALGO, "%s %s: UDP timeout after %d msec",
+		outq->probe->name,
+		outq->qtype==LDNS_RR_TYPE_DNSKEY?"DNSKEY":"DS", outq->timeout);
 	if(outq->timeout > QUERY_END_TIMEOUT) {
 		/* too many timeouts */
 		outq_done(outq, "timeout");
@@ -533,6 +526,7 @@ int outq_handle_tcp(struct comm_point* c, void* my_arg, int error,
 		outq_done(outq, "TCP reply with wrong ID");
 		return 0;
 	}
+	comm_timer_disable(outq->timer);
 	outq_check_packet(outq, wire, len);
 	return 0;
 }
@@ -556,7 +550,8 @@ static void probe_spawn(const char* ip, int recurse)
 
 	/* send the queries */
 	dest = get_random_dest();
-	verbose(VERB_ALGO, "spawn probe for %s (for %s)", p->name, dest);
+	verbose(VERB_ALGO, "probe %s %s (tld %s)",
+		p->name, (recurse?"rec":"norec"), dest);
 
 	/* send the probe queries and wait for reply */
 	p->dnskey_c = outq_create(p->name, LDNS_RR_TYPE_DNSKEY, ".",
@@ -578,10 +573,13 @@ static void probe_spawn(const char* ip, int recurse)
 static void probe_spawn_direct(void)
 {
 	int nump = global_svr->num_probes;
+	/* try both IP4 and IP6, one that works is enough */
+	verbose(VERB_ALGO, "probe authority servers");
 	probe_spawn(get_random_auth_ip4(), 0);
 	probe_spawn(get_random_auth_ip6(), 0);
 	if(global_svr->num_probes == nump) {
 		/* failed to create the probes */
+		/* not a loop since svr->probe_direct is true */
 		probe_all_done();
 	}
 }
@@ -597,8 +595,8 @@ probe_partial_done(struct probe_ip* p, const char* in, const char* reason)
 		return;
 	}
 	if(reason) {
-		verbose(VERB_ALGO, "probe %s: %s failed: %s",
-			p->name, in, reason);
+		verbose(VERB_ALGO, "probe %s: failed: %s in %s",
+			p->name, reason, in);
 		/* stop other probe (if any), it failed */
 		outq_delete(p->ds_c);
 		p->ds_c = NULL;
@@ -639,6 +637,7 @@ probe_done(struct probe_ip* p)
 			svr->saw_direct_work = 1;
 			probe_all_done();
 			/* no need for wait for more done */
+			/* TODO: stop others */
 			return;
 		}
 	}
@@ -655,7 +654,10 @@ probe_all_done(void)
 	struct svr* svr = global_svr;
 	if(!svr->probe_direct && !svr->saw_first_working) {
 		/* no working server, probe the direct DNS */
-		svr->probe_direct = 1; /* set flag first avoids loop */
+		/* we wait until the other probes fail to not put
+		 * traffic to the authority servers when a cache works */
+		svr->probe_direct = 1;
+		/* set flag first avoids loop in case spawn fails */
 		probe_spawn_direct();
 		return;
 	}

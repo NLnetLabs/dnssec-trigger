@@ -124,7 +124,6 @@ void svr_delete(struct svr* svr)
 
 	/* delete probes */
 	probe_list_delete(svr->probes);
-	svr->probes = NULL;
 
 	if(svr->ctx) {
 		SSL_CTX_free(svr->ctx);
@@ -186,7 +185,7 @@ static int setup_listen(struct svr* svr)
 #if defined(SO_REUSEADDR) || defined(IPV6_V6ONLY)
 	int on = 1;
 #endif
-	if(!extstrtoaddr(str, &addr, &len)) {
+	if(!ipstrtoaddr(str, svr->cfg->control_port, &addr, &len)) {
 		log_err("cannot parse ifname %s", str);
 		return 0;
 	}
@@ -226,6 +225,7 @@ static int setup_listen(struct svr* svr)
 		fatal_exit("out of memory");
 	}
 	e->c = comm_point_create_raw(svr->base, s, 0, handle_ssl_accept, NULL);
+	e->c->do_not_close = 0;
 	e->next = svr->listen;
 	svr->listen = e;
 	return 1;
@@ -475,6 +475,8 @@ static void sslconn_command(struct sslconn* sc)
 		return;
 	}
 	str += strlen(header);
+	while(*str == ' ')
+		str++;
 	verbose(VERB_ALGO, "command: %s", str);
 	if(strncmp(str, "submit ", 7) == 0) {
 		handle_submit(str+7);

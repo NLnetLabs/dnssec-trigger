@@ -48,17 +48,21 @@ struct cfg* cfg_create(const char* cfgfile)
 	if(!cfg) return NULL;
 	cfg->use_syslog = 1;
 	cfg->control_port = 8955;
-	cfg->server_key_file=strdup(KEYDIR"/dnssec_trigger_server.key");
-	cfg->server_cert_file=strdup(KEYDIR"/dnssec_trigger_server.pem");
-	cfg->control_key_file=strdup(KEYDIR"/dnssec_trigger_control.key");
-	cfg->control_cert_file=strdup(KEYDIR"/dnssec_trigger_control.pem");
+	//cfg->server_key_file=strdup(KEYDIR"/dnssec_trigger_server.key");
+	//cfg->server_cert_file=strdup(KEYDIR"/dnssec_trigger_server.pem");
+	//cfg->control_key_file=strdup(KEYDIR"/dnssec_trigger_control.key");
+	//cfg->control_cert_file=strdup(KEYDIR"/dnssec_trigger_control.pem");
 	//cfg->unbound_control = strdup("unbound-control");
 	//cfg->pidfile = strdup(PIDFILE);
 
 	/* test settings */
 	cfg->pidfile = strdup("test.pid");
 	cfg->use_syslog = 0;
-	cfg->logfile = strdup("test.log");
+	//cfg->logfile = strdup("test.log");
+	cfg->server_key_file=strdup("keys""/dnssec_trigger_server.key");
+	cfg->server_cert_file=strdup("keys""/dnssec_trigger_server.pem");
+	cfg->control_key_file=strdup("keys""/dnssec_trigger_control.key");
+	cfg->control_cert_file=strdup("keys""/dnssec_trigger_control.pem");
 	cfg->unbound_control = strdup("echo unbound-control");
 
 	if(!cfg->unbound_control || !cfg->pidfile || !cfg->server_key_file ||

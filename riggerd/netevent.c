@@ -586,7 +586,6 @@ comm_point_udp_callback(int fd, short event, void* arg)
 {
 	struct comm_reply rep;
 	ssize_t rcv;
-	int i;
 
 	rep.c = (struct comm_point*)arg;
 	log_assert(rep.c->type == comm_udp);
@@ -595,7 +594,10 @@ comm_point_udp_callback(int fd, short event, void* arg)
 		return;
 	log_assert(rep.c && rep.c->buffer && rep.c->fd == fd);
 	comm_base_now(rep.c->ev->base);
-	for(i=0; i<NUM_UDP_PER_SELECT; i++) {
+
+	/* NUM UDP PER SELECT feature used to be here but removed
+	 * so that the UDP commpoint can be deleted in its callback */
+	{
 		ldns_buffer_clear(rep.c->buffer);
 		rep.addrlen = (socklen_t)sizeof(rep.addr);
 		log_assert(fd != -1);
@@ -626,9 +628,6 @@ comm_point_udp_callback(int fd, short event, void* arg)
 			(void)comm_point_send_udp_msg(rep.c, rep.c->buffer,
 				(struct sockaddr*)&rep.addr, rep.addrlen);
 		}
-		if(rep.c->fd != fd) /* commpoint closed to -1 or reused for
-		another UDP port. Note rep.c cannot be reused with TCP fd. */
-			break;
 	}
 }
 
