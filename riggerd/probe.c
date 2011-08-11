@@ -256,7 +256,7 @@ outq_check_packet(struct outq* outq, uint8_t* wire, size_t len)
 	}
 
 	/* test if the type, RRSIG present */
-	if(!check_type_in_answer(p, outq->qtype)) {
+	if(!check_type_in_answer(p, (int)outq->qtype)) {
 		char* r = ldns_rr_type2str(outq->qtype);
 		snprintf(reason, sizeof(reason),
 			"no %s in reply", r?r:"DNSSEC-RRTYPE");
@@ -343,7 +343,7 @@ outq_create(const char* ip, int tp, const char* domain, int recurse,
 	}
 	outq->qname = domain;
 	outq->probe = p;
-	outq->qtype = tp;
+	outq->qtype = (uint16_t)tp;
 	outq->recurse = recurse;
 
 	if(!ipstrtoaddr(ip, DNS_PORT, &outq->addr, &outq->addrlen)) {
