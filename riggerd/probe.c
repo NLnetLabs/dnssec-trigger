@@ -47,7 +47,7 @@
 #include <ldns/packet.h>
 
 /* create probes for the ip addresses in the string */
-static void probe_spawn(char* ip);
+static void probe_spawn(const char* ip, int recurse);
 /* delete and stop outq */
 static void outq_delete(struct outq* outq);
 /* set timeout on outq and create UDP query and send it */
@@ -61,6 +61,8 @@ static void probe_partial_done(struct probe_ip* p, const char* in,
 	const char* reason);
 /* a probe is done (fail or success) see global progress */
 static void probe_done(struct probe_ip* p);
+/* all probes are done */
+static void probe_all_done(void);
 
 /** add timers and the values do not overflow or become negative */
 static void
@@ -79,15 +81,29 @@ timeval_add(struct timeval* d, const struct timeval* add)
 void probe_start(char* ips)
 {
 	char* next;
+	struct svr* svr = global_svr;
+	if(svr->probes) {
+		/* clear existing probe list : the DHCP changes are
+		 * coming in too fast ! */
+		probe_list_delete(svr->probes);
+		svr->probes = NULL;
+		verbose(VERB_QUERY, "probes cancelled due to new DHCP change"); 
+	}
+
 	/* spawn a probe for every IP address in the list */
+	svr->saw_first_working = 0;
+	svr->saw_direct_work = 0;
+	svr->probe_direct = 0;
 	while(*ips == ' ')
 		ips++;
 	while( *ips && (next=strchr(ips, ' ')) != NULL) {
 		*next++ = 0;
-		probe_spawn(ips);
+		probe_spawn(ips, 0);
 		ips = next;
 	}
-	/* TODO: if no resulting probes, check result now */
+	/* (if no resulting probes), check result now */
+	if(!svr->probes)
+		probe_all_done();
 }
 
 void probe_delete(struct probe_ip* p)
@@ -100,11 +116,64 @@ void probe_delete(struct probe_ip* p)
 	free(p);
 }
 
+void probe_list_delete(struct probe_ip* list)
+{
+	struct probe_ip* p=list, *np;
+	while(p) {
+		np = p->next;
+		probe_delete(p);
+		p = np;
+	}
+}
+
+/** get random signed TLD */
 static const char*
 get_random_dest(void)
 {
 	const char* choices[] = { "se.", "uk.", "nl.", "de." };
 	return choices[ ldns_get_random() %4 ];
+}
+
+/** get random authority server */
+static const char*
+get_random_auth_ip4(void)
+{
+	/* list of root servers */
+	const char* choices[] = {
+		"198.41.0.4", /* a */
+		"192.228.79.201", /* b */
+		"192.33.4.12", /* c */
+		"128.8.10.90", /* d */
+		"192.203.230.10", /* e */
+		"192.5.5.241", /* f */
+		"192.112.36.4", /* g */
+		"128.63.2.53", /* h */
+		"192.36.148.17", /* i */
+		"192.58.128.30", /* j */
+		"193.0.14.129", /* k */
+		"199.7.83.42", /* l */
+		"202.12.27.33" /* m */
+	};
+	return choices[ ldns_get_random() % 13 ];
+}
+
+/** get random authority server */
+static const char*
+get_random_auth_ip6(void)
+{
+	/* list of root servers */
+	const char* choices[] = {
+		"2001:503:ba3e::2:30", /* a */
+		"2001:500:2d::d", /* d */
+		"2001:500:2f::f", /* f */
+		"2001:500:1::803f:235", /* h */
+		"2001:7fe::53", /* i */
+		"2001:503:c27::2:30", /* j */
+		"2001:7fd::1", /* k */
+		"2001:500:3::42", /* l */
+		"2001:dc3::35" /* m */
+	};
+	return choices[ ldns_get_random() % 9 ];
 }
 
 /** outq is done, NULL reason for success */
@@ -468,7 +537,7 @@ int outq_handle_tcp(struct comm_point* c, void* my_arg, int error,
 	return 0;
 }
 
-static void probe_spawn(char* ip)
+static void probe_spawn(const char* ip, int recurse)
 {
 	const char* dest;
 	struct probe_ip* p = (struct probe_ip*)calloc(1, sizeof(*p));
@@ -490,8 +559,9 @@ static void probe_spawn(char* ip)
 	verbose(VERB_ALGO, "spawn probe for %s (for %s)", p->name, dest);
 
 	/* send the probe queries and wait for reply */
-	p->dnskey_c = outq_create(p->name, LDNS_RR_TYPE_DNSKEY, ".", 1, p);
-	p->ds_c = outq_create(p->name, LDNS_RR_TYPE_DS, dest, 1, p);
+	p->dnskey_c = outq_create(p->name, LDNS_RR_TYPE_DNSKEY, ".",
+		recurse, p);
+	p->ds_c = outq_create(p->name, LDNS_RR_TYPE_DS, dest, recurse, p);
 	if(!p->ds_c || !p->dnskey_c) {
 		log_err("could not send queries for probe");
 		probe_delete(p);
@@ -501,6 +571,19 @@ static void probe_spawn(char* ip)
 	/* put it in the svr list */
 	p->next = global_svr->probes;
 	global_svr->probes = p;
+	global_svr->num_probes++;
+}
+
+/** start probes for direct DNS authority server connection */
+static void probe_spawn_direct(void)
+{
+	int nump = global_svr->num_probes;
+	probe_spawn(get_random_auth_ip4(), 0);
+	probe_spawn(get_random_auth_ip6(), 0);
+	if(global_svr->num_probes == nump) {
+		/* failed to create the probes */
+		probe_all_done();
+	}
 }
 
 /** see if probe totally done or we have to wait more */
@@ -531,6 +614,7 @@ probe_partial_done(struct probe_ip* p, const char* in, const char* reason)
 	}
 
 	p->finished = 1;
+	global_svr->num_probes_done++;
 	probe_done(p);
 }
 
@@ -546,6 +630,46 @@ probe_partial_done(struct probe_ip* p, const char* in, const char* reason)
 static void
 probe_done(struct probe_ip* p)
 {
+	struct svr* svr = global_svr;
 	if(p->works) {
+		if(!svr->probe_direct && !svr->saw_first_working) {
+			svr->saw_first_working = 1;
+			/* TODO: signal unbound a working server */
+		} else if(svr->probe_direct && !svr->saw_direct_work) {
+			svr->saw_direct_work = 1;
+			probe_all_done();
+			/* no need for wait for more done */
+			return;
+		}
+	}
+	if(svr->num_probes_done < svr->num_probes) {
+		/* continue to wait for the rest */
+		return;
+	}
+	probe_all_done();
+}
+
+static void
+probe_all_done(void)
+{
+	struct svr* svr = global_svr;
+	if(!svr->probe_direct && !svr->saw_first_working) {
+		/* no working server, probe the direct DNS */
+		svr->probe_direct = 1; /* set flag first avoids loop */
+		probe_spawn_direct();
+		return;
+	}
+	if(svr->probe_direct && svr->saw_direct_work) {
+		/* set unbound to process directly */
+		verbose(VERB_ALGO, "probe done: DNSSEC to auth direct");
+
+	} else if(svr->probe_direct && !svr->saw_direct_work) {
+		verbose(VERB_ALGO, "probe done: DNSSEC fails");
+		/* DNSSEC failure */
+		/* set unbound to dark */
+		/* see what the user wants */
+	} else {
+		verbose(VERB_ALGO, "probe done: DNSSEC to cache");
+		/* send the working servers to unbound */
 	}
 }

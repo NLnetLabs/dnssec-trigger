@@ -93,6 +93,9 @@ void probe_start(char* ips);
 /** delete and stop probe */
 void probe_delete(struct probe_ip* p);
 
+/** probe list delete */
+void probe_list_delete(struct probe_ip* list);
+
 /** handle probe results */
 int outq_handle_udp(struct comm_point* c, void* my_arg, int error,
         struct comm_reply *reply_info);

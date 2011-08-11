@@ -108,7 +108,6 @@ struct svr* svr_create(struct cfg* cfg)
 void svr_delete(struct svr* svr)
 {
 	struct listen_list* ll, *nll;
-	struct probe_ip* p, *np;
 	if(!svr) return;
 	/* delete busy */
 	while(svr->busy_list)
@@ -124,12 +123,8 @@ void svr_delete(struct svr* svr)
 	}
 
 	/* delete probes */
-	p = svr->probes;
-	while(p) {
-		np = p->next;
-		probe_delete(p);
-		p = np;
-	}
+	probe_list_delete(svr->probes);
+	svr->probes = NULL;
 
 	if(svr->ctx) {
 		SSL_CTX_free(svr->ctx);

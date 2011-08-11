@@ -73,6 +73,16 @@ struct svr {
 
 	/** probes for the IP addresses */
 	struct probe_ip* probes;
+	/** numprobes in list */
+	int num_probes;
+	/** number done */
+	int num_probes_done;
+	/** saw the first working probe */
+	int saw_first_working;
+	/** saw direct work */
+	int saw_direct_work;
+	/** attempt to access DNS authority servers directly */
+	int probe_direct;
 };
 
 /** list of commpoints */
