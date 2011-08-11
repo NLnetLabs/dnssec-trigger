@@ -42,6 +42,8 @@
 #ifndef PROBE_H
 #define PROBE_H
 struct comm_point;
+struct comm_reply;
+struct outq;
 
 /**
  * probe structure that contains the probe details for one IP address.
@@ -50,10 +52,12 @@ struct probe_ip {
 	struct probe_ip* next;
 	/* the IP address probed */
 	char* name;
-	/* commpoint for DS query */
-	struct comm_point* ds_c;
-	/* commpoint for DNSKEY query */
-	struct comm_point* dnskey_c;
+
+	/* DS query, or NULL if done */
+	struct outq* ds_c;
+	/* DNSKEY query, or NULL if done */
+	struct outq* dnskey_c;
+
 	/* if probe has finished */
 	int finished;
 	/* result for this IP, true if DNSSEC OK */
@@ -62,9 +66,40 @@ struct probe_ip {
 	char* reason;
 };
 
+/** outstanding query */
+struct outq {
+	struct sockaddr_storage addr;
+	socklen_t addrlen;
+	uint16_t qid;
+	uint16_t qtype;
+	int recurse; /* if true: recursive probe */
+	const char* qname; /* reference to a static string */
+	int timeout; /* in msec */
+	int on_tcp; /* if we are using TCP */
+	struct comm_point* c;
+	struct comm_timer* timer;
+	struct probe_ip* probe; /* reference only to owner */
+};
+
+#define QUERY_START_TIMEOUT 100 /* msec */
+#define QUERY_END_TIMEOUT 1000 /* msec */
+#define QUERY_TCP_TIMEOUT 3000 /* msec */
+
 /** start the probe process for a new set of IPs.
  * in a string, with whitespace in between
  * the string may be altered. */
 void probe_start(char* ips);
+
+/** delete and stop probe */
+void probe_delete(struct probe_ip* p);
+
+/** handle probe results */
+int outq_handle_udp(struct comm_point* c, void* my_arg, int error,
+        struct comm_reply *reply_info);
+int outq_handle_tcp(struct comm_point* c, void* my_arg, int error,
+        struct comm_reply *reply_info);
+
+/** outstanding query UDP timeout handler */
+void outq_timeout(void* arg);
 
 #endif /* PROBE_H */

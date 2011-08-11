@@ -48,6 +48,7 @@ struct sslconn;
 struct listen_list;
 struct comm_point;
 struct ldns_struct_buffer;
+struct probe_ip;
 
 /**
  * The server
@@ -69,6 +70,9 @@ struct svr {
 
 	/** udp buffer */
 	struct ldns_struct_buffer* udp_buffer;
+
+	/** probes for the IP addresses */
+	struct probe_ip* probes;
 };
 
 /** list of commpoints */

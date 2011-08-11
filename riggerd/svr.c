@@ -108,6 +108,7 @@ struct svr* svr_create(struct cfg* cfg)
 void svr_delete(struct svr* svr)
 {
 	struct listen_list* ll, *nll;
+	struct probe_ip* p, *np;
 	if(!svr) return;
 	/* delete busy */
 	while(svr->busy_list)
@@ -120,6 +121,14 @@ void svr_delete(struct svr* svr)
 		comm_point_delete(ll->c);
 		free(ll);
 		ll=nll;
+	}
+
+	/* delete probes */
+	p = svr->probes;
+	while(p) {
+		np = p->next;
+		probe_delete(p);
+		p = np;
 	}
 
 	if(svr->ctx) {

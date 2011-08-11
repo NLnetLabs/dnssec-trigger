@@ -46,11 +46,14 @@
 #include "config.h"
 #include "fptr_wlist.h"
 #include "svr.h"
+#include "probe.h"
 #include "mini_event.h"
 
 int 
 fptr_whitelist_comm_point(comm_point_callback_t *fptr)
 {
+	if(fptr == &outq_handle_udp) return 1;
+	else if(fptr == &outq_handle_tcp) return 1;
 	return 0;
 }
 
@@ -65,6 +68,7 @@ fptr_whitelist_comm_point_raw(comm_point_callback_t *fptr)
 int 
 fptr_whitelist_comm_timer(void (*fptr)(void*))
 {
+	if(fptr == &outq_timeout) return 1;
 	return 0;
 }
 
