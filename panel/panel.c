@@ -44,6 +44,13 @@
 #include <signal.h>
 #include <gtk/gtk.h>
 
+static GtkTextView* result_textview;
+static GtkStatusIcon* status_icon;
+static GtkWidget* window;
+static GdkPixbuf* normal_icon;
+static GdkPixbuf* alert_icon;
+static GtkMenu* statusmenu;
+
 /** print usage text */
 static void
 usage(void)
@@ -81,9 +88,66 @@ static RETSIGTYPE record_sigh(int sig)
 }
 
 void 
-on_window_destroy(GtkObject* object, gpointer user_data)
+on_window_destroy(GtkObject* ATTR_UNUSED(object),
+	gpointer ATTR_UNUSED(user_data))
 {
 	gtk_main_quit();
+}
+
+void on_quit_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
+	gpointer ATTR_UNUSED(user_data))
+{
+	gtk_main_quit();
+}
+
+void 
+on_result_ok_button_clicked(GtkButton* ATTR_UNUSED(button),
+	gpointer ATTR_UNUSED(user_data)) 
+{
+	GtkTextBuffer *buffer;
+	buffer = gtk_text_view_get_buffer(result_textview);
+	gtk_text_buffer_set_text (buffer, "result", -1);
+	gtk_main_quit();
+}
+
+void 
+on_statusicon_popup_menu(GtkStatusIcon* ATTR_UNUSED(status_icon),
+	guint button, guint activate_time,
+	gpointer ATTR_UNUSED(user_data))
+{
+	gtk_menu_popup(GTK_MENU(statusmenu), NULL, NULL, NULL, NULL,
+		button, activate_time);
+}
+
+void 
+on_statusicon_activate(GtkStatusIcon* ATTR_UNUSED(status_icon),
+	gpointer ATTR_UNUSED(user_data))
+{
+	/* hide and show the window when the status icon is clicked */
+	if(gtk_widget_get_visible(window) &&
+		gtk_window_has_toplevel_focus(GTK_WINDOW(window))) {
+		gtk_widget_hide(GTK_WIDGET(window));
+	} else {
+		gtk_widget_show(GTK_WIDGET(window));
+		gtk_window_deiconify(GTK_WINDOW(window));
+		gtk_window_present(GTK_WINDOW(window));
+	}
+}
+
+static void make_tray_icon(void)
+{
+	GError* error = NULL;
+	normal_icon = gdk_pixbuf_new_from_file_at_size(
+		"panel/status-icon.png", 25, 25, &error);
+	alert_icon = gdk_pixbuf_new_from_file_at_size(
+		"panel/status-icon-alert.png", 25, 25, &error);
+	status_icon = gtk_status_icon_new_from_pixbuf(normal_icon);
+	g_signal_connect(G_OBJECT(status_icon), "activate",
+		G_CALLBACK(on_statusicon_activate), NULL);
+	g_signal_connect(G_OBJECT(status_icon), "popup-menu",
+		G_CALLBACK(on_statusicon_popup_menu), NULL);
+	gtk_status_icon_set_tooltip(status_icon, "dnssec-trigger");
+	gtk_status_icon_set_visible(status_icon, TRUE);
 }
 
 /** do main work */
@@ -91,7 +155,6 @@ static void
 do_main_work(void)
 {
 	GtkBuilder* builder;
-	GtkWidget* window;
 
         /* start signal handlers */
         if( signal(SIGTERM, record_sigh) == SIG_ERR ||
@@ -116,9 +179,14 @@ do_main_work(void)
 	builder = gtk_builder_new();
 	gtk_builder_add_from_file(builder, "panel/pui.xml", NULL);
 
-	window = GTK_WIDGET(gtk_builder_get_object(builder, "resultdialog"));
+	window = GTK_WIDGET(gtk_builder_get_object(builder, "result_dialog"));
+	result_textview = GTK_TEXT_VIEW(gtk_builder_get_object(builder,
+		"result_textview"));
+	statusmenu = GTK_MENU(gtk_builder_get_object(builder, "statusmenu"));
+	g_object_ref(G_OBJECT(statusmenu));
 	gtk_builder_connect_signals(builder, NULL);          
 	g_object_unref(G_OBJECT(builder));
+	make_tray_icon();
 
 	gtk_widget_show(window);       
 	gdk_threads_enter();

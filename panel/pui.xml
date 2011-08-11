@@ -2,8 +2,10 @@
 <interface>
   <requires lib="gtk+" version="2.16"/>
   <!-- interface-naming-policy project-wide -->
-  <object class="GtkDialog" id="resultdialog">
+  <object class="GtkDialog" id="result_dialog">
     <property name="border_width">5</property>
+    <property name="default_width">400</property>
+    <property name="default_height">280</property>
     <property name="type_hint">normal</property>
     <signal name="destroy" handler="on_window_destroy"/>
     <child internal-child="vbox">
@@ -12,10 +14,18 @@
         <property name="orientation">vertical</property>
         <property name="spacing">2</property>
         <child>
-          <object class="GtkTextView" id="textview1">
+          <object class="GtkScrolledWindow" id="scrolledwindow1">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="editable">False</property>
+            <property name="hscrollbar_policy">automatic</property>
+            <property name="vscrollbar_policy">automatic</property>
+            <child>
+              <object class="GtkTextView" id="result_textview">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="editable">False</property>
+              </object>
+            </child>
           </object>
           <packing>
             <property name="position">1</property>
@@ -26,11 +36,12 @@
             <property name="visible">True</property>
             <property name="layout_style">end</property>
             <child>
-              <object class="GtkButton" id="text_ok_button">
+              <object class="GtkButton" id="result_ok_button">
                 <property name="label" translatable="yes">OK</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <signal name="clicked" handler="on_result_ok_button_clicked"/>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -48,7 +59,31 @@
       </object>
     </child>
     <action-widgets>
-      <action-widget response="0">text_ok_button</action-widget>
+      <action-widget response="0">result_ok_button</action-widget>
     </action-widgets>
+  </object>
+  <object class="GtkMenu" id="statusmenu">
+    <property name="visible">True</property>
+    <child>
+      <object class="GtkMenuItem" id="proberesults">
+        <property name="visible">True</property>
+        <property name="use_action_appearance">False</property>
+        <property name="label" translatable="yes">Probe results</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkSeparatorMenuItem" id="sep1">
+        <property name="visible">True</property>
+        <property name="use_action_appearance">False</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="quit">
+        <property name="visible">True</property>
+        <property name="use_action_appearance">False</property>
+        <property name="label" translatable="yes">Quit</property>
+        <signal name="activate" handler="on_quit_activate"/>
+      </object>
+    </child>
   </object>
 </interface>
