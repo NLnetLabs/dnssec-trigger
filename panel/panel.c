@@ -42,6 +42,7 @@
 #include <getopt.h>
 #endif
 #include <signal.h>
+#include <gtk/gtk.h>
 
 /** print usage text */
 static void
@@ -79,10 +80,19 @@ static RETSIGTYPE record_sigh(int sig)
 	}
 }
 
-/** do main work of daemon */
+void 
+on_window_destroy(GtkObject* object, gpointer user_data)
+{
+	gtk_main_quit();
+}
+
+/** do main work */
 static void
 do_main_work(void)
 {
+	GtkBuilder* builder;
+	GtkWidget* window;
+
         /* start signal handlers */
         if( signal(SIGTERM, record_sigh) == SIG_ERR ||
 #ifdef SIGQUIT
@@ -102,7 +112,18 @@ do_main_work(void)
                 printf("install sighandler: %s\n", strerror(errno));
         /* start */
 	printf("panel\n");
+
+	builder = gtk_builder_new();
+	gtk_builder_add_from_file(builder, "panel/pui.xml", NULL);
+
+	window = GTK_WIDGET(gtk_builder_get_object(builder, "resultdialog"));
+	gtk_builder_connect_signals(builder, NULL);          
+	g_object_unref(G_OBJECT(builder));
+
+	gtk_widget_show(window);       
+	gtk_main();
 }
+
 
 /** getopt global, in case header files fail to declare it. */
 extern int optind;
@@ -133,7 +154,8 @@ int main(int argc, char *argv[])
                 return 1;
 	}
 
+	/* show user interface */
+	gtk_init (&argc, &argv);
 	do_main_work();
-
 	return 0;
 }

@@ -480,6 +480,7 @@ static void sslconn_command(struct sslconn* sc)
 	verbose(VERB_ALGO, "command: %s", str);
 	if(strncmp(str, "submit ", 7) == 0) {
 		handle_submit(str+7);
+		SSL_shutdown(sc->ssl);
 		sslconn_delete(sc);
 	} else {
 		log_err("unknown command: %s", str);

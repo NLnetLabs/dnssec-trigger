@@ -242,6 +242,12 @@ else
 	LIBS="-lssl $LIBS"
 fi
 
+# GTK
+GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
+GTK_LIBS=`pkg-config --libs gtk+-2.0`
+AC_SUBST(GTK_CFLAGS)
+AC_SUBST(GTK_LIBS)
+
 LDNSLIBS=""
 AC_ARG_WITH(ldns, AC_HELP_STRING([--with-ldns=PATH], 
 	[specify prefix of path of ldns library to use]), 

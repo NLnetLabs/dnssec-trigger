@@ -597,6 +597,8 @@ ac_subst_vars='LTLIBOBJS
 DATE
 LDNSLIBS
 ldnsdir
+GTK_LIBS
+GTK_CFLAGS
 RUNTIME_PATH
 HAVE_SSL
 configfile
@@ -6721,6 +6723,12 @@ if test "$staticexe" = "yes"; then
 else
 	LIBS="-lssl $LIBS"
 fi
+
+# GTK
+GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
+GTK_LIBS=`pkg-config --libs gtk+-2.0`
+
+
 
 LDNSLIBS=""
 
