@@ -39,6 +39,7 @@
  * This file contains the code that attaches the panel to the daemon.
  */
 #include "config.h"
+#include <gtk/gtk.h>
 #include "panel/attach.h"
 #include "riggerd/cfg.h"
 #include "riggerd/log.h"
@@ -216,6 +217,7 @@ static void read_from_feed(void)
 		if(line[0] == 0) {
 			strlist_delete(feed->results);
 			feed->results = first;
+			feed->results_last = last;
 			return;
 		}
 		strlist_append(&first, &last, line);
@@ -228,6 +230,28 @@ static void read_from_feed(void)
 	feed->connected = 1;
 }
 
+static void process_results(void)
+{
+	int now_insecure = 0, feed_insecure = 0;
+	int now_dark = 0, now_auth = 0, now_cache = 0;
+
+	/* fetch data */
+	g_mutex_lock(feed->lock);
+	if(!feed->connected) return;
+	if(!feed->results_last) return;
+	now_insecure = (strstr(feed->results_last->str, "insecure")!=NULL);
+	now_dark = (strstr(feed->results_last->str, "dark")!=NULL);
+	now_cache = (strstr(feed->results_last->str, "cache")!=NULL);
+	now_auth = (strstr(feed->results_last->str, "auth")!=NULL);
+	feed_insecure = feed->insecure_mode;
+	g_mutex_unlock(feed->lock);
+
+	gdk_threads_enter();
+	panel_alert_state(feed_insecure, now_insecure, now_dark, now_cache,
+		now_auth);
+	gdk_threads_leave();
+}
+
 static void attach_main(void)
 {
 	/* check for event */
@@ -235,6 +259,7 @@ static void attach_main(void)
 		g_mutex_lock(feed->lock);
 		read_from_feed();
 		g_mutex_unlock(feed->lock);
+		process_results();
 	}
 
 }

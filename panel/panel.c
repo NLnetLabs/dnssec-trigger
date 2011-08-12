@@ -43,6 +43,7 @@
 #endif
 #include <signal.h>
 #include <gtk/gtk.h>
+#include <glib.h>
 
 #include "riggerd/log.h"
 #include "riggerd/cfg.h"
@@ -50,7 +51,7 @@
 
 static GtkTextView* result_textview;
 static GtkStatusIcon* status_icon;
-static GtkWidget* window;
+static GtkWidget* result_window;
 static GdkPixbuf* normal_icon;
 static GdkPixbuf* alert_icon;
 static GtkMenu* statusmenu;
@@ -111,13 +112,6 @@ spawn_feed(struct cfg* cfg)
 	if(!thr) fatal_exit("cannot create thread: %s", err->message);
 }
 
-void 
-on_window_destroy(GtkObject* ATTR_UNUSED(object),
-	gpointer ATTR_UNUSED(user_data))
-{
-	gtk_main_quit();
-}
-
 void on_quit_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 	gpointer ATTR_UNUSED(user_data))
 {
@@ -125,13 +119,64 @@ void on_quit_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 }
 
 void 
+on_window_destroy(GtkObject* ATTR_UNUSED(object),
+	gpointer ATTR_UNUSED(user_data))
+{
+	gtk_widget_hide(GTK_WIDGET(result_window));
+}
+
+void 
 on_result_ok_button_clicked(GtkButton* ATTR_UNUSED(button),
 	gpointer ATTR_UNUSED(user_data)) 
 {
+	gtk_widget_hide(GTK_WIDGET(result_window));
+}
+
+void on_proberesults_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
+	gpointer ATTR_UNUSED(user_data))
+{
 	GtkTextBuffer *buffer;
+	struct strlist* p;
+	GtkTextIter end;
+
+	/* fetch results */
 	buffer = gtk_text_view_get_buffer(result_textview);
-	gtk_text_buffer_set_text (buffer, "result", -1);
-	gtk_main_quit();
+	gtk_text_buffer_set_text(buffer, "results from probe:\n", -1);
+	g_mutex_lock(feed->lock);
+	for(p=feed->results; p; p=p->next) {
+		if(!p->next) {
+			/* last line */
+			gtk_text_buffer_get_end_iter(buffer, &end);
+			gtk_text_buffer_insert(buffer, &end, "\n", -1);
+			gtk_text_buffer_get_end_iter(buffer, &end);
+			if(strstr(p->str, "cache"))
+				gtk_text_buffer_insert(buffer, &end, 
+					"DNSSEC results fetched from (DHCP) "
+					"cache(s)\n", -1);
+			else if(strstr(p->str, "auth"))
+				gtk_text_buffer_insert(buffer, &end, 
+					"DNSSEC results fetched direct from "
+					"authorities\n", -1);
+			else if(strstr(p->str, "dark") && !strstr(p->str,
+				"insecure"))
+				gtk_text_buffer_insert(buffer, &end, 
+					"local cache of DNS results is used "
+					"but no queries are sent over the "
+					"network (DNS is stopped)\n", -1);
+			else gtk_text_buffer_insert(buffer, &end, 
+				"DNS queries are sent to INSECURE servers.\n"
+				"Please, be careful there.\n", -1);
+		} else {
+			gtk_text_buffer_get_end_iter(buffer, &end);
+			gtk_text_buffer_insert(buffer, &end, p->str, -1);
+			gtk_text_buffer_get_end_iter(buffer, &end);
+			gtk_text_buffer_insert(buffer, &end, "\n", -1);
+		}
+	}
+	g_mutex_unlock(feed->lock);
+
+	/* show them */
+	gtk_widget_show(GTK_WIDGET(result_window));
 }
 
 void 
@@ -150,14 +195,47 @@ on_statusicon_activate(GtkStatusIcon* ATTR_UNUSED(status_icon),
 	/* no window to show and hide by default */
 	if(0) {
 		/* hide and show the window when the status icon is clicked */
-		if(gtk_widget_get_visible(window) &&
-			gtk_window_has_toplevel_focus(GTK_WINDOW(window))) {
-			gtk_widget_hide(GTK_WIDGET(window));
+		if(gtk_widget_get_visible(result_window) &&
+			gtk_window_has_toplevel_focus(GTK_WINDOW(
+				result_window))) {
+			gtk_widget_hide(GTK_WIDGET(result_window));
 		} else {
-			gtk_widget_show(GTK_WIDGET(window));
-			gtk_window_deiconify(GTK_WINDOW(window));
-			gtk_window_present(GTK_WINDOW(window));
+			gtk_widget_show(GTK_WIDGET(result_window));
+			gtk_window_deiconify(GTK_WINDOW(result_window));
+			gtk_window_present(GTK_WINDOW(result_window));
 		}
+	}
+}
+
+void panel_alert_danger(void)
+{
+	gtk_status_icon_set_from_pixbuf(status_icon, alert_icon);
+}
+
+void panel_alert_safe(void)
+{
+	gtk_status_icon_set_from_pixbuf(status_icon, normal_icon);
+}
+
+void panel_alert_state(int last_insecure, int now_insecure, int dark,
+        int cache, int ATTR_UNUSED(auth))
+{
+	const char* tt;
+	/* handle state changes */
+	if(now_insecure)
+		tt = "DNS DANGER";
+	else if(dark)
+		tt = "DNS stopped";
+	else if(cache)
+		tt = "DNSSEC via cache";
+	else	tt = "DNSSEC via authorities";
+	gtk_status_icon_set_tooltip(status_icon, tt);
+	printf("tooltip: %s\n", tt);
+	if(last_insecure != now_insecure) {
+		if(now_insecure)
+			panel_alert_danger();
+		else
+			panel_alert_safe();
 	}
 }
 
@@ -204,12 +282,11 @@ do_main_work(const char* cfgfile)
                 printf("install sighandler: %s\n", strerror(errno));
         /* start */
 	printf("panel\n");
-	spawn_feed(cfg);
-
 	builder = gtk_builder_new();
 	gtk_builder_add_from_file(builder, "panel/pui.xml", NULL);
 
-	window = GTK_WIDGET(gtk_builder_get_object(builder, "result_dialog"));
+	result_window = GTK_WIDGET(gtk_builder_get_object(builder,
+		"result_dialog"));
 	result_textview = GTK_TEXT_VIEW(gtk_builder_get_object(builder,
 		"result_textview"));
 	statusmenu = GTK_MENU(gtk_builder_get_object(builder, "statusmenu"));
@@ -217,8 +294,8 @@ do_main_work(const char* cfgfile)
 	gtk_builder_connect_signals(builder, NULL);          
 	g_object_unref(G_OBJECT(builder));
 	make_tray_icon();
+	spawn_feed(cfg);
 
-	gtk_widget_show(window);       
 	gdk_threads_enter();
 	gtk_main();
 	gdk_threads_leave();

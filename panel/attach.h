@@ -57,7 +57,10 @@ struct feed {
 	/* non connection reason */
 	char connect_reason[512];
 	
-	struct strlist* results;
+	/* list of lines, last has status */
+	struct strlist* results, *results_last;
+	/* if we are in insecure mode - here to see if it has changed */
+	int insecure_mode;
 
 	/* config */
 	struct cfg* cfg;
@@ -79,5 +82,8 @@ void attach_start(struct cfg* cfg);
 
 /** stop attach */
 void attach_stop(void);
+
+void panel_alert_state(int last_insecure, int now_insecure, int dark,
+	int cache, int auth);
 
 #endif /* ATTACH_H */
