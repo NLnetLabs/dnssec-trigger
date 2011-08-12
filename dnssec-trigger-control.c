@@ -52,6 +52,7 @@
 #ifdef HAVE_OPENSSL_RAND_H
 #include <openssl/rand.h>
 #endif
+#include <signal.h>
 #include "riggerd/log.h"
 #include "riggerd/cfg.h"
 #include "riggerd/net_help.h"
@@ -68,6 +69,8 @@ usage()
 	printf("  -h		show this usage help.\n");
 	printf("Commands:\n");
 	printf("submit <ips>	submit a list of DHCP provided DNS servers\n");
+	printf("results		continuous feed of probe results\n");
+	printf("cmdtray		command channel for gui panel\n");
 	printf("Version %s\n", PACKAGE_VERSION);
 	printf("BSD licensed, see LICENSE in source package for details.\n");
 	printf("Report bugs to %s\n", PACKAGE_BUGREPORT);
@@ -80,6 +83,14 @@ static void ssl_err(const char* s)
 	fprintf(stderr, "error: %s\n", s);
 	ERR_print_errors_fp(stderr);
 	exit(1);
+}
+
+static SSL* global_ssl;
+static RETSIGTYPE sigh(int ATTR_UNUSED(sig))
+{
+	if(global_ssl) {
+		SSL_shutdown(global_ssl);
+	}
 }
 
 /** setup SSL context */
@@ -230,7 +241,7 @@ go_cmd(SSL* ssl, int argc, char* argv[])
 	if(SSL_write(ssl, newline, (int)strlen(newline)) <= 0)
 		ssl_err("could not SSL_write");
 
-	if(argc == 1 && strcmp(argv[0], "load_cache") == 0) {
+	if(argc == 1 && strcmp(argv[0], "cmdtray") == 0) {
 		send_file(ssl, stdin, buf, sizeof(buf));
 	}
 
@@ -269,6 +280,14 @@ go(const char* cfgfile, char* svr, int argc, char* argv[])
 	/* contact server */
 	fd = contact_server(svr, cfg, argc>0&&strcmp(argv[0],"status")==0);
 	ssl = setup_ssl(ctx, fd);
+	global_ssl = ssl;
+#ifdef SIGHUP
+	(void)signal(SIGHUP, sigh);
+#endif
+#ifdef SIGPIPE
+	(void)signal(SIGPIPE, sigh);
+#endif
+	(void)signal(SIGINT, sigh);
 	
 	/* send command */
 	ret = go_cmd(ssl, argc, argv);

@@ -52,7 +52,11 @@ static int setup_ssl_ctx(struct svr* svr);
 static int setup_listen(struct svr* svr);
 static void sslconn_delete(struct sslconn* sc);
 static int sslconn_readline(struct sslconn* sc);
+static int sslconn_write(struct sslconn* sc);
+static int sslconn_checkclose(struct sslconn* sc);
+static void sslconn_shutdown(struct sslconn* sc);
 static void sslconn_command(struct sslconn* sc);
+static void sslconn_persist_command(struct sslconn* sc);
 
 /** log ssl crypto err */
 static void
@@ -110,8 +114,10 @@ void svr_delete(struct svr* svr)
 	struct listen_list* ll, *nll;
 	if(!svr) return;
 	/* delete busy */
-	while(svr->busy_list)
+	while(svr->busy_list) {
+		(void)SSL_shutdown(svr->busy_list->ssl);
 		sslconn_delete(svr->busy_list);
+	}
 
 	/* delete listening */
 	ll = svr->listen;
@@ -399,26 +405,46 @@ int control_callback(struct comm_point* c, void* arg, int err,
 			return 0;
 		}
 		/* set to read state */
-		s->line_state = line_read;
+		s->line_state = command_read;
 		if(s->shake_state == rc_hs_write)
 			comm_point_listen_for_rw(c, 1, 0);
 		s->shake_state = rc_hs_none;
 		ldns_buffer_clear(s->buffer);
-	}
-	if(s->shake_state == rc_hs_want_write) {
+	} else if(s->shake_state == rc_hs_want_write) {
 		/* we have satisfied the condition that the socket is
 		 * writable, remove the handshake state, and continue */
 		comm_point_listen_for_rw(c, 1, 0); /* back to reading */
 		s->shake_state = rc_hs_none;
+	} else if(s->shake_state == rc_hs_want_read) {
+		/* we have satisfied the condition that the socket is
+		 * readable, remove the handshake state, and continue */
+		comm_point_listen_for_rw(c, 1, 1); /* back to writing */
+		s->shake_state = rc_hs_none;
+	} else if(s->shake_state == rc_hs_shutdown) {
+		sslconn_shutdown(s);
 	}
 
-	if(s->line_state == line_read) {
+	if(s->line_state == command_read) {
 		if(!sslconn_readline(s))
 			return 0;
 		/* we are done handle it */
 		sslconn_command(s);
+	} else if(s->line_state == persist_read) {
+		if(!sslconn_readline(s))
+			return 0;
+		/* we are done handle it */
+		sslconn_persist_command(s);
+	} else if(s->line_state == persist_write) {
+		if(sslconn_checkclose(s))
+			return 0;
+		if(!sslconn_write(s))
+			return 0;
+		/* nothing more to write */
+		comm_point_listen_for_rw(c, 1, 0);
+		s->line_state = persist_write_checkclose;
+	} else if(s->line_state == persist_write_checkclose) {
+		(void)sslconn_checkclose(s);
 	}
-	/* TODO persistent connection communication with panel */
 	return 0;
 }
 
@@ -431,9 +457,8 @@ static int sslconn_readline(struct sslconn* sc)
 			<= 0) {
 			int want = SSL_get_error(sc->ssl, r);
 			if(want == SSL_ERROR_ZERO_RETURN) {
-				ldns_buffer_write_u8(sc->buffer, 0);
-				ldns_buffer_flip(sc->buffer);
-				return 1;
+				sslconn_shutdown(sc);
+				return 0;
 			} else if(want == SSL_ERROR_WANT_READ) {
 				return 0;
 			} else if(want == SSL_ERROR_WANT_WRITE) {
@@ -458,10 +483,139 @@ static int sslconn_readline(struct sslconn* sc)
 	return 0;
 }
 
+static int sslconn_write(struct sslconn* sc)
+{
+        int r;
+	SSL_set_mode(sc->ssl, SSL_MODE_ENABLE_PARTIAL_WRITE);
+	while(ldns_buffer_remaining(sc->buffer)>0) {
+		ERR_clear_error();
+		if((r=SSL_write(sc->ssl, ldns_buffer_current(sc->buffer), 
+			ldns_buffer_remaining(sc->buffer)))
+			<= 0) {
+			int want = SSL_get_error(sc->ssl, r);
+			if(want == SSL_ERROR_ZERO_RETURN) {
+				/* the other side has closed the channel */
+				verbose(VERB_ALGO, "result write closed");
+				sslconn_delete(sc);
+				return 0;
+			} else if(want == SSL_ERROR_WANT_READ) {
+				sc->shake_state = rc_hs_want_read;
+				comm_point_listen_for_rw(sc->c, 1, 0);
+				return 0;
+			} else if(want == SSL_ERROR_WANT_WRITE) {
+				return 0;
+			}
+			log_crypto_err("could not SSL_read");
+			/* the other side has closed the channel */
+			sslconn_delete(sc);
+			return 0;
+		}
+		ldns_buffer_skip(sc->buffer, r);
+	}
+	/* done writing the buffer. */
+	return 1;
+}
+
+static void sslconn_shutdown(struct sslconn* sc)
+{
+	int r = SSL_shutdown(sc->ssl);
+	if(r > 0) {
+		sslconn_delete(sc);
+	} else if(r == 0) {
+		/* we do not need to get notify from the peer, since we
+		 * close the fd */
+		sslconn_delete(sc);
+	} else {
+		int want = SSL_get_error(sc->ssl, r);
+		sc->shake_state = rc_hs_shutdown;
+		if(want == SSL_ERROR_ZERO_RETURN) {
+			sslconn_delete(sc);
+		} else if(want == SSL_ERROR_WANT_READ) {
+			comm_point_listen_for_rw(sc->c, 1, 0);
+		} else if(want == SSL_ERROR_WANT_WRITE) {
+			comm_point_listen_for_rw(sc->c, 0, 1);
+		} else {
+			log_crypto_err("could not SSL_shutdown");
+			sslconn_delete(sc);
+		}
+	}
+
+}
+
+static int sslconn_checkclose(struct sslconn* sc)
+{
+	int r;
+	log_info("check close");
+	ERR_clear_error();
+	if((r=SSL_read(sc->ssl, NULL, 0)) <= 0) {
+		int want = SSL_get_error(sc->ssl, r);
+		if(want == SSL_ERROR_ZERO_RETURN) {
+			verbose(VERB_ALGO, "checked channel closed otherside");
+			sslconn_shutdown(sc);
+			return 1;
+		} else if(want == SSL_ERROR_WANT_READ) {
+			return 0;
+		} else if(want == SSL_ERROR_WANT_WRITE) {
+			sc->shake_state = rc_hs_want_write;
+			comm_point_listen_for_rw(sc->c, 0, 1);
+			return 0;
+		}
+		log_crypto_err("checkclose could not SSL_read");
+		sslconn_delete(sc);
+		return 1;
+	}
+	if(SSL_get_shutdown(sc->ssl)) {
+		verbose(VERB_ALGO, "checked channel closed");
+		sslconn_delete(sc);
+		return 1;
+	}
+	return 0;
+}
+
+static void sslconn_persist_command(struct sslconn* sc)
+{
+	char* str = (char*)ldns_buffer_begin(sc->buffer);
+	while(*str == ' ')
+		str++;
+	verbose(VERB_ALGO, "persist-channel command: %s", str);
+	if(*str == 0) {
+		/* ignore empty lines */
+	} else {
+		log_err("unknown command from panel: %s", str);
+	}
+	/* and ready to read the next command */
+	ldns_buffer_clear(sc->buffer);
+}
+
 static void handle_submit(char* ips)
 {
 	/* start probing the servers */
 	probe_start(ips);
+}
+
+static void handle_results_cmd(struct sslconn* sc)
+{
+	/* turn into persist write with results. */
+	ldns_buffer_clear(sc->buffer);
+	ldns_buffer_flip(sc->buffer);
+	/* must listen for close of connection: reading */
+	comm_point_listen_for_rw(sc->c, 1, 0);
+	sc->line_state = persist_write_checkclose;
+	/* feed it the first results (if any) */
+	/* TODO */
+	ldns_buffer_clear(sc->buffer);
+	ldns_buffer_printf(sc->buffer, "hello panel\n");
+	ldns_buffer_flip(sc->buffer);
+	comm_point_listen_for_rw(sc->c, 1, 1);
+	sc->line_state = persist_write;
+}
+
+static void handle_cmdtray_cmd(struct sslconn* sc)
+{
+	/* turn into persist read */
+	ldns_buffer_clear(sc->buffer);
+	comm_point_listen_for_rw(sc->c, 1, 0);
+	sc->line_state = persist_read;
 }
 
 static void sslconn_command(struct sslconn* sc)
@@ -478,10 +632,13 @@ static void sslconn_command(struct sslconn* sc)
 	while(*str == ' ')
 		str++;
 	verbose(VERB_ALGO, "command: %s", str);
-	if(strncmp(str, "submit ", 7) == 0) {
-		handle_submit(str+7);
-		SSL_shutdown(sc->ssl);
-		sslconn_delete(sc);
+	if(strncmp(str, "submit", 6) == 0) {
+		handle_submit(str+6);
+		sslconn_shutdown(sc);
+	} else if(strncmp(str, "results", 7) == 0) {
+		handle_results_cmd(sc);
+	} else if(strncmp(str, "cmdtray", 7) == 0) {
+		handle_cmdtray_cmd(sc);
 	} else {
 		log_err("unknown command: %s", str);
 		sslconn_delete(sc);

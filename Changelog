@@ -1,3 +1,6 @@
+12 Aug 2011: Wouter
+	- persistant SSL connections to the server.
+
 11 Aug 2011: Wouter
 	- detection probes code.
 

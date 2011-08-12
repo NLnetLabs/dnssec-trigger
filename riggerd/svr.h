@@ -98,12 +98,13 @@ struct sslconn {
 	/** the commpoint */
 	struct comm_point* c;
 	/** in the handshake part */
-	enum { rc_hs_none, rc_hs_read, rc_hs_write, rc_hs_want_write 
-	} shake_state;
+	enum { rc_hs_none, rc_hs_read, rc_hs_write, rc_hs_want_write,
+		rc_hs_want_read, rc_hs_shutdown } shake_state;
 	/** the ssl state */
 	SSL* ssl;
 	/** line state: read or write */
-	enum { line_read, line_write } line_state;
+	enum { command_read, persist_read, persist_write,
+		persist_write_checkclose } line_state;
 	/** buffer with info to send or receive */
 	struct ldns_struct_buffer* buffer;
 };

@@ -123,14 +123,17 @@ void
 on_statusicon_activate(GtkStatusIcon* ATTR_UNUSED(status_icon),
 	gpointer ATTR_UNUSED(user_data))
 {
-	/* hide and show the window when the status icon is clicked */
-	if(gtk_widget_get_visible(window) &&
-		gtk_window_has_toplevel_focus(GTK_WINDOW(window))) {
-		gtk_widget_hide(GTK_WIDGET(window));
-	} else {
-		gtk_widget_show(GTK_WIDGET(window));
-		gtk_window_deiconify(GTK_WINDOW(window));
-		gtk_window_present(GTK_WINDOW(window));
+	/* no window to show and hide by default */
+	if(0) {
+		/* hide and show the window when the status icon is clicked */
+		if(gtk_widget_get_visible(window) &&
+			gtk_window_has_toplevel_focus(GTK_WINDOW(window))) {
+			gtk_widget_hide(GTK_WIDGET(window));
+		} else {
+			gtk_widget_show(GTK_WIDGET(window));
+			gtk_window_deiconify(GTK_WINDOW(window));
+			gtk_window_present(GTK_WINDOW(window));
+		}
 	}
 }
 
