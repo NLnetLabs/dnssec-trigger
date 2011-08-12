@@ -143,6 +143,14 @@ void on_proberesults_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 	buffer = gtk_text_view_get_buffer(result_textview);
 	gtk_text_buffer_set_text(buffer, "results from probe:\n", -1);
 	g_mutex_lock(feed->lock);
+	if(!feed->connected) {
+		gtk_text_buffer_get_end_iter(buffer, &end);
+		gtk_text_buffer_insert(buffer, &end, "error: ", -1);
+		gtk_text_buffer_get_end_iter(buffer, &end);
+		gtk_text_buffer_insert(buffer, &end, feed->connect_reason, -1);
+		gtk_text_buffer_get_end_iter(buffer, &end);
+		gtk_text_buffer_insert(buffer, &end, "\n", -1);
+	}
 	for(p=feed->results; p; p=p->next) {
 		if(!p->next) {
 			/* last line */
@@ -243,9 +251,9 @@ static void make_tray_icon(void)
 {
 	GError* error = NULL;
 	normal_icon = gdk_pixbuf_new_from_file_at_size(
-		"panel/status-icon.png", 25, 25, &error);
+		"panel/status-icon.png", 64, 64, &error);
 	alert_icon = gdk_pixbuf_new_from_file_at_size(
-		"panel/status-icon-alert.png", 25, 25, &error);
+		"panel/status-icon-alert.png", 64, 64, &error);
 	status_icon = gtk_status_icon_new_from_pixbuf(normal_icon);
 	g_signal_connect(G_OBJECT(status_icon), "activate",
 		G_CALLBACK(on_statusicon_activate), NULL);
