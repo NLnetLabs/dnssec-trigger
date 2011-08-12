@@ -91,7 +91,7 @@ COMMON_OBJ=$(addprefix $(BUILD),$(COMMON_SRC:.c=.o))
 COMPAT_SRC=$(addprefix compat/,$(LIBOBJS:.o=.c))
 COMPAT_OBJ=$(addprefix $(BUILD)compat/,$(LIBOBJS:.o=.o))
 
-PANEL_SRC=panel/panel.c
+PANEL_SRC=panel/panel.c panel/attach.c riggerd/cfg.c riggerd/log.c riggerd/net_help.c
 PANEL_OBJ=$(addprefix $(BUILD),$(PANEL_SRC:.c=.o)) $(COMPAT_OBJ)
 CONTROL_SRC=dnssec-trigger-control.c riggerd/cfg.c riggerd/log.c riggerd/net_help.c
 CONTROL_OBJ=$(addprefix $(BUILD),$(CONTROL_SRC:.c=.o)) $(COMPAT_OBJ)

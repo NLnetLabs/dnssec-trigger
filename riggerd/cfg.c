@@ -91,3 +91,93 @@ void cfg_delete(struct cfg* cfg)
 	free(cfg->control_cert_file);
 	free(cfg);
 }
+
+/** give errors and return NULL */
+static SSL_CTX*
+ctx_err_ret(SSL_CTX* ctx, char* err, size_t errlen, const char* msg)
+{
+	char sslerr[512];
+	sslerr[0]=0;
+	ERR_error_string_n(ERR_get_error(), sslerr, sizeof(sslerr));
+	snprintf(err, errlen, "%s %s", msg, sslerr);
+	if(ctx) SSL_CTX_free(ctx);
+	return NULL;
+}
+
+/** give errors and return NULL */
+static SSL*
+ssl_err_ret(SSL* ssl, char* err, size_t errlen, const char* msg)
+{
+	(void)ctx_err_ret(NULL, err, errlen, msg);
+	if(ssl) SSL_free(ssl);
+	return NULL;
+}
+
+/** setup SSL context */
+SSL_CTX*
+cfg_setup_ctx_client(struct cfg* cfg, char* err, size_t errlen)
+{
+	char* s_cert, *c_key, *c_cert;
+	SSL_CTX* ctx;
+
+	s_cert = cfg->server_cert_file;
+	c_key = cfg->control_key_file;
+	c_cert = cfg->control_cert_file;
+        ctx = SSL_CTX_new(SSLv23_client_method());
+	if(!ctx)
+		return ctx_err_ret(ctx, err, errlen,
+			"could not allocate SSL_CTX pointer");
+        if(!(SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2) & SSL_OP_NO_SSLv2))
+		return ctx_err_ret(ctx, err, errlen, 
+			"could not set SSL_OP_NO_SSLv2");
+	if(!SSL_CTX_use_certificate_file(ctx,c_cert,SSL_FILETYPE_PEM) ||
+		!SSL_CTX_use_PrivateKey_file(ctx,c_key,SSL_FILETYPE_PEM)
+		|| !SSL_CTX_check_private_key(ctx))
+		return ctx_err_ret(ctx, err, errlen,
+			"Error setting up SSL_CTX client key and cert");
+	if (SSL_CTX_load_verify_locations(ctx, s_cert, NULL) != 1)
+		return ctx_err_ret(ctx, err, errlen,
+			"Error setting up SSL_CTX verify, server cert");
+	SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
+
+	return ctx;
+}
+
+/** setup SSL on the connection, blocking, or NULL and string in err */
+SSL* setup_ssl_client(SSL_CTX* ctx, int fd, char* err, size_t errlen)
+{
+	SSL* ssl;
+	X509* x;
+	int r;
+
+	ssl = SSL_new(ctx);
+	if(!ssl)
+		return ssl_err_ret(ssl, err, errlen, "could not SSL_new");
+	SSL_set_connect_state(ssl);
+	(void)SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
+	if(!SSL_set_fd(ssl, fd))
+		return ssl_err_ret(ssl, err, errlen, "could not SSL_set_fd");
+	while(1) {
+		ERR_clear_error();
+		if( (r=SSL_do_handshake(ssl)) == 1)
+			break;
+		r = SSL_get_error(ssl, r);
+		if(r != SSL_ERROR_WANT_READ && r != SSL_ERROR_WANT_WRITE)
+			return ssl_err_ret(ssl, err, errlen,
+				"SSL handshake failed");
+		/* wants to be called again */
+	}
+
+	/* check authenticity of server */
+	if(SSL_get_verify_result(ssl) != X509_V_OK)
+		return ssl_err_ret(ssl, err, errlen,
+			"SSL verification failed");
+	x = SSL_get_peer_certificate(ssl);
+	if(!x)
+		return ssl_err_ret(ssl, err, errlen,
+			"Server presented no peer certificate");
+	X509_free(x);
+	return ssl;
+}
+
+

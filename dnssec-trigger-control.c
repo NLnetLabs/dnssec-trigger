@@ -68,9 +68,10 @@ usage()
 	printf("  -s ip[@port]	server address, if omitted config is used.\n");
 	printf("  -h		show this usage help.\n");
 	printf("Commands:\n");
-	printf("submit <ips>	submit a list of DHCP provided DNS servers\n");
-	printf("results		continuous feed of probe results\n");
-	printf("cmdtray		command channel for gui panel\n");
+	printf("  submit <ips>	submit a list of DHCP provided DNS servers,\n");
+	printf("		separated by spaces, these are then probed.\n");
+	printf("  results	continuous feed of probe results\n");
+	printf("  cmdtray	command channel for gui panel\n");
 	printf("Version %s\n", PACKAGE_VERSION);
 	printf("BSD licensed, see LICENSE in source package for details.\n");
 	printf("Report bugs to %s\n", PACKAGE_BUGREPORT);
@@ -78,7 +79,7 @@ usage()
 }
 
 /** exit with ssl error */
-static void ssl_err(const char* s)
+void ssl_err(const char* s)
 {
 	fprintf(stderr, "error: %s\n", s);
 	ERR_print_errors_fp(stderr);
@@ -91,122 +92,6 @@ static RETSIGTYPE sigh(int ATTR_UNUSED(sig))
 	if(global_ssl) {
 		SSL_shutdown(global_ssl);
 	}
-}
-
-/** setup SSL context */
-static SSL_CTX*
-setup_ctx(struct cfg* cfg)
-{
-	char* s_cert, *c_key, *c_cert;
-	SSL_CTX* ctx;
-
-	s_cert = cfg->server_cert_file;
-	c_key = cfg->control_key_file;
-	c_cert = cfg->control_cert_file;
-        ctx = SSL_CTX_new(SSLv23_client_method());
-	if(!ctx)
-		ssl_err("could not allocate SSL_CTX pointer");
-        if(!(SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2) & SSL_OP_NO_SSLv2))
-		ssl_err("could not set SSL_OP_NO_SSLv2");
-	if(!SSL_CTX_use_certificate_file(ctx,c_cert,SSL_FILETYPE_PEM) ||
-		!SSL_CTX_use_PrivateKey_file(ctx,c_key,SSL_FILETYPE_PEM)
-		|| !SSL_CTX_check_private_key(ctx))
-		ssl_err("Error setting up SSL_CTX client key and cert");
-	if (SSL_CTX_load_verify_locations(ctx, s_cert, NULL) != 1)
-		ssl_err("Error setting up SSL_CTX verify, server cert");
-	SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
-
-	return ctx;
-}
-
-/** contact the server with TCP connect */
-static int
-contact_server(const char* svr, struct cfg* cfg, int statuscmd)
-{
-	struct sockaddr_storage addr;
-	socklen_t addrlen;
-	int fd;
-	/* use svr or the first config entry */
-	if(!svr) {
-		svr = "127.0.0.1";
-		/* config 0 addr (everything), means ask localhost */
-		if(strcmp(svr, "0.0.0.0") == 0)
-			svr = "127.0.0.1";
-		else if(strcmp(svr, "::0") == 0 ||
-			strcmp(svr, "0::0") == 0 ||
-			strcmp(svr, "0::") == 0 ||
-			strcmp(svr, "::") == 0)
-			svr = "::1";
-	}
-	if(strchr(svr, '@')) {
-		if(!extstrtoaddr(svr, &addr, &addrlen))
-			fatal_exit("could not parse IP@port: %s", svr);
-	} else {
-		if(!ipstrtoaddr(svr, cfg->control_port, &addr, &addrlen))
-			fatal_exit("could not parse IP: %s", svr);
-	}
-	fd = socket(addr_is_ip6(&addr, addrlen)?AF_INET6:AF_INET, 
-		SOCK_STREAM, 0);
-	if(fd == -1) {
-#ifndef USE_WINSOCK
-		fatal_exit("socket: %s", strerror(errno));
-#else
-		fatal_exit("socket: %s", wsa_strerror(WSAGetLastError()));
-#endif
-	}
-	if(connect(fd, (struct sockaddr*)&addr, addrlen) < 0) {
-		log_addr(0, "address", &addr, addrlen);
-#ifndef USE_WINSOCK
-		log_err("connect: %s", strerror(errno));
-		if(errno == ECONNREFUSED && statuscmd) {
-			printf("the daemon is stopped\n");
-			exit(3);
-		}
-#else
-		log_err("connect: %s", wsa_strerror(WSAGetLastError()));
-		if(WSAGetLastError() == WSAECONNREFUSED && statuscmd) {
-			printf("the daemon is stopped\n");
-			exit(3);
-		}
-#endif
-		exit(1);
-	}
-	return fd;
-}
-
-/** setup SSL on the connection */
-static SSL*
-setup_ssl(SSL_CTX* ctx, int fd)
-{
-	SSL* ssl;
-	X509* x;
-	int r;
-
-	ssl = SSL_new(ctx);
-	if(!ssl)
-		ssl_err("could not SSL_new");
-	SSL_set_connect_state(ssl);
-	(void)SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
-	if(!SSL_set_fd(ssl, fd))
-		ssl_err("could not SSL_set_fd");
-	while(1) {
-		ERR_clear_error();
-		if( (r=SSL_do_handshake(ssl)) == 1)
-			break;
-		r = SSL_get_error(ssl, r);
-		if(r != SSL_ERROR_WANT_READ && r != SSL_ERROR_WANT_WRITE)
-			ssl_err("SSL handshake failed");
-		/* wants to be called again */
-	}
-
-	/* check authenticity of server */
-	if(SSL_get_verify_result(ssl) != X509_V_OK)
-		ssl_err("SSL verification failed");
-	x = SSL_get_peer_certificate(ssl);
-	if(!x)
-		ssl_err("Server presented no peer certificate");
-	X509_free(x);
-	return ssl;
 }
 
 /** send stdin to server */
@@ -271,15 +156,25 @@ go(const char* cfgfile, char* svr, int argc, char* argv[])
 	int fd, ret;
 	SSL_CTX* ctx;
 	SSL* ssl;
+	char err[512];
 
 	/* read config */
 	if(!(cfg = cfg_create(cfgfile)))
 		fatal_exit("could not get config file");
-	ctx = setup_ctx(cfg);
+	ctx = cfg_setup_ctx_client(cfg, err, sizeof(err));
+	if(!cfg) fatal_exit("%s", err);
 	
 	/* contact server */
-	fd = contact_server(svr, cfg, argc>0&&strcmp(argv[0],"status")==0);
-	ssl = setup_ssl(ctx, fd);
+	fd = contact_server(svr, cfg->control_port,
+		argc>0&&strcmp(argv[0],"status")==0, err, sizeof(err));
+	if(fd == -1) fatal_exit("%s", err);
+	else if(fd == -2) {
+		log_err("%s", err);
+		printf("the daemon is stopped\n");
+		exit(3); /* statuscmd and server is down */
+	}
+	ssl = setup_ssl_client(ctx, fd, err, sizeof(err));
+	if(!ssl) fatal_exit("%s", err);
 	global_ssl = ssl;
 #ifdef SIGHUP
 	(void)signal(SIGHUP, sigh);

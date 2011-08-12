@@ -263,4 +263,17 @@ int addr_is_broadcast(struct sockaddr_storage* addr, socklen_t addrlen);
  */
 int addr_is_any(struct sockaddr_storage* addr, socklen_t addrlen);
 
+/**
+ * Create tcp connection (blockingly) to the server.
+ * @param svr: IP address (can have '@port').
+ * @param port: used if no port specced.
+ * @param statuscmd: if true, tests to see if the server is down.
+ * @param err: buffer to print error in (for -1 return value).
+ * @param errlen: length of buffer.
+ * @return fd of TCP. -1 on failure (log_err result).
+ * -2 if server is down and statuscmd is given.
+ */
+int contact_server(const char* svr, int port, int statuscmd,
+	char* err, size_t errlen);
+
 #endif /* NET_HELP_H */

@@ -44,6 +44,10 @@
 #include <signal.h>
 #include <gtk/gtk.h>
 
+#include "riggerd/log.h"
+#include "riggerd/cfg.h"
+#include "panel/attach.h"
+
 static GtkTextView* result_textview;
 static GtkStatusIcon* status_icon;
 static GtkWidget* window;
@@ -56,6 +60,7 @@ static void
 usage(void)
 {
 	printf("usage:  dnssec-trigger-panel [options]\n");
+	printf(" -c config      use configfile, default is %s\n", CONFIGFILE);
 	printf(" -h             this help\n");
 }
 
@@ -85,6 +90,24 @@ static RETSIGTYPE record_sigh(int sig)
 	default:
 		printf("ignoring signal %d", sig);
 	}
+}
+
+gpointer feed_thread(gpointer data)
+{
+	attach_start((struct cfg*)data);
+	return NULL;
+}
+
+/** spawn the feed thread */
+static void
+spawn_feed(struct cfg* cfg)
+{
+	GError* err=NULL;
+	GThread* thr;
+	feed = (struct feed*)calloc(1, sizeof(*feed));
+	if(!feed) fatal_exit("out of memory");
+	thr = g_thread_create(&feed_thread, cfg, FALSE, &err);
+	if(!thr) fatal_exit("cannot create thread: %s", err->message);
 }
 
 void 
@@ -155,9 +178,11 @@ static void make_tray_icon(void)
 
 /** do main work */
 static void
-do_main_work(void)
+do_main_work(const char* cfgfile)
 {
 	GtkBuilder* builder;
+	struct cfg* cfg = cfg_create(cfgfile);
+	if(!cfg) fatal_exit("cannot read config %s", cfgfile);
 
         /* start signal handlers */
         if( signal(SIGTERM, record_sigh) == SIG_ERR ||
@@ -178,6 +203,7 @@ do_main_work(void)
                 printf("install sighandler: %s\n", strerror(errno));
         /* start */
 	printf("panel\n");
+	spawn_feed(cfg);
 
 	builder = gtk_builder_new();
 	gtk_builder_add_from_file(builder, "panel/pui.xml", NULL);
@@ -213,12 +239,24 @@ extern char* optarg;
 int main(int argc, char *argv[])
 {
         int c;
+	const char* cfgfile = CONFIGFILE;
+#ifdef USE_WINSOCK
+	int r;
+	WSADATA wsa_data;
+	if((r = WSAStartup(MAKEWORD(2,2), &wsa_data)) != 0)
+		fatal_exit("WSAStartup failed: %s", wsa_strerror(r));
+#endif
 	g_thread_init(NULL);
 	gdk_threads_init();
 	gtk_init(&argc, &argv);
-        while( (c=getopt(argc, argv, "h")) != -1) {
+	log_ident_set("dnssec-trigger-panel");
+	log_init(NULL, 0, NULL);
+        while( (c=getopt(argc, argv, "c:h")) != -1) {
                 switch(c) {
                 default:
+		case 'c':
+			cfgfile = optarg;
+			break;
                 case 'h':
                         usage();
                         return 1;
@@ -231,7 +269,15 @@ int main(int argc, char *argv[])
                 return 1;
 	}
 
+        ERR_load_crypto_strings();
+	ERR_load_SSL_strings();
+	OpenSSL_add_all_algorithms();
+	(void)SSL_library_init();
+
 	/* show user interface */
-	do_main_work();
+	do_main_work(cfgfile);
+#ifdef USE_WINSOCK
+	WSACleanup();
+#endif
 	return 0;
 }

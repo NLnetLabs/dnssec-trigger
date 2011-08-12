@@ -426,3 +426,60 @@ int addr_is_any(struct sockaddr_storage* addr, socklen_t addrlen)
 	return 0;
 }
 
+/** contact the server with TCP connect, for clients. returns fd */
+int
+contact_server(const char* svr, int port, int statuscmd,
+	char* err, size_t errlen)
+{
+	struct sockaddr_storage addr;
+	socklen_t addrlen;
+	int fd;
+	/* use svr or the first config entry */
+	if(!svr) {
+		svr = "127.0.0.1";
+		/* config 0 addr (everything), means ask localhost */
+		if(strcmp(svr, "0.0.0.0") == 0)
+			svr = "127.0.0.1";
+		else if(strcmp(svr, "::0") == 0 ||
+			strcmp(svr, "0::0") == 0 ||
+			strcmp(svr, "0::") == 0 ||
+			strcmp(svr, "::") == 0)
+			svr = "::1";
+	}
+	if(strchr(svr, '@')) {
+		if(!extstrtoaddr(svr, &addr, &addrlen)) {
+			snprintf(err, errlen, "could not parse IP: %s", svr);
+			return -1;
+		}
+	} else {
+		if(!ipstrtoaddr(svr, port, &addr, &addrlen)) {
+			snprintf(err, errlen, "could not parse IP: %s", svr);
+			return -1;
+		}
+	}
+	fd = socket(addr_is_ip6(&addr, addrlen)?AF_INET6:AF_INET, 
+		SOCK_STREAM, 0);
+	if(fd == -1) {
+#ifndef USE_WINSOCK
+		snprintf(err, errlen, "socket: %s", strerror(errno));
+#else
+		snprintf(err, errlen, "socket: %s", wsa_strerror(WSAGetLastError()));
+#endif
+		return -1;
+	}
+	if(connect(fd, (struct sockaddr*)&addr, addrlen) < 0) {
+#ifndef USE_WINSOCK
+		snprintf(err, errlen, "connect: %s", strerror(errno));
+		if(errno == ECONNREFUSED && statuscmd) {
+			return -2;
+		}
+#else
+		snprintf(err, errlen, "connect: %s", wsa_strerror(WSAGetLastError()));
+		if(WSAGetLastError() == WSAECONNREFUSED && statuscmd) {
+			return -2;
+		}
+#endif
+		return -1;
+	}
+	return fd;
+}

@@ -1,5 +1,5 @@
 /*
- * cfg.h - dnssec-trigger config
+ * attach.h - dnssec-trigger acttachment from panel to daemon.
  *
  * Copyright (c) 2011, NLnet Labs. All rights reserved.
  *
@@ -36,52 +36,36 @@
 /**
  * \file
  *
- * This file contains config file options.
+ * This file contains the code that attaches the panel to the daemon.
  */
 
-#ifndef CFG_H
-#define CFG_H
+#ifndef ATTACH_H
+#define ATTACH_H
+struct feed;
+struct cfg;
 
-/* version of control proto */
-#define CONTROL_VERSION 1
+/** attachment structure for the results read thread */
+extern struct feed* feed;
 
-/**
- * The configuration options
- */
-struct cfg {
-	/** verbosity */
-	int verbosity;
-	/** pid file */
-	char* pidfile;
-	/** log file (or NULL) */
-	char* logfile;
-	/** use syslog (bool) */
-	int use_syslog;
-	/** chroot dir (or NULL) */
-	char* chroot;
-	/** path to unbound-control */
-	char* unbound_control;
+/** structure for reading from the daemon */
+struct feed {
+	/* if connection with the daemon has been established. */
+	int connected;
+	/* non connection reason */
+	char connect_reason[512];
 
-	/** port number for the control port */
-	int control_port;
-	/** private key file for server */
-	char* server_key_file;
-	/** certificate file for server */
-	char* server_cert_file;
-	/** private key file for control */
-	char* control_key_file;
-	/** certificate file for control */
-	char* control_cert_file;
+	/* config */
+	struct cfg* cfg;
+	/* ssl context with keys */
+	SSL_CTX* ctx;
+	/* ssl to read results from */
+	SSL* ssl_read;
+	/* ssl to write results to */
+	SSL* ssl_write;
 };
 
-/** create config and read in */
-struct cfg* cfg_create(const char* cfgfile);
-/** delete config */
-void cfg_delete(struct cfg* cfg);
+/** start the connection thread */
+void attach_start(struct cfg* cfg);
 
-/** setup SSL context for client usage, or NULL and error in err */
-SSL_CTX* cfg_setup_ctx_client(struct cfg* cfg, char* err, size_t errlen);
-/** setup SSL on the connection, blocking, or NULL and string in err */
-SSL* setup_ssl_client(SSL_CTX* ctx, int fd, char* err, size_t errlen);
 
-#endif /* CFG_H */
+#endif /* ATTACH_H */
