@@ -690,10 +690,15 @@ probe_all_done(void)
 		/* set unbound to process directly */
 		verbose(VERB_OPS, "probe done: DNSSEC to auth direct");
 		/* TODO signal unbound */
+		svr->res_state = res_auth;
+		svr->insecure_state = 0;
 		/* TODO set resolv.conf to 127.0.0.1 */
 	} else if(svr->probe_direct && !svr->saw_direct_work) {
 		verbose(VERB_OPS, "probe done: DNSSEC fails");
 		/* DNSSEC failure */
+		if(svr->res_state != res_dark)
+			svr->insecure_state = 0; /* ask again */
+		svr->res_state = res_dark;
 		/* set unbound to dark */
 		/* see what the user wants */
 		/* TODO signal unbound */
@@ -702,7 +707,10 @@ probe_all_done(void)
 	} else {
 		verbose(VERB_OPS, "probe done: DNSSEC to cache");
 		/* send the working servers to unbound */
+		svr->res_state = res_cache;
+		svr->insecure_state = 0;
 		/* TODO signal unbound */
 		/* TODO set resolv.conf to 127.0.0.1 */
 	}
+	svr_send_results(svr);
 }

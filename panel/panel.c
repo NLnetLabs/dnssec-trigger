@@ -106,6 +106,7 @@ spawn_feed(struct cfg* cfg)
 	GThread* thr;
 	feed = (struct feed*)calloc(1, sizeof(*feed));
 	if(!feed) fatal_exit("out of memory");
+	feed->lock = g_mutex_new();
 	thr = g_thread_create(&feed_thread, cfg, FALSE, &err);
 	if(!thr) fatal_exit("cannot create thread: %s", err->message);
 }
@@ -221,6 +222,7 @@ do_main_work(const char* cfgfile)
 	gdk_threads_enter();
 	gtk_main();
 	gdk_threads_leave();
+	attach_stop();
 	printf("panel stop\n");
 }
 

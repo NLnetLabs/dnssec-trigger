@@ -57,6 +57,7 @@ static int sslconn_checkclose(struct sslconn* sc);
 static void sslconn_shutdown(struct sslconn* sc);
 static void sslconn_command(struct sslconn* sc);
 static void sslconn_persist_command(struct sslconn* sc);
+static void send_results_to_con(struct svr* svr, struct sslconn* s);
 
 /** log ssl crypto err */
 static void
@@ -439,6 +440,11 @@ int control_callback(struct comm_point* c, void* arg, int err,
 			return 0;
 		if(!sslconn_write(s))
 			return 0;
+		if(s->fetch_another_update) {
+			s->fetch_another_update = 0;
+			send_results_to_con(global_svr, s);
+			return 0;
+		}
 		/* nothing more to write */
 		comm_point_listen_for_rw(c, 1, 0);
 		s->line_state = persist_write_checkclose;
@@ -593,6 +599,26 @@ static void handle_submit(char* ips)
 	probe_start(ips);
 }
 
+static void
+send_results_to_con(struct svr* svr, struct sslconn* s)
+{
+	struct probe_ip* p;
+	ldns_buffer_clear(s->buffer);
+	for(p=svr->probes; p; p=p->next) {
+		ldns_buffer_printf(s->buffer, "%s %s: %s %s\n",
+			p->to_auth?"authority":"cache", p->name,
+			p->works?"OK":"error", p->reason?p->reason:"");
+	}
+	ldns_buffer_printf(s->buffer, "state: %s %s\n",
+		svr->res_state==res_cache?"cache":(
+		svr->res_state==res_auth?"auth":"dark"),
+		svr->insecure_state?"insecure":"secure");
+	ldns_buffer_printf(s->buffer, "\n");
+	ldns_buffer_flip(s->buffer);
+	comm_point_listen_for_rw(s->c, 1, 1);
+	s->line_state = persist_write;
+}
+
 static void handle_results_cmd(struct sslconn* sc)
 {
 	/* turn into persist write with results. */
@@ -602,12 +628,7 @@ static void handle_results_cmd(struct sslconn* sc)
 	comm_point_listen_for_rw(sc->c, 1, 0);
 	sc->line_state = persist_write_checkclose;
 	/* feed it the first results (if any) */
-	/* TODO */
-	ldns_buffer_clear(sc->buffer);
-	ldns_buffer_printf(sc->buffer, "hello panel\n");
-	ldns_buffer_flip(sc->buffer);
-	comm_point_listen_for_rw(sc->c, 1, 1);
-	sc->line_state = persist_write;
+	send_results_to_con(global_svr, sc);
 }
 
 static void handle_cmdtray_cmd(struct sslconn* sc)
@@ -644,3 +665,18 @@ static void sslconn_command(struct sslconn* sc)
 		sslconn_delete(sc);
 	}
 }
+
+void svr_send_results(struct svr* svr)
+{
+	struct sslconn* s;
+	for(s=svr->busy_list; s; s=s->next) {
+		if(s->line_state == persist_write) {
+			/* busy with last results, fetch update later */
+			s->fetch_another_update=1;
+		}
+		if(s->line_state == persist_write_checkclose) {
+			send_results_to_con(svr, s);
+		}
+	}
+}
+

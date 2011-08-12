@@ -83,6 +83,12 @@ struct svr {
 	int saw_direct_work;
 	/** attempt to access DNS authority servers directly */
 	int probe_direct;
+
+
+	/* result of probes */
+	enum res_state { res_auth, res_cache, res_dark } res_state;
+	/* insecure state entered */
+	int insecure_state;
 };
 
 /** list of commpoints */
@@ -107,6 +113,8 @@ struct sslconn {
 		persist_write_checkclose } line_state;
 	/** buffer with info to send or receive */
 	struct ldns_struct_buffer* buffer;
+	/** have to fetch another status update right away */
+	int fetch_another_update;
 };
 
 extern struct svr* global_svr;
@@ -117,6 +125,8 @@ struct svr* svr_create(struct cfg* cfg);
 void svr_delete(struct svr* svr);
 /** perform the service */
 void svr_service(struct svr* svr);
+/** send results to clients */
+void svr_send_results(struct svr* svr);
 
 int handle_ssl_accept(struct comm_point* c, void* arg, int error,
         struct comm_reply* reply_info);

@@ -47,24 +47,53 @@
 /* the global feed structure */
 struct feed* feed = NULL;
 
-/* keep trying to open the read channel, blocking */
-static SSL* try_contact_server(void)
+static void attach_main(void);
+
+/* stop read */
+static void
+stop_ssl(SSL* ssl, int fd)
 {
+	if(ssl) SSL_shutdown(ssl);
+	SSL_free(ssl);
+#ifndef USE_WINSOCK
+	close(fd);
+#else
+	closesocket(fd);
+#endif
+}
+
+void attach_stop(void)
+{
+	g_mutex_lock(feed->lock);
+	if(feed->ssl_read)
+		stop_ssl(feed->ssl_read, SSL_get_fd(feed->ssl_read));
+	if(feed->ssl_write)
+		stop_ssl(feed->ssl_write, SSL_get_fd(feed->ssl_write));
+	g_mutex_unlock(feed->lock);
+}
+
+/* keep trying to open the read channel, blocking */
+static SSL* try_contact_server()
+{
+	const char* svr = "127.0.0.1";
 	SSL* ssl = NULL;
 	while(!ssl) {
-		int fd;
-		while( (fd=contact_server("127.0.0.1",
-			feed->cfg->control_port, 0, feed->connect_reason,
-			sizeof(feed->connect_reason))) == -1)
-			sleep(1);
+		int fd = -1;
+		while(fd == -1) {
+			fd = contact_server(svr, feed->cfg->control_port, 0,
+				feed->connect_reason,
+				sizeof(feed->connect_reason));
+			if(fd == -1) {
+				g_mutex_unlock(feed->lock);
+				sleep(1);
+				g_mutex_lock(feed->lock);
+			}
+		}
 		ssl = setup_ssl_client(feed->ctx, fd, feed->connect_reason,
-			sizeof(feed->connect_reason));
+				sizeof(feed->connect_reason));
 		if(!ssl) {
-#ifndef USE_WINSOCK
-			close(fd);
-#else
-			closesocket(fd);
-#endif
+			stop_ssl(ssl, fd);
+			sleep(1);
 		}
 	}
 	return ssl;
@@ -84,6 +113,7 @@ static void write_firstcmd(SSL* ssl, char* cmd)
 
 void attach_start(struct cfg* cfg)
 {
+	g_mutex_lock(feed->lock);
 	snprintf(feed->connect_reason, sizeof(feed->connect_reason),
 		"connecting to probe daemon");
 	feed->cfg = cfg;
@@ -99,5 +129,112 @@ void attach_start(struct cfg* cfg)
 	write_firstcmd(feed->ssl_write, "cmdtray\n");
 	write_firstcmd(feed->ssl_read, "results\n");
 	printf("contacted server, first cmds written\n");
-	/* TODO mainloop */
+	feed->connected = 1;
+	g_mutex_unlock(feed->lock);
+	/* mainloop */
+	attach_main();
+}
+
+static int check_for_event(void)
+{
+	int fd;
+	fd_set r;
+	g_mutex_lock(feed->lock);
+	fd = SSL_get_fd(feed->ssl_read);
+	g_mutex_unlock(feed->lock);
+	/* select on it */
+	while(1) {
+		FD_ZERO(&r);
+		FD_SET(fd, &r);
+		if(select(fd+1, &r, NULL, NULL, NULL) < 0) {
+			if(errno == EAGAIN || errno == EINTR)
+				continue;
+			else break;
+		}
+		return 1;
+	}
+	return 0;
+}
+
+static int
+read_an_ssl_line(SSL* ssl, char* line, size_t len)
+{
+	size_t i = 0;
+	while(SSL_read(ssl, line+i, 1) > 0) {
+		if(line[i] == '\n') {
+			line[i]=0;
+			return 1;
+		}
+		if(++i >= len) {
+			log_err("line too long");
+			return 0;
+		}
+	}
+	/* error */
+	log_err("failed SSL_read");
+	return 0;
+}
+
+/** append to strlist */
+static void strlist_append(struct strlist** first, struct strlist** last,
+	char* str)
+{
+	struct strlist* e = (struct strlist*)malloc(sizeof(*e));
+	if(!e) fatal_exit("out of memory");
+	e->next = NULL;
+	e->str = strdup(str);
+	if(!e->str) fatal_exit("out of memory");
+	if(*last)
+		(*last)->next = e;
+	else {
+		*last = e;
+		*first = e;
+	}
+}
+
+/** free strlist */
+static void
+strlist_delete(struct strlist* e)
+{
+	struct strlist* p = e, *np;
+	while(p) {
+		np = p->next;
+		free(p->str);
+		free(p);
+		p = np;
+	}
+}
+
+static void read_from_feed(void)
+{
+	struct strlist* first=NULL, *last=NULL;
+	char line[1024];
+	printf("read from feed\n");
+	while(read_an_ssl_line(feed->ssl_read, line, sizeof(line))) {
+		/* stop at empty line */
+		printf("feed: %s\n", line);
+		if(line[0] == 0) {
+			strlist_delete(feed->results);
+			feed->results = first;
+			return;
+		}
+		strlist_append(&first, &last, line);
+	}
+	feed->connected = 0;
+	stop_ssl(feed->ssl_read, SSL_get_fd(feed->ssl_read));
+	feed->ssl_read = NULL; /* for quit in meantime */
+	feed->ssl_read = try_contact_server();
+	write_firstcmd(feed->ssl_read, "results\n");
+	feed->connected = 1;
+}
+
+static void attach_main(void)
+{
+	/* check for event */
+	while(check_for_event()) {
+		g_mutex_lock(feed->lock);
+		read_from_feed();
+		g_mutex_unlock(feed->lock);
+	}
+
 }

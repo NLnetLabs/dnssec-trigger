@@ -43,16 +43,21 @@
 #define ATTACH_H
 struct feed;
 struct cfg;
+#include <glib.h>
+struct strlist;
 
 /** attachment structure for the results read thread */
 extern struct feed* feed;
 
 /** structure for reading from the daemon */
 struct feed {
+	GMutex* lock;
 	/* if connection with the daemon has been established. */
 	int connected;
 	/* non connection reason */
 	char connect_reason[512];
+	
+	struct strlist* results;
 
 	/* config */
 	struct cfg* cfg;
@@ -64,8 +69,15 @@ struct feed {
 	SSL* ssl_write;
 };
 
+struct strlist {
+	struct strlist* next;
+	char* str;
+};
+
 /** start the connection thread */
 void attach_start(struct cfg* cfg);
 
+/** stop attach */
+void attach_stop(void);
 
 #endif /* ATTACH_H */
