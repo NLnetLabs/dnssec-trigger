@@ -187,10 +187,8 @@ static void strlist_append(struct strlist** first, struct strlist** last,
 	if(!e->str) fatal_exit("out of memory");
 	if(*last)
 		(*last)->next = e;
-	else {
-		*last = e;
-		*first = e;
-	}
+	else	*first = e;
+	*last = e;
 }
 
 /** free strlist */

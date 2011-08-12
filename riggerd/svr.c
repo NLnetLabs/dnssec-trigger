@@ -639,6 +639,16 @@ static void handle_cmdtray_cmd(struct sslconn* sc)
 	sc->line_state = persist_read;
 }
 
+static void handle_unsafe_cmd(struct sslconn* sc)
+{
+	struct svr* svr = global_svr;
+	svr->saw_first_working = 0;
+	svr->saw_direct_work = 0;
+	svr->probe_direct = 1;
+	probe_all_done();
+	sslconn_shutdown(sc);
+}
+
 static void sslconn_command(struct sslconn* sc)
 {
 	char header[10];
@@ -660,6 +670,8 @@ static void sslconn_command(struct sslconn* sc)
 		handle_results_cmd(sc);
 	} else if(strncmp(str, "cmdtray", 7) == 0) {
 		handle_cmdtray_cmd(sc);
+	} else if(strncmp(str, "unsafe", 6) == 0) {
+		handle_unsafe_cmd(sc);
 	} else {
 		log_err("unknown command: %s", str);
 		sslconn_delete(sc);

@@ -160,9 +160,9 @@ void on_proberesults_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 			else if(strstr(p->str, "dark") && !strstr(p->str,
 				"insecure"))
 				gtk_text_buffer_insert(buffer, &end, 
-					"local cache of DNS results is used "
-					"but no queries are sent over the "
-					"network (DNS is stopped)\n", -1);
+		"A local cache of DNS results is used but no queries\n"
+		"are made, because DNSSEC is intercepted on this network.\n"
+		"(DNS is stopped)\n", -1);
 			else gtk_text_buffer_insert(buffer, &end, 
 				"DNS queries are sent to INSECURE servers.\n"
 				"Please, be careful there.\n", -1);

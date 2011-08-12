@@ -107,4 +107,6 @@ int outq_handle_tcp(struct comm_point* c, void* my_arg, int error,
 /** outstanding query UDP timeout handler */
 void outq_timeout(void* arg);
 
+void probe_all_done(void);
+
 #endif /* PROBE_H */

@@ -59,8 +59,6 @@ static void probe_partial_done(struct probe_ip* p, const char* in,
 	const char* reason);
 /* a probe is done (fail or success) see global progress */
 static void probe_done(struct probe_ip* p);
-/* all probes are done */
-static void probe_all_done(void);
 
 void probe_start(char* ips)
 {
@@ -666,7 +664,7 @@ probe_done(struct probe_ip* p)
 	probe_all_done();
 }
 
-static void
+void
 probe_all_done(void)
 {
 	struct svr* svr = global_svr;
