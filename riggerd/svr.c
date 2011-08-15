@@ -492,11 +492,12 @@ static int sslconn_readline(struct sslconn* sc)
 static int sslconn_write(struct sslconn* sc)
 {
         int r;
-	SSL_set_mode(sc->ssl, SSL_MODE_ENABLE_PARTIAL_WRITE);
+	/* ignore return, if fails we may simply block */
+	(void)SSL_set_mode(sc->ssl, SSL_MODE_ENABLE_PARTIAL_WRITE);
 	while(ldns_buffer_remaining(sc->buffer)>0) {
 		ERR_clear_error();
 		if((r=SSL_write(sc->ssl, ldns_buffer_current(sc->buffer), 
-			ldns_buffer_remaining(sc->buffer)))
+			(int)ldns_buffer_remaining(sc->buffer)))
 			<= 0) {
 			int want = SSL_get_error(sc->ssl, r);
 			if(want == SSL_ERROR_ZERO_RETURN) {
@@ -516,7 +517,7 @@ static int sslconn_write(struct sslconn* sc)
 			sslconn_delete(sc);
 			return 0;
 		}
-		ldns_buffer_skip(sc->buffer, r);
+		ldns_buffer_skip(sc->buffer, (ssize_t)r);
 	}
 	/* done writing the buffer. */
 	return 1;

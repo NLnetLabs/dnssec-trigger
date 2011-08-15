@@ -4,6 +4,8 @@
 	- menu is positioned neatly under the statusicon.
 	- result window has icon set and a title.
 	- fix unref for result_window by reffing it in the init function.
+	- stop using deprecated glib function for tooltip.
+	- lint fixes.
 
 12 Aug 2011: Wouter
 	- persistant SSL connections to the server.

@@ -197,7 +197,7 @@ $(BUILD)%.lint:    $(srcdir)/%.c
 	$Q$(LINT) $(LINTFLAGS) -I. -I$(srcdir) -I$(ldnsdir)/include $<
 	$Qtouch $@
 
-lint:	$(addprefix $(BUILD),$(filter-out panel/panel.lint,$(filter-out util/configparser.lint,$(filter-out util/configlexer.lint,$(sort $(ALL_SRC:.c=.lint))))))
+lint:	$(addprefix $(BUILD),$(filter-out panel/attach.lint,$(filter-out panel/panel.lint,$(filter-out util/configparser.lint,$(filter-out util/configlexer.lint,$(sort $(ALL_SRC:.c=.lint)))))))
 
 tags:	$(srcdir)/*.[ch] $(srcdir)/*/*.[ch]
 	ctags  -f $(srcdir)/tags $(srcdir)/*.[ch] $(srcdir)/*/*.[ch]
