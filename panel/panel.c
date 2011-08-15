@@ -238,7 +238,7 @@ void panel_alert_state(int last_insecure, int now_insecure, int dark,
 	else if(cache)
 		tt = "DNSSEC via cache";
 	else	tt = "DNSSEC via authorities";
-	gtk_status_icon_set_tooltip(status_icon, tt);
+	gtk_status_icon_set_tooltip_text(status_icon, tt);
 	if(last_insecure != now_insecure) {
 		if(now_insecure)
 			panel_alert_danger();
@@ -259,15 +259,45 @@ static void make_tray_icon(void)
 		G_CALLBACK(on_statusicon_activate), NULL);
 	g_signal_connect(G_OBJECT(status_icon), "popup-menu",
 		G_CALLBACK(on_statusicon_popup_menu), NULL);
-	gtk_status_icon_set_tooltip(status_icon, "dnssec-trigger");
+	gtk_status_icon_set_tooltip_text(status_icon, "dnssec-trigger");
 	gtk_status_icon_set_visible(status_icon, TRUE);
+}
+
+/** initialize the gui */
+static void
+init_gui(void)
+{
+	GtkBuilder* builder;
+
+	/* read xml with gui */
+	builder = gtk_builder_new();
+	gtk_builder_add_from_file(builder, "panel/pui.xml", NULL);
+
+	/* grab important widgets into global variables */
+	result_window = GTK_WIDGET(gtk_builder_get_object(builder,
+		"result_dialog"));
+	result_textview = GTK_TEXT_VIEW(gtk_builder_get_object(builder,
+		"result_textview"));
+	statusmenu = GTK_MENU(gtk_builder_get_object(builder, "statusmenu"));
+	/* we need to incref otherwise we may lose the reference */
+	g_object_ref(G_OBJECT(statusmenu));
+	gtk_widget_hide(GTK_WIDGET(result_window));
+	g_object_ref(G_OBJECT(result_window));
+
+	/* no more need for the builder */
+	gtk_builder_connect_signals(builder, NULL);          
+	g_object_unref(G_OBJECT(builder));
+
+	/* create the status icon in the system tray, loads icons */
+	make_tray_icon();
+	/* make tray icon loaded the icons, also good for our windows */
+	gtk_window_set_icon(GTK_WINDOW(result_window), normal_icon);
 }
 
 /** do main work */
 static void
 do_main_work(const char* cfgfile)
 {
-	GtkBuilder* builder;
 	struct cfg* cfg = cfg_create(cfgfile);
 	if(!cfg) fatal_exit("cannot read config %s", cfgfile);
 
@@ -289,29 +319,13 @@ do_main_work(const char* cfgfile)
 	)
                 printf("install sighandler failed: %s\n", strerror(errno));
         /* start */
-	builder = gtk_builder_new();
-	gtk_builder_add_from_file(builder, "panel/pui.xml", NULL);
-
-	result_window = GTK_WIDGET(gtk_builder_get_object(builder,
-		"result_dialog"));
-	result_textview = GTK_TEXT_VIEW(gtk_builder_get_object(builder,
-		"result_textview"));
-	statusmenu = GTK_MENU(gtk_builder_get_object(builder, "statusmenu"));
-	g_object_ref(G_OBJECT(statusmenu));
-	gtk_widget_hide(GTK_WIDGET(result_window));
-	g_object_ref(G_OBJECT(result_window));
-
-	gtk_builder_connect_signals(builder, NULL);          
-	g_object_unref(G_OBJECT(builder));
-	make_tray_icon();
-	/* make tray icon loaded the icons, also good for our windows */
-	gtk_window_set_icon(GTK_WINDOW(result_window), normal_icon);
-	spawn_feed(cfg);
+	init_gui(); /* initializes the GUI objects */
+	spawn_feed(cfg); /* starts connecting to the server in other thread */
 
 	gdk_threads_enter();
 	gtk_main();
 	gdk_threads_leave();
-	attach_stop();
+	attach_stop(); /* stop the other thread */
 }
 
 
