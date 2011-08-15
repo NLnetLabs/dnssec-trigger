@@ -183,6 +183,19 @@ outq_done(struct outq* outq, const char* reason)
 	probe_partial_done(p, in, reason);
 }
 
+/** test if type is present in authority section of returned packet */
+static int
+check_type_in_authority(ldns_pkt* p, int t)
+{
+	ldns_rr_list *l = ldns_pkt_rr_list_by_type(p, t,
+		LDNS_SECTION_AUTHORITY);
+	if(!l) {
+		return 0;
+	}
+	ldns_rr_list_deep_free(l);
+	return 1;
+}
+
 /** test if type is present in returned packet */
 static int
 check_type_in_answer(ldns_pkt* p, int t)
@@ -195,10 +208,42 @@ check_type_in_answer(ldns_pkt* p, int t)
 	return 1;
 }
 
+/** test if the right denial (from parent) is in the returned packet */
+static int
+check_denial_in_answer(ldns_pkt* p, const char* dname)
+{
+	size_t i;
+	ldns_rdf* d = ldns_dname_new_frm_str(dname);
+	ldns_rr_list *l = ldns_pkt_rr_list_by_type(p, LDNS_RR_TYPE_SOA,
+		LDNS_SECTION_AUTHORITY);
+	if(!d) {
+		ldns_rr_list_deep_free(l);
+		return 0; /* robustness, the name should parse */
+	}
+	if(!l) {
+		ldns_rdf_deep_free(d);
+		return 0;
+	}
+	for(i=0; i<ldns_rr_list_rr_count(l); i++) {
+		/* note that subdomain test is false if names are equal,
+		 * the SOA must be from a parent server */
+		if(ldns_dname_is_subdomain(d, ldns_rr_owner(ldns_rr_list_rr(
+			l, i)))) {
+			ldns_rr_list_deep_free(l);
+			ldns_rdf_deep_free(d);
+			return 1;
+		}
+	}
+	ldns_rr_list_deep_free(l);
+	ldns_rdf_deep_free(d);
+	return 0;
+}
+
 static void
 outq_check_packet(struct outq* outq, uint8_t* wire, size_t len)
 {
 	char reason[512];
+	int rrsig_in_auth = 0;
 	ldns_pkt *p = NULL;
 	ldns_status s;
 	if(!LDNS_QR_WIRE(wire)) {
@@ -247,18 +292,44 @@ outq_check_packet(struct outq* outq, uint8_t* wire, size_t len)
 
 	/* test if the type, RRSIG present */
 	if(!check_type_in_answer(p, (int)outq->qtype)) {
-		char* r = ldns_rr_type2str(outq->qtype);
-		snprintf(reason, sizeof(reason),
-			"no %s in reply", r?r:"DNSSEC-RRTYPE");
-		outq_done(outq, reason);
-		LDNS_FREE(r);
-		ldns_pkt_free(p);
-		return;
+		if(outq->qtype == LDNS_RR_TYPE_DS) {
+			/* if type DS, and it is not present, it is OK if
+			 * we get a proper denial from the parent with NSEC */
+			if(!check_denial_in_answer(p, outq->qname)) {
+				outq_done(outq, "no DS and no proper "
+					"denial in reply");
+				ldns_pkt_free(p);
+				return;
+			}
+			if(!check_type_in_authority(p, LDNS_RR_TYPE_NSEC)) {
+				outq_done(outq, "no NSEC in denial reply");
+				ldns_pkt_free(p);
+				return;
+			}
+			rrsig_in_auth = 1;
+		} else {
+			/* failed to find type */
+			char* r = ldns_rr_type2str(outq->qtype);
+			snprintf(reason, sizeof(reason),
+				"no %s in reply", r?r:"DNSSEC-RRTYPE");
+			outq_done(outq, reason);
+			LDNS_FREE(r);
+			ldns_pkt_free(p);
+			return;
+		}
 	}
-	if(!check_type_in_answer(p, LDNS_RR_TYPE_RRSIG)) {
-		outq_done(outq, "no RRSIGs in reply");
-		ldns_pkt_free(p);
-		return;
+	if(rrsig_in_auth) {
+		if(!check_type_in_authority(p, LDNS_RR_TYPE_RRSIG)) {
+			outq_done(outq, "no RRSIGs in reply");
+			ldns_pkt_free(p);
+			return;
+		}
+	} else {
+		if(!check_type_in_answer(p, LDNS_RR_TYPE_RRSIG)) {
+			outq_done(outq, "no RRSIGs in reply");
+			ldns_pkt_free(p);
+			return;
+		}
 	}
 
 	outq_done(outq, NULL);

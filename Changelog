@@ -6,6 +6,8 @@
 	- fix unref for result_window by reffing it in the init function.
 	- stop using deprecated glib function for tooltip.
 	- lint fixes.
+	- can handle NSEC DS denials if a zone is (temporarily) insecure,
+	  detects that the denial is from the parent and contains NSEC.
 
 12 Aug 2011: Wouter
 	- persistant SSL connections to the server.
