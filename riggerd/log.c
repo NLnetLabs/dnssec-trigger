@@ -70,7 +70,7 @@ static int logging_to_syslog = 0;
 /** time to print in log, if NULL, use time(2) */
 static uint32_t* log_now = NULL;
 /** print time in UTC or in secondsfrom1970 */
-static int log_time_asc = 0;
+static int log_time_asc = 1;
 
 void
 log_init(const char* filename, int use_syslog, const char* chrootdir)

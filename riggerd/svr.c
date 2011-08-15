@@ -551,7 +551,6 @@ static void sslconn_shutdown(struct sslconn* sc)
 static int sslconn_checkclose(struct sslconn* sc)
 {
 	int r;
-	log_info("check close");
 	ERR_clear_error();
 	if((r=SSL_read(sc->ssl, NULL, 0)) <= 0) {
 		int want = SSL_get_error(sc->ssl, r);

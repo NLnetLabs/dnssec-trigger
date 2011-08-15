@@ -4,6 +4,7 @@
   <!-- interface-naming-policy project-wide -->
   <object class="GtkDialog" id="result_dialog">
     <property name="border_width">5</property>
+    <property name="title" translatable="yes">probe dnssec results</property>
     <property name="default_width">400</property>
     <property name="default_height">280</property>
     <property name="type_hint">normal</property>
@@ -67,7 +68,6 @@
     <child>
       <object class="GtkMenuItem" id="proberesults">
         <property name="visible">True</property>
-        <property name="use_action_appearance">False</property>
         <property name="label" translatable="yes">Probe results</property>
         <signal name="activate" handler="on_proberesults_activate"/>
       </object>
@@ -75,13 +75,11 @@
     <child>
       <object class="GtkSeparatorMenuItem" id="sep1">
         <property name="visible">True</property>
-        <property name="use_action_appearance">False</property>
       </object>
     </child>
     <child>
       <object class="GtkMenuItem" id="quit">
         <property name="visible">True</property>
-        <property name="use_action_appearance">False</property>
         <property name="label" translatable="yes">Quit</property>
         <signal name="activate" handler="on_quit_activate"/>
       </object>

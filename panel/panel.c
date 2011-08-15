@@ -81,7 +81,7 @@ static RETSIGTYPE record_sigh(int sig)
 	case SIGBREAK:
 #endif
 	case SIGINT:
-		printf("killed by signal %d\n", (int)sig);
+		if(verbosity >= 2) printf("killed by signal %d\n", (int)sig);
 		gtk_main_quit();
 	break;
 #ifdef SIGPIPE
@@ -89,7 +89,7 @@ static RETSIGTYPE record_sigh(int sig)
 	break;
 #endif
 	default:
-		printf("ignoring signal %d", sig);
+		if(verbosity >= 2) printf("ignoring signal %d", sig);
 	}
 }
 
@@ -192,7 +192,8 @@ on_statusicon_popup_menu(GtkStatusIcon* ATTR_UNUSED(status_icon),
 	guint button, guint activate_time,
 	gpointer ATTR_UNUSED(user_data))
 {
-	gtk_menu_popup(GTK_MENU(statusmenu), NULL, NULL, NULL, NULL,
+	gtk_menu_popup(GTK_MENU(statusmenu), NULL, NULL,
+		&gtk_status_icon_position_menu, status_icon,
 		button, activate_time);
 }
 
@@ -238,7 +239,6 @@ void panel_alert_state(int last_insecure, int now_insecure, int dark,
 		tt = "DNSSEC via cache";
 	else	tt = "DNSSEC via authorities";
 	gtk_status_icon_set_tooltip(status_icon, tt);
-	printf("tooltip: %s\n", tt);
 	if(last_insecure != now_insecure) {
 		if(now_insecure)
 			panel_alert_danger();
@@ -287,9 +287,8 @@ do_main_work(const char* cfgfile)
 #endif
                 signal(SIGINT, record_sigh) == SIG_ERR
 	)
-                printf("install sighandler: %s\n", strerror(errno));
+                printf("install sighandler failed: %s\n", strerror(errno));
         /* start */
-	printf("panel\n");
 	builder = gtk_builder_new();
 	gtk_builder_add_from_file(builder, "panel/pui.xml", NULL);
 
@@ -299,16 +298,20 @@ do_main_work(const char* cfgfile)
 		"result_textview"));
 	statusmenu = GTK_MENU(gtk_builder_get_object(builder, "statusmenu"));
 	g_object_ref(G_OBJECT(statusmenu));
+	gtk_widget_hide(GTK_WIDGET(result_window));
+	g_object_ref(G_OBJECT(result_window));
+
 	gtk_builder_connect_signals(builder, NULL);          
 	g_object_unref(G_OBJECT(builder));
 	make_tray_icon();
+	/* make tray icon loaded the icons, also good for our windows */
+	gtk_window_set_icon(GTK_WINDOW(result_window), normal_icon);
 	spawn_feed(cfg);
 
 	gdk_threads_enter();
 	gtk_main();
 	gdk_threads_leave();
 	attach_stop();
-	printf("panel stop\n");
 }
 
 

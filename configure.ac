@@ -133,7 +133,7 @@ if test $ac_cv_func_daemon = yes; then
 ])
 fi
 
-AC_CHECK_FUNCS([fcntl setsid])
+AC_CHECK_FUNCS([strftime localtime_r fcntl setsid])
 
 hooks="auto"
 AC_ARG_WITH([hooks], AC_HELP_STRING([--with-hooks],
