@@ -1,5 +1,5 @@
 /*
- * cfg.h - dnssec-trigger config
+ * ubhook.h - dnssec-trigger unbound control hooks for adjusting that server
  *
  * Copyright (c) 2011, NLnet Labs. All rights reserved.
  *
@@ -36,52 +36,44 @@
 /**
  * \file
  *
- * This file contains config file options.
+ * This file contains the unbound hooks for adjusting the unbound validating
+ * DNSSEC resolver.
  */
 
-#ifndef CFG_H
-#define CFG_H
-
-/* version of control proto */
-#define CONTROL_VERSION 1
+#ifndef UBHOOKS_H
+#define UBHOOKS_H
+struct cfg;
+struct probe_ip;
 
 /**
- * The configuration options
+ * Set the unbound server to go to the authorities
+ * @param cfg: the config options.
  */
-struct cfg {
-	/** verbosity */
-	int verbosity;
-	/** pid file */
-	char* pidfile;
-	/** log file (or NULL) */
-	char* logfile;
-	/** use syslog (bool) */
-	int use_syslog;
-	/** chroot dir (or NULL) */
-	char* chroot;
-	/** path to unbound-control, can have space and commandline options */
-	char* unbound_control;
+void hook_unbound_auth(struct cfg* cfg);
 
-	/** port number for the control port */
-	int control_port;
-	/** private key file for server */
-	char* server_key_file;
-	/** certificate file for server */
-	char* server_cert_file;
-	/** private key file for control */
-	char* control_key_file;
-	/** certificate file for control */
-	char* control_cert_file;
-};
+/**
+ * Set the unbound server to go to the given cache
+ * @param cfg: the config options.
+ */
+void hook_unbound_cache(struct cfg* cfg, const char* ip);
 
-/** create config and read in */
-struct cfg* cfg_create(const char* cfgfile);
-/** delete config */
-void cfg_delete(struct cfg* cfg);
+/**
+ * Set the unbound server to go to the working probed servers. 
+ * @param cfg: the config options.
+ * @param list: the working servers in this list are used.
+ */
+void hook_unbound_cache_list(struct cfg* cfg, struct probe_ip* list);
 
-/** setup SSL context for client usage, or NULL and error in err */
-SSL_CTX* cfg_setup_ctx_client(struct cfg* cfg, char* err, size_t errlen);
-/** setup SSL on the connection, blocking, or NULL and string in err */
-SSL* setup_ssl_client(SSL_CTX* ctx, int fd, char* err, size_t errlen);
+/**
+ * Set the unbound server to go dark.  It gets no connections.
+ * In reality, it sets unbound to forward to 127.0.0.127 and thus no upstream.
+ * Unbound by default does not send queries to 127/8.
+ * @param cfg: the config options.
+ */
+void hook_unbound_dark(struct cfg* cfg);
 
-#endif /* CFG_H */
+/* IP address that makes unbound go dark, no upstream. unbound has
+ * donotquery 127.0.0.0/8 by default */
+#define UNBOUND_DARK_IP "127.0.0.127"
+
+#endif /* UBHOOKS_H */

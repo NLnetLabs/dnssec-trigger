@@ -6,6 +6,7 @@
 	- fix bug with active number of connections.
 	- fix nice exit for panel on quit.
 	- present insecure or disconnect choice.
+	- unbound control hooks.
 
 15 Aug 2011: Wouter
 	- log with time in readable format (to logfile), detects strftime.
