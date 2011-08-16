@@ -52,6 +52,7 @@
 static GtkTextView* result_textview;
 static GtkStatusIcon* status_icon;
 static GtkWidget* result_window;
+static GtkWidget* unsafe_dialog;
 static GdkPixbuf* normal_icon;
 static GdkPixbuf* alert_icon;
 static GtkMenu* statusmenu;
@@ -219,6 +220,37 @@ on_statusicon_activate(GtkStatusIcon* ATTR_UNUSED(status_icon),
 	}
 }
 
+void 
+on_unsafe_dialog_destroy(GtkObject* ATTR_UNUSED(object),
+	gpointer ATTR_UNUSED(user_data))
+{
+	/* user clicked close button, like the user chose the safe option */
+	gtk_widget_hide(GTK_WIDGET(unsafe_dialog));
+	attach_send_insecure(0);
+}
+
+void on_disconnect_button_clicked(GtkButton *ATTR_UNUSED(button), gpointer
+	ATTR_UNUSED(user_data))
+{
+	gtk_widget_hide(GTK_WIDGET(unsafe_dialog));
+	attach_send_insecure(0);
+}
+
+void on_insecure_button_clicked(GtkButton *ATTR_UNUSED(button), gpointer
+	ATTR_UNUSED(user_data))
+{
+	gtk_widget_hide(GTK_WIDGET(unsafe_dialog));
+	attach_send_insecure(1);
+}
+
+void present_unsafe_dialog(void)
+{
+	gtk_window_set_urgency_hint(GTK_WINDOW(unsafe_dialog), TRUE);
+	gtk_widget_show(GTK_WIDGET(unsafe_dialog));
+	gtk_window_deiconify(GTK_WINDOW(unsafe_dialog));
+	gtk_window_present(GTK_WINDOW(unsafe_dialog));
+}
+
 void panel_alert_danger(void)
 {
 	gtk_status_icon_set_from_pixbuf(status_icon, alert_icon);
@@ -244,13 +276,15 @@ void panel_alert_state(int last_insecure, int now_insecure, int dark,
 		tt = "network disconnected";
 	else	tt = "DNSSEC via authorities";
 	gtk_status_icon_set_tooltip_text(status_icon, tt);
-	printf("last insecure %d now insecure %d\n",
-		last_insecure, now_insecure);
 	if(!last_insecure && now_insecure) {
 		panel_alert_danger();
 	} else if(last_insecure && !now_insecure) {
 		panel_alert_safe();
 	}
+	if(!now_insecure && dark) {
+		present_unsafe_dialog();
+	}
+
 }
 
 static void make_tray_icon(void)
@@ -284,11 +318,14 @@ init_gui(void)
 		"result_dialog"));
 	result_textview = GTK_TEXT_VIEW(gtk_builder_get_object(builder,
 		"result_textview"));
+	unsafe_dialog = GTK_WIDGET(gtk_builder_get_object(builder,
+		"unsafe_dialog"));
 	statusmenu = GTK_MENU(gtk_builder_get_object(builder, "statusmenu"));
 	/* we need to incref otherwise we may lose the reference */
 	g_object_ref(G_OBJECT(statusmenu));
 	gtk_widget_hide(GTK_WIDGET(result_window));
 	g_object_ref(G_OBJECT(result_window));
+	g_object_ref(G_OBJECT(unsafe_dialog));
 
 	/* no more need for the builder */
 	gtk_builder_connect_signals(builder, NULL);          
@@ -298,6 +335,7 @@ init_gui(void)
 	make_tray_icon();
 	/* make tray icon loaded the icons, also good for our windows */
 	gtk_window_set_icon(GTK_WINDOW(result_window), normal_icon);
+	gtk_window_set_icon(GTK_WINDOW(unsafe_dialog), alert_icon);
 }
 
 /** do main work */

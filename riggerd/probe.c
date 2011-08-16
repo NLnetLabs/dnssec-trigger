@@ -817,8 +817,8 @@ probe_all_done(void)
 			/* set unbound to dark */
 			/* see what the user wants */
 			/* TODO signal unbound */
-			/* TODO: set resolv.conf to 127.0.0.1, or outq->recurse 
-			 * list if user want insecure */
+			/* TODO set resolv.conf to 127.0.0.1 now,
+			 * the user may select insecure later */
 		}
 	} else {
 		verbose(VERB_OPS, "probe done: DNSSEC to cache");

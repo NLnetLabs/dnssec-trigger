@@ -83,6 +83,9 @@ void attach_start(struct cfg* cfg);
 /** stop attach */
 void attach_stop(void);
 
+/** send insecure choice to the daemon */
+void attach_send_insecure(int val);
+
 void panel_alert_state(int last_insecure, int now_insecure, int dark,
 	int cache, int auth, int disconn);
 

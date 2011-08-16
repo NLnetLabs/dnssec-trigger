@@ -85,4 +85,92 @@
       </object>
     </child>
   </object>
+  <object class="GtkDialog" id="unsafe_dialog">
+    <property name="border_width">5</property>
+    <property name="title" translatable="yes">Network DNSSEC Failure</property>
+    <property name="type_hint">dialog</property>
+    <property name="urgency_hint">True</property>
+    <signal name="destroy" handler="on_unsafe_dialog_destroy"/>
+    <child internal-child="vbox">
+      <object class="GtkVBox" id="dialog-vbox2">
+        <property name="visible">True</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child>
+          <object class="GtkLabel" id="label1">
+            <property name="visible">True</property>
+            <property name="label" translatable="yes">&lt;b&gt;The Network Fails to Support DNSSEC&lt;/b&gt;
+
+The network you are connected to does not allow DNSSEC, via
+the provided DNS caches, nor via contacting servers on the
+internet directly (it filters traffic to this end).  It is not possible
+to provide DNSSEC security, but you can connect insecurely.
+
+Do you want to connect insecurely?
+
+* if you choose &lt;b&gt;Disconnect&lt;/b&gt; then DNS is disabled. It is safe,
+but there is very little that works.
+
+* if you choose &lt;b&gt;Insecure&lt;/b&gt; then the DNSSEC security is lost.
+You can connect and work. But there is no safety. The network
+interferes with DNSSEC, it may also interfere with other things.
+Have caution and work with sensitive personal and financial
+things some other time.
+
+Some hotspots may work after you have gained access via
+its signon page. Then use &lt;i&gt;Reprobe&lt;/i&gt; from the menu to retry. 
+
+&lt;i&gt;Stay safe out there!&lt;/i&gt;</property>
+            <property name="use_markup">True</property>
+          </object>
+          <packing>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child internal-child="action_area">
+          <object class="GtkHButtonBox" id="dialog-action_area2">
+            <property name="visible">True</property>
+            <property name="layout_style">end</property>
+            <child>
+              <object class="GtkButton" id="disconnect_button">
+                <property name="label" translatable="yes">Disconnect</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <signal name="clicked" handler="on_disconnect_button_clicked"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="insecure_button">
+                <property name="label" translatable="yes">Insecure</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <signal name="clicked" handler="on_insecure_button_clicked"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="pack_type">end</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+    <action-widgets>
+      <action-widget response="-2">disconnect_button</action-widget>
+      <action-widget response="0">insecure_button</action-widget>
+    </action-widgets>
+  </object>
 </interface>

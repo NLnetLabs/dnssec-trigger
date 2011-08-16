@@ -579,6 +579,26 @@ static int sslconn_checkclose(struct sslconn* sc)
 	return 0;
 }
 
+static void persist_cmd_insecure(int val)
+{
+	struct svr* svr = global_svr;
+	int was_insecure = svr->insecure_state;
+	svr->insecure_state = val;
+	/* see if we need to change unbound's settings */
+	if(svr->res_state == res_dark) {
+		if(!was_insecure && val) {
+			/* TODO: set resolv.conf to the DHCP IP list */
+		} else if(was_insecure && !val) {
+			/* TODO: set resolv.conf to 127.0.0.1 */
+		}
+	} else {
+		/* no need for insecure; robustness, in case some delayed
+		 * command arrives when we have reprobed again */
+		svr->insecure_state = 0;
+	}
+	svr_send_results(svr);
+}
+
 static void sslconn_persist_command(struct sslconn* sc)
 {
 	char* str = (char*)ldns_buffer_begin(sc->buffer);
@@ -587,6 +607,10 @@ static void sslconn_persist_command(struct sslconn* sc)
 	verbose(VERB_ALGO, "persist-channel command: %s", str);
 	if(*str == 0) {
 		/* ignore empty lines */
+	} else if(strcmp(str, "insecure yes") == 0) {
+		persist_cmd_insecure(1);
+	} else if(strcmp(str, "insecure no") == 0) {
+		persist_cmd_insecure(0);
 	} else {
 		log_err("unknown command from panel: %s", str);
 	}

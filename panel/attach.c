@@ -273,3 +273,25 @@ static void attach_main(void)
 	}
 
 }
+
+void attach_send_insecure(int val)
+{
+	g_mutex_lock(feed->lock);
+	if(feed->ssl_write) {
+		const char* cmd;
+		if(val) cmd = "insecure yes\n";
+		else	cmd = "insecure no\n";
+
+		if(SSL_write(feed->ssl_write, cmd, (int)strlen(cmd)) <= 0) {
+			log_err("could not SSL_write");
+			/* reconnect and try again */
+			stop_ssl(feed->ssl_write, SSL_get_fd(feed->ssl_write));
+			feed->ssl_write = NULL; /* for quit in meantime */
+			feed->ssl_write = try_contact_server();
+			write_firstcmd(feed->ssl_write, "cmdtray\n");
+			(void)SSL_write(feed->ssl_write, cmd, (int)strlen(cmd));
+		}
+	}
+	g_mutex_unlock(feed->lock);
+}
+
