@@ -176,7 +176,7 @@ void on_proberesults_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 		"(DNS is stopped)\n", -1);
 			else gtk_text_buffer_insert(buffer, &end, 
 		"DNS queries are sent to INSECURE servers.\n"
-		"Please, be careful there.\n", -1);
+		"Please, be careful out there.\n", -1);
 		} else {
 			gtk_text_buffer_get_end_iter(buffer, &end);
 			gtk_text_buffer_insert(buffer, &end, p->str, -1);
@@ -244,11 +244,12 @@ void panel_alert_state(int last_insecure, int now_insecure, int dark,
 		tt = "network disconnected";
 	else	tt = "DNSSEC via authorities";
 	gtk_status_icon_set_tooltip_text(status_icon, tt);
-	if(last_insecure != now_insecure) {
-		if(now_insecure)
-			panel_alert_danger();
-		else
-			panel_alert_safe();
+	printf("last insecure %d now insecure %d\n",
+		last_insecure, now_insecure);
+	if(!last_insecure && now_insecure) {
+		panel_alert_danger();
+	} else if(last_insecure && !now_insecure) {
+		panel_alert_safe();
 	}
 }
 

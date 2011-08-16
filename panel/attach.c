@@ -249,6 +249,7 @@ static void process_results(void)
 	now_auth = (strstr(feed->results_last->str, "auth")!=NULL);
 	now_disconn = (strstr(feed->results_last->str, "disconnected")!=NULL);
 	feed_insecure = feed->insecure_mode;
+	feed->insecure_mode = now_insecure;
 	g_mutex_unlock(feed->lock);
 
 	gdk_threads_enter();
