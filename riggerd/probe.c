@@ -45,6 +45,7 @@
 #include "netevent.h"
 #include "net_help.h"
 #include "ubhook.h"
+#include "reshook.h"
 #include <ldns/packet.h>
 
 /* create probes for the ip addresses in the string */
@@ -756,7 +757,8 @@ probe_done(struct probe_ip* p)
 			svr->saw_first_working = 1;
 			/* signal unbound a working server */
 			hook_unbound_cache(svr->cfg, p->name);
-			/* TODO: set resolv.conf to 127.0.0.1 */
+			/* set resolv.conf to 127.0.0.1 */
+			hook_resolv_localhost(svr->cfg);
 		} else if(svr->probe_direct && !svr->saw_direct_work) {
 			svr->saw_direct_work = 1;
 			/* no need for wait for more done */
@@ -798,7 +800,8 @@ probe_all_done(void)
 		svr->res_state = res_auth;
 		svr->insecure_state = 0;
 		hook_unbound_auth(svr->cfg);
-		/* TODO set resolv.conf to 127.0.0.1 */
+		/* set resolv.conf to 127.0.0.1 */
+		hook_resolv_localhost(svr->cfg);
 	} else if(svr->probe_direct && !svr->saw_direct_work) {
 		/* if there are no cache IPs, then there is nothing else
 		 * we can do, we are in offline mode, most likely. No DHCP,
@@ -809,8 +812,9 @@ probe_all_done(void)
 			svr->res_state = res_disconn;
 			/* set unbound to go dark */
 			hook_unbound_dark(svr->cfg);
-			/* TODO: set resolver.conf to 127.0.0.1 (get rid
-			 * of old settings that may be in there) */
+			/* set resolver.conf to 127.0.0.1 (get rid of old
+			 * settings that may be in there) */
+			hook_resolv_localhost(svr->cfg);
 		} else {
 			verbose(VERB_OPS, "probe done: DNSSEC fails");
 			/* DNSSEC failure, and there is some unsafe IPs */
@@ -821,18 +825,21 @@ probe_all_done(void)
 			hook_unbound_dark(svr->cfg);
 			/* see what the user wants */
 			if(svr->insecure_state) {
-				/* TODO set resolv.conf to DHCP IP list */
-			} else { /* TODO set resolv.conf to 127.0.0.1 now,
+				/* set resolv.conf to DHCP IP list */
+				hook_resolv_iplist(svr->cfg, svr->probes);
+			} else { /* set resolv.conf to 127.0.0.1 now,
 			 	* the user may select insecure later */
+				hook_resolv_localhost(svr->cfg);
 			}
 		}
 	} else {
 		verbose(VERB_OPS, "probe done: DNSSEC to cache");
-		/* send the working servers to unbound */
 		svr->res_state = res_cache;
 		svr->insecure_state = 0;
+		/* send the working servers to unbound */
 		hook_unbound_cache_list(svr->cfg, svr->probes);
-		/* TODO set resolv.conf to 127.0.0.1 */
+		/* set resolv.conf to 127.0.0.1 */
+		hook_resolv_localhost(svr->cfg);
 	}
 	svr_send_results(svr);
 }

@@ -54,6 +54,7 @@ struct cfg* cfg_create(const char* cfgfile)
 	//cfg->control_cert_file=strdup(KEYDIR"/dnssec_trigger_control.pem");
 	//cfg->unbound_control = strdup("unbound-control");
 	//cfg->pidfile = strdup(PIDFILE);
+	cfg->resolvconf = strdup("/etc/resolv.conf");
 
 	/* test settings */
 	cfg->pidfile = strdup("test.pid");
@@ -67,7 +68,7 @@ struct cfg* cfg_create(const char* cfgfile)
 
 	if(!cfg->unbound_control || !cfg->pidfile || !cfg->server_key_file ||
 		!cfg->server_cert_file || !cfg->control_key_file ||
-		!cfg->control_cert_file) {
+		!cfg->control_cert_file || !cfg->resolvconf) {
 		cfg_delete(cfg);
 		return NULL;
 	}
@@ -85,6 +86,9 @@ void cfg_delete(struct cfg* cfg)
 	free(cfg->logfile);
 	free(cfg->chroot);
 	free(cfg->unbound_control);
+	free(cfg->resolvconf);
+	free(cfg->rescf_domain);
+	free(cfg->rescf_search);
 	free(cfg->server_key_file);
 	free(cfg->server_cert_file);
 	free(cfg->control_key_file);

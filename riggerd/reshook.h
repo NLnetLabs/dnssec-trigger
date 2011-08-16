@@ -1,5 +1,5 @@
 /*
- * cfg.h - dnssec-trigger config
+ * reshook.h - dnssec-trigger resolv.conf hooks for adjusting name resolution 
  *
  * Copyright (c) 2011, NLnet Labs. All rights reserved.
  *
@@ -36,59 +36,26 @@
 /**
  * \file
  *
- * This file contains config file options.
+ * This file contains the unbound hooks for adjusting the name resolution
+ * on the system (to 127.0.0.1).
  */
 
-#ifndef CFG_H
-#define CFG_H
-
-/* version of control proto */
-#define CONTROL_VERSION 1
+#ifndef RESHOOKS_H
+#define RESHOOKS_H
+struct cfg;
+struct probe_ip;
 
 /**
- * The configuration options
+ * Set the system to resolve at 127.0.0.1 (where unbound is running)
+ * @param cfg: with config options.
  */
-struct cfg {
-	/** verbosity */
-	int verbosity;
-	/** pid file */
-	char* pidfile;
-	/** log file (or NULL) */
-	char* logfile;
-	/** use syslog (bool) */
-	int use_syslog;
-	/** chroot dir (or NULL) */
-	char* chroot;
+void hook_resolv_localhost(struct cfg* cfg);
 
-	/** path to unbound-control, can have space and commandline options */
-	char* unbound_control;
-	/** path to resolv.conf */
-	char* resolvconf;
-	/** resolv.conf domain line (or NULL) */
-	char* rescf_domain;
-	/** resolv.conf search line (or NULL) */
-	char* rescf_search;
+/**
+ * Set the system to resolve at the list of 'cache' (recursive) probes in
+ * the given list.
+ * @param cfg: with config options.
+ */
+void hook_resolv_iplist(struct cfg* cfg, struct probe_ip* list);
 
-	/** port number for the control port */
-	int control_port;
-	/** private key file for server */
-	char* server_key_file;
-	/** certificate file for server */
-	char* server_cert_file;
-	/** private key file for control */
-	char* control_key_file;
-	/** certificate file for control */
-	char* control_cert_file;
-};
-
-/** create config and read in */
-struct cfg* cfg_create(const char* cfgfile);
-/** delete config */
-void cfg_delete(struct cfg* cfg);
-
-/** setup SSL context for client usage, or NULL and error in err */
-SSL_CTX* cfg_setup_ctx_client(struct cfg* cfg, char* err, size_t errlen);
-/** setup SSL on the connection, blocking, or NULL and string in err */
-SSL* setup_ssl_client(SSL_CTX* ctx, int fd, char* err, size_t errlen);
-
-#endif /* CFG_H */
+#endif /* RESHOOKS_H */

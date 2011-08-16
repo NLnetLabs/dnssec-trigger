@@ -45,6 +45,7 @@
 #include "probe.h"
 #include "netevent.h"
 #include "net_help.h"
+#include "reshook.h"
 
 struct svr* global_svr = NULL;
 
@@ -587,9 +588,11 @@ static void persist_cmd_insecure(int val)
 	/* see if we need to change unbound's settings */
 	if(svr->res_state == res_dark) {
 		if(!was_insecure && val) {
-			/* TODO: set resolv.conf to the DHCP IP list */
+			/* set resolv.conf to the DHCP IP list */
+			hook_resolv_iplist(svr->cfg, svr->probes);
 		} else if(was_insecure && !val) {
-			/* TODO: set resolv.conf to 127.0.0.1 */
+			/* set resolv.conf to 127.0.0.1 */
+			hook_resolv_localhost(svr->cfg);
 		}
 	} else {
 		/* no need for insecure; robustness, in case some delayed
