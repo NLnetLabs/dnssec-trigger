@@ -600,6 +600,31 @@ int outq_handle_tcp(struct comm_point* c, void* my_arg, int error,
 	return 0;
 }
 
+static int addr_is_localhost(const char* ip)
+{
+	struct sockaddr_storage addr;
+	socklen_t len;
+	struct sockaddr_storage lo;
+	socklen_t lolen;
+	/* unified print format for ipv4 addresses */
+	if(strcmp(ip, "127.0.0.1") == 0)
+		return 1;
+	/* only for IPv6 do we need more tests */
+	if(!strchr(ip, ':'))
+		return 0;
+	/* detect ::ffff:127.0.0.1 */
+	if(strstr(ip, "127.0.0.1"))
+		return 1;
+	/* detect ::1 but there are many ways to denote that IPv6 */
+	if(!ipstrtoaddr(ip, DNS_PORT, &addr, &len)) {
+		return 0; /* it is not localhost, but unparseable */
+	}
+	if(!ipstrtoaddr("::1", DNS_PORT, &lo, &lolen)) {
+		return 0; /* internal error or no IPv6 */
+	}
+	return (sockaddr_cmp_addr(&lo, lolen, &addr, len) == 0);
+}
+
 static void probe_spawn(const char* ip, int recurse)
 {
 	const char* dest;
@@ -609,6 +634,14 @@ static void probe_spawn(const char* ip, int recurse)
 		log_err("out of memory");
 		return;
 	}
+	/* make sure the IP address is not 127.0.0.1 or ::1, that would
+	 * create a forward-loop for the resolver */
+	if(addr_is_localhost(ip)) {
+		free(p);
+		verbose(VERB_ALGO, "skip localhost address %s", ip);
+		return;
+	}
+
 	/* create probe structure and register it */
 	p->to_auth = !recurse;
 	p->name = strdup(ip);

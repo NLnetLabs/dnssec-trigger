@@ -1,3 +1,8 @@
+16 Aug 2011: Wouter
+	- detect localhost in DHCP DNS servers and skip them, because a loop
+	  from the resolver to itself is not good.  Since localhost resolver
+	  may probe as a good DNS cache itself easily.
+
 15 Aug 2011: Wouter
 	- log with time in readable format (to logfile), detects strftime.
 	- removed debug printouts.
