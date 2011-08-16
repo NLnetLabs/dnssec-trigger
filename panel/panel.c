@@ -151,6 +151,7 @@ void on_proberesults_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 		gtk_text_buffer_get_end_iter(buffer, &end);
 		gtk_text_buffer_insert(buffer, &end, "\n", -1);
 	}
+	/* indent for strings is adjusted to be able to judge line length */
 	for(p=feed->results; p; p=p->next) {
 		if(!p->next) {
 			/* last line */
@@ -159,12 +160,14 @@ void on_proberesults_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 			gtk_text_buffer_get_end_iter(buffer, &end);
 			if(strstr(p->str, "cache"))
 				gtk_text_buffer_insert(buffer, &end, 
-					"DNSSEC results fetched from (DHCP) "
-					"cache(s)\n", -1);
+		"DNSSEC results fetched from (DHCP) cache(s)\n", -1);
 			else if(strstr(p->str, "auth"))
 				gtk_text_buffer_insert(buffer, &end, 
-					"DNSSEC results fetched direct from "
-					"authorities\n", -1);
+		"DNSSEC results fetched direct from authorities\n", -1);
+			else if(strstr(p->str, "disconnected"))
+				gtk_text_buffer_insert(buffer, &end, 
+		"The network seems to be disconnected. A local cache of DNS\n"
+		"results is used, but no queries are made.\n", -1);
 			else if(strstr(p->str, "dark") && !strstr(p->str,
 				"insecure"))
 				gtk_text_buffer_insert(buffer, &end, 
@@ -172,8 +175,8 @@ void on_proberesults_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 		"are made, because DNSSEC is intercepted on this network.\n"
 		"(DNS is stopped)\n", -1);
 			else gtk_text_buffer_insert(buffer, &end, 
-				"DNS queries are sent to INSECURE servers.\n"
-				"Please, be careful there.\n", -1);
+		"DNS queries are sent to INSECURE servers.\n"
+		"Please, be careful there.\n", -1);
 		} else {
 			gtk_text_buffer_get_end_iter(buffer, &end);
 			gtk_text_buffer_insert(buffer, &end, p->str, -1);
@@ -227,7 +230,7 @@ void panel_alert_safe(void)
 }
 
 void panel_alert_state(int last_insecure, int now_insecure, int dark,
-        int cache, int ATTR_UNUSED(auth))
+        int cache, int ATTR_UNUSED(auth), int disconn)
 {
 	const char* tt;
 	/* handle state changes */
@@ -237,6 +240,8 @@ void panel_alert_state(int last_insecure, int now_insecure, int dark,
 		tt = "DNS stopped";
 	else if(cache)
 		tt = "DNSSEC via cache";
+	else if(disconn)
+		tt = "network disconnected";
 	else	tt = "DNSSEC via authorities";
 	gtk_status_icon_set_tooltip_text(status_icon, tt);
 	if(last_insecure != now_insecure) {

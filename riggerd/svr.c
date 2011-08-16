@@ -254,6 +254,7 @@ static void sslconn_delete(struct sslconn* sc)
 			break;
 		}
 	}
+	global_svr->active--;
 	if(sc->buffer)
 		ldns_buffer_free(sc->buffer);
 	comm_point_delete(sc->c);
@@ -611,7 +612,8 @@ send_results_to_con(struct svr* svr, struct sslconn* s)
 	}
 	ldns_buffer_printf(s->buffer, "state: %s %s\n",
 		svr->res_state==res_cache?"cache":(
-		svr->res_state==res_auth?"auth":"dark"),
+		svr->res_state==res_auth?"auth":(
+		svr->res_state==res_disconn?"disconnected":"dark")),
 		svr->insecure_state?"insecure":"secure");
 	ldns_buffer_printf(s->buffer, "\n");
 	ldns_buffer_flip(s->buffer);

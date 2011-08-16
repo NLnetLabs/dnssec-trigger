@@ -77,6 +77,8 @@ struct svr {
 	int num_probes;
 	/** number done */
 	int num_probes_done;
+	/** number of probes to cache servers (i.e. number of DHCP IPs) */
+	int num_probes_to_cache;
 	/** saw the first working probe */
 	int saw_first_working;
 	/** saw direct work */
@@ -86,7 +88,7 @@ struct svr {
 
 
 	/* result of probes */
-	enum res_state { res_auth, res_cache, res_dark } res_state;
+	enum res_state { res_auth, res_cache, res_dark, res_disconn} res_state;
 	/* insecure state entered */
 	int insecure_state;
 };

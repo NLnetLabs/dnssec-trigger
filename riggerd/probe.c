@@ -91,6 +91,7 @@ void probe_start(char* ips)
 		probe_spawn(ips, 1);
 		ips = next;
 	}
+	svr->num_probes_to_cache = svr->num_probes;
 	/* (if no resulting probes), check result now */
 	if(!svr->probes)
 		probe_all_done();
@@ -796,16 +797,29 @@ probe_all_done(void)
 		svr->insecure_state = 0;
 		/* TODO set resolv.conf to 127.0.0.1 */
 	} else if(svr->probe_direct && !svr->saw_direct_work) {
-		verbose(VERB_OPS, "probe done: DNSSEC fails");
-		/* DNSSEC failure */
-		if(svr->res_state != res_dark)
-			svr->insecure_state = 0; /* ask again */
-		svr->res_state = res_dark;
-		/* set unbound to dark */
-		/* see what the user wants */
-		/* TODO signal unbound */
-		/* TODO: set resolv.conf to 127.0.0.1, or outq->recurse 
-		 * list if user want insecure */
+		/* if there are no cache IPs, then there is nothing else
+		 * we can do, we are in offline mode, most likely. No DHCP,
+		 * no network connectivity */
+		if(svr->num_probes_to_cache == 0) {
+			verbose(VERB_OPS, "probe done: disconnected");
+			/* set unbound to go dark */
+			/* TODO: signal unbound */
+			/* TODO: set resolver.conf to 127.0.0.1 (get rid
+			 * of old settings that may be in there) */
+			svr->insecure_state = 0;
+			svr->res_state = res_disconn;
+		} else {
+			verbose(VERB_OPS, "probe done: DNSSEC fails");
+			/* DNSSEC failure, and there is some unsafe IPs */
+			if(svr->res_state != res_dark)
+				svr->insecure_state = 0; /* ask again */
+			svr->res_state = res_dark;
+			/* set unbound to dark */
+			/* see what the user wants */
+			/* TODO signal unbound */
+			/* TODO: set resolv.conf to 127.0.0.1, or outq->recurse 
+			 * list if user want insecure */
+		}
 	} else {
 		verbose(VERB_OPS, "probe done: DNSSEC to cache");
 		/* send the working servers to unbound */

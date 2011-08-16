@@ -75,6 +75,7 @@ fptr_whitelist_comm_timer(void (*fptr)(void*))
 int 
 fptr_whitelist_comm_signal(void (*fptr)(int, void*))
 {
+	(void)fptr;
 	return 0;
 }
 

@@ -84,6 +84,6 @@ void attach_start(struct cfg* cfg);
 void attach_stop(void);
 
 void panel_alert_state(int last_insecure, int now_insecure, int dark,
-	int cache, int auth);
+	int cache, int auth, int disconn);
 
 #endif /* ATTACH_H */

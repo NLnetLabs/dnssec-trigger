@@ -66,10 +66,14 @@ stop_ssl(SSL* ssl, int fd)
 void attach_stop(void)
 {
 	g_mutex_lock(feed->lock);
-	if(feed->ssl_read)
+	if(feed->ssl_read) {
 		stop_ssl(feed->ssl_read, SSL_get_fd(feed->ssl_read));
-	if(feed->ssl_write)
+		feed->ssl_read = NULL;
+	}
+	if(feed->ssl_write) {
 		stop_ssl(feed->ssl_write, SSL_get_fd(feed->ssl_write));
+		feed->ssl_write = NULL;
+	}
 	g_mutex_unlock(feed->lock);
 }
 
@@ -94,7 +98,9 @@ static SSL* try_contact_server()
 				sizeof(feed->connect_reason));
 		if(!ssl) {
 			stop_ssl(ssl, fd);
+			g_mutex_unlock(feed->lock);
 			sleep(1);
+			g_mutex_lock(feed->lock);
 		}
 	}
 	return ssl;
@@ -231,7 +237,7 @@ static void read_from_feed(void)
 static void process_results(void)
 {
 	int now_insecure = 0, feed_insecure = 0;
-	int now_dark = 0, now_auth = 0, now_cache = 0;
+	int now_dark = 0, now_auth = 0, now_cache = 0, now_disconn = 0;
 
 	/* fetch data */
 	g_mutex_lock(feed->lock);
@@ -241,12 +247,13 @@ static void process_results(void)
 	now_dark = (strstr(feed->results_last->str, "dark")!=NULL);
 	now_cache = (strstr(feed->results_last->str, "cache")!=NULL);
 	now_auth = (strstr(feed->results_last->str, "auth")!=NULL);
+	now_disconn = (strstr(feed->results_last->str, "disconnected")!=NULL);
 	feed_insecure = feed->insecure_mode;
 	g_mutex_unlock(feed->lock);
 
 	gdk_threads_enter();
 	panel_alert_state(feed_insecure, now_insecure, now_dark, now_cache,
-		now_auth);
+		now_auth, now_disconn);
 	gdk_threads_leave();
 }
 
@@ -255,6 +262,10 @@ static void attach_main(void)
 	/* check for event */
 	while(check_for_event()) {
 		g_mutex_lock(feed->lock);
+		if(!feed->ssl_read) {
+			g_mutex_unlock(feed->lock);
+			break;
+		}
 		read_from_feed();
 		g_mutex_unlock(feed->lock);
 		process_results();
