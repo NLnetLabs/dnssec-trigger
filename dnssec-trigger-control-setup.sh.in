@@ -37,6 +37,8 @@
 
 # directory for files
 DESTDIR=0keydir0
+# for domain and search options with -i.
+configfile=0configfile0
 
 # issuer and subject name for certificates
 SERVERNAME=dnssec-trigger
@@ -127,6 +129,26 @@ if test "$action" = "install"; then
 		echo "fetching or updating root trust anchor"
 		unbound-anchor
 		echo "server: auto-trust-anchor-file: "$rootkey" # linetag-dnssec-trigger" >> $ubconf
+	fi
+	echo "check for search path in resolv.conf and edit $configfile"
+	if test -f /etc/resolv.conf && grep "^search " /etc/resolv.conf >/dev/null; then
+		if grep "^search: " $configfile >/dev/null; then
+			:
+		else
+			echo >> $configfile
+			echo 'search: "'`grep "^search " /etc/resolv.conf | sed -e "s/^search //"`'"' >> $configfile
+			tail -1 $configfile
+		fi
+	fi
+	echo "check for domain in resolv.conf and edit $configfile"
+	if test -f /etc/resolv.conf && grep "^domain " /etc/resolv.conf >/dev/null; then
+		if grep "^domain: " $configfile >/dev/null; then
+			:
+		else
+			echo >> $configfile
+			echo 'domain: "'`grep "^domain " /etc/resolv.conf | sed -e "s/^domain //"`'"' >> $configfile
+			tail -1 $configfile
+		fi
 	fi
 	exit 0
 fi
