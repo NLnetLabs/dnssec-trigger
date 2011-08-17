@@ -56,6 +56,8 @@ static GtkWidget* unsafe_dialog;
 static GdkPixbuf* normal_icon;
 static GdkPixbuf* alert_icon;
 static GtkMenu* statusmenu;
+/** if we have asked about disconnect or insecure */
+static int unsafe_asked = 0;
 
 /** print usage text */
 static void
@@ -126,13 +128,6 @@ on_result_dialog_delete_event(GtkWidget* ATTR_UNUSED(widget),
 	gtk_widget_hide(GTK_WIDGET(result_window));
 	attach_send_insecure(0);
 	return TRUE; /* stop other handlers, do not destroy the window */
-}
-
-void 
-on_window_destroy(GtkObject* ATTR_UNUSED(object),
-	gpointer ATTR_UNUSED(user_data))
-{
-	gtk_widget_hide(GTK_WIDGET(result_window));
 }
 
 void 
@@ -234,6 +229,7 @@ on_unsafe_dialog_delete_event(GtkWidget* ATTR_UNUSED(widget),
 	GdkEvent* ATTR_UNUSED(event), gpointer ATTR_UNUSED(user_data))
 {
 	gtk_widget_hide(GTK_WIDGET(unsafe_dialog));
+	unsafe_asked = 1;
 	attach_send_insecure(0);
 	return TRUE; /* stop other handlers, do not destroy dialog */
 }
@@ -242,6 +238,7 @@ void on_disconnect_button_clicked(GtkButton *ATTR_UNUSED(button), gpointer
 	ATTR_UNUSED(user_data))
 {
 	gtk_widget_hide(GTK_WIDGET(unsafe_dialog));
+	unsafe_asked = 1;
 	attach_send_insecure(0);
 }
 
@@ -249,6 +246,7 @@ void on_insecure_button_clicked(GtkButton *ATTR_UNUSED(button), gpointer
 	ATTR_UNUSED(user_data))
 {
 	gtk_widget_hide(GTK_WIDGET(unsafe_dialog));
+	unsafe_asked = 1;
 	attach_send_insecure(1);
 }
 
@@ -285,12 +283,14 @@ void panel_alert_state(int last_insecure, int now_insecure, int dark,
 		tt = "network disconnected";
 	else	tt = "DNSSEC via authorities";
 	gtk_status_icon_set_tooltip_text(status_icon, tt);
+	if(!dark)
+		unsafe_asked = 0;
 	if(!last_insecure && now_insecure) {
 		panel_alert_danger();
 	} else if(last_insecure && !now_insecure) {
 		panel_alert_safe();
 	}
-	if(!now_insecure && dark) {
+	if(!now_insecure && dark && !unsafe_asked) {
 		present_unsafe_dialog();
 	}
 

@@ -132,10 +132,10 @@ void attach_start(struct cfg* cfg)
 	}
 	feed->ssl_read = try_contact_server();
 	feed->ssl_write = try_contact_server();
-	printf("contacted server\n");
+	if(verbosity>2) printf("contacted server\n");
 	write_firstcmd(feed->ssl_write, "cmdtray\n");
 	write_firstcmd(feed->ssl_read, "results\n");
-	printf("contacted server, first cmds written\n");
+	if(verbosity>2) printf("contacted server, first cmds written\n");
 	feed->connected = 1;
 	g_mutex_unlock(feed->lock);
 	/* mainloop */
@@ -178,7 +178,8 @@ read_an_ssl_line(SSL* ssl, char* line, size_t len)
 		}
 	}
 	/* error */
-	log_err("failed SSL_read");
+	if(ERR_get_error() != 0)
+		log_err("failed SSL_read");
 	return 0;
 }
 
@@ -214,10 +215,10 @@ static void read_from_feed(void)
 {
 	struct strlist* first=NULL, *last=NULL;
 	char line[1024];
-	printf("read from feed\n");
+	if(verbosity > 2) printf("read from feed\n");
 	while(read_an_ssl_line(feed->ssl_read, line, sizeof(line))) {
 		/* stop at empty line */
-		printf("feed: %s\n", line);
+		if(verbosity > 2) printf("feed: %s\n", line);
 		if(line[0] == 0) {
 			strlist_delete(feed->results);
 			feed->results = first;
