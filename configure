@@ -6811,6 +6811,10 @@ fi
 # GTK
 GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
 GTK_LIBS=`pkg-config --libs gtk+-2.0`
+if test -z "$GTK_LIBS"; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: No gtk+-2.0 detected, please install glib-dev, gtk2-dev" >&5
+$as_echo "$as_me: WARNING: No gtk+-2.0 detected, please install glib-dev, gtk2-dev" >&2;}
+fi
 
 
 # check for missing -lgthread-2.0 in the GTK_LIBS string.
