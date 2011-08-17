@@ -4471,6 +4471,37 @@ $as_echo "#define DO_DEBUG /**/" >>confdefs.h
 		;;
 esac
 
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CC supports -export-dynamic" >&5
+$as_echo_n "checking whether $CC supports -export-dynamic... " >&6; }
+cache=`echo export-dynamic | sed 'y%.=/+-%___p_%'`
+if { as_var=cv_prog_cc_flag_$cache; eval "test \"\${$as_var+set}\" = set"; }; then :
+  $as_echo_n "(cached) " >&6
+else
+
+echo 'void f(){}' >conftest.c
+if test -z "`$CC $CPPFLAGS $CFLAGS -export-dynamic -c conftest.c 2>&1`"; then
+eval "cv_prog_cc_flag_$cache=yes"
+else
+eval "cv_prog_cc_flag_$cache=no"
+fi
+rm -f conftest conftest.o conftest.c
+
+fi
+
+if eval "test \"`echo '$cv_prog_cc_flag_'$cache`\" = yes"; then
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+:
+echo support
+else
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+:
+
+fi
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for inline" >&5
 $as_echo_n "checking for inline... " >&6; }
 if test "${ac_cv_c_inline+set}" = set; then :
@@ -6785,6 +6816,7 @@ GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
 GTK_LIBS=`pkg-config --libs gtk+-2.0`
 
 
+# check for missing -lgthread-2.0 in the GTK_LIBS string.
 case "$GTK_LIBS" in *-lgthread* ) ;;
 *) { $as_echo "$as_me:${as_lineno-$LINENO}: checking for g_thread_init in -lgthread-2.0" >&5
 $as_echo_n "checking for g_thread_init in -lgthread-2.0... " >&6; }

@@ -50,6 +50,7 @@ case "$enable_debug" in
 		# nothing to do.
 		;;
 esac
+ACX_CHECK_COMPILER_FLAG([export-dynamic], [echo support])
 
 AC_C_INLINE
 ACX_CHECK_FORMAT_ATTRIBUTE
@@ -268,6 +269,7 @@ GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
 GTK_LIBS=`pkg-config --libs gtk+-2.0`
 AC_SUBST(GTK_CFLAGS)
 AC_SUBST(GTK_LIBS)
+# check for missing -lgthread-2.0 in the GTK_LIBS string.
 case "$GTK_LIBS" in *-lgthread* ) ;;
 *) AC_CHECK_LIB(gthread-2.0, g_thread_init, [GTK_LIBS="$GTK_LIBS -lgthread-2.0"]) esac
 
