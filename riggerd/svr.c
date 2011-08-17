@@ -670,7 +670,6 @@ static void handle_cmdtray_cmd(struct sslconn* sc)
 
 static void handle_unsafe_cmd(struct sslconn* sc)
 {
-	struct svr* svr = global_svr;
 	probe_unsafe_test();
 	sslconn_shutdown(sc);
 }

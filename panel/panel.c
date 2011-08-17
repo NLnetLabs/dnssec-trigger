@@ -120,7 +120,8 @@ void on_quit_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 }
 
 gboolean
-on_result_dialog_delete_event(GtkWidget* widget, GdkEvent* event, gpointer user_data)
+on_result_dialog_delete_event(GtkWidget* ATTR_UNUSED(widget),
+	GdkEvent* ATTR_UNUSED(event), gpointer ATTR_UNUSED(user_data))
 {
 	gtk_widget_hide(GTK_WIDGET(result_window));
 	attach_send_insecure(0);
@@ -229,7 +230,8 @@ on_statusicon_activate(GtkStatusIcon* ATTR_UNUSED(status_icon),
 }
 
 gboolean
-on_unsafe_dialog_delete_event(GtkWidget* widget, GdkEvent* event, gpointer user_data)
+on_unsafe_dialog_delete_event(GtkWidget* ATTR_UNUSED(widget),
+	GdkEvent* ATTR_UNUSED(event), gpointer ATTR_UNUSED(user_data))
 {
 	gtk_widget_hide(GTK_WIDGET(unsafe_dialog));
 	attach_send_insecure(0);
