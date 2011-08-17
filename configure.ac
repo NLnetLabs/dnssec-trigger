@@ -268,6 +268,8 @@ GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
 GTK_LIBS=`pkg-config --libs gtk+-2.0`
 AC_SUBST(GTK_CFLAGS)
 AC_SUBST(GTK_LIBS)
+case "$GTK_LIBS" in *-lgthread* ) ;;
+*) AC_CHECK_LIB(gthread-2.0, g_thread_init, [GTK_LIBS="$GTK_LIBS -lgthread-2.0"]) esac
 
 LDNSLIBS=""
 AC_ARG_WITH(ldns, AC_HELP_STRING([--with-ldns=PATH], 
