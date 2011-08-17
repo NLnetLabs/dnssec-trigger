@@ -62,7 +62,7 @@ usage(void)
 	printf(" -h		this help\n");
 	printf(" -v		increase verbosity\n");
 	printf(" -d		do not fork into the background\n");
-	printf(" -c file	config file to read (default none)\n");
+	printf(" -c file	config file, default %s\n", CONFIGFILE);
 }
 
 /** sighandler.  Since we must have one
@@ -209,7 +209,7 @@ extern char* optarg;
 int main(int argc, char *argv[])
 {
 	int c;
-	const char* cfgfile = NULL;
+	const char* cfgfile = CONFIGFILE;
 	int nodaemonize = 0, verb = 0;
 #ifdef USE_WINSOCK
 	int r;
