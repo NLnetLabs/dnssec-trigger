@@ -8,7 +8,7 @@
     <property name="default_width">400</property>
     <property name="default_height">280</property>
     <property name="type_hint">normal</property>
-    <signal name="destroy" handler="on_window_destroy"/>
+    <signal name="delete_event" handler="on_result_dialog_delete_event"/>
     <child internal-child="vbox">
       <object class="GtkVBox" id="dialog-vbox1">
         <property name="visible">True</property>
@@ -90,7 +90,7 @@
     <property name="title" translatable="yes">Network DNSSEC Failure</property>
     <property name="type_hint">dialog</property>
     <property name="urgency_hint">True</property>
-    <signal name="destroy" handler="on_unsafe_dialog_destroy"/>
+    <signal name="delete_event" handler="on_unsafe_dialog_delete_event"/>
     <child internal-child="vbox">
       <object class="GtkVBox" id="dialog-vbox2">
         <property name="visible">True</property>

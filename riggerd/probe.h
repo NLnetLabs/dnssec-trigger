@@ -108,5 +108,6 @@ int outq_handle_tcp(struct comm_point* c, void* my_arg, int error,
 void outq_timeout(void* arg);
 
 void probe_all_done(void);
+void probe_unsafe_test(void);
 
 #endif /* PROBE_H */

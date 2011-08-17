@@ -690,6 +690,14 @@ static void probe_spawn_direct(void)
 	}
 }
 
+void probe_unsafe_test(void)
+{
+	verbose(VERB_OPS, "test unsafe probe combination started");
+	probe_start("127.0.0.3");
+	global_svr->probe_direct = 1;
+	probe_spawn("127.0.0.4", 0);
+}
+
 /* stop unfininished probes and remove them */
 static void stop_unfinished_probes(void)
 {

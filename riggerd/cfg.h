@@ -68,6 +68,8 @@ struct cfg {
 	char* rescf_domain;
 	/** resolv.conf search line (or NULL) */
 	char* rescf_search;
+	/** noaction option does no actions to resolv.conf or unbound */
+	int noaction;
 
 	/** port number for the control port */
 	int control_port;

@@ -57,6 +57,8 @@ ub_ctrl(struct cfg* cfg, const char* cmd, const char* args)
 	char command[12000];
 	const char* ctrl = "unbound-control";
 	int r;
+	if(cfg->noaction)
+		return;
 	if(cfg->unbound_control)
 		ctrl = cfg->unbound_control;
 	verbose(VERB_ALGO, "system %s %s %s", ctrl, cmd, args);
@@ -72,12 +74,16 @@ ub_ctrl(struct cfg* cfg, const char* cmd, const char* args)
 void hook_unbound_auth(struct cfg* cfg)
 {
 	verbose(VERB_QUERY, "unbound hook to auth");
+	if(cfg->noaction)
+		return;
 	ub_ctrl(cfg, "forward", "off");
 }
 
 void hook_unbound_cache(struct cfg* cfg, const char* ip)
 {
 	verbose(VERB_QUERY, "unbound hook to cache");
+	if(cfg->noaction)
+		return;
 	ub_ctrl(cfg, "forward", ip); 
 }
 
@@ -88,6 +94,8 @@ void hook_unbound_cache_list(struct cfg* cfg, struct probe_ip* list)
 	char* now = buf;
 	size_t left = sizeof(buf);
 	verbose(VERB_QUERY, "unbound hook to cache list");
+	if(cfg->noaction)
+		return;
 	buf[0]=0; /* safe, robust */
 	while(list) {
 		if(list->works && list->finished) {
@@ -107,5 +115,7 @@ void hook_unbound_cache_list(struct cfg* cfg, struct probe_ip* list)
 void hook_unbound_dark(struct cfg* cfg)
 {
 	verbose(VERB_QUERY, "unbound hook to dark");
+	if(cfg->noaction)
+		return;
 	ub_ctrl(cfg, "forward", UNBOUND_DARK_IP); 
 }

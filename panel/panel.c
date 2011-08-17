@@ -119,6 +119,14 @@ void on_quit_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 	gtk_main_quit();
 }
 
+gboolean
+on_result_dialog_delete_event(GtkWidget* widget, GdkEvent* event, gpointer user_data)
+{
+	gtk_widget_hide(GTK_WIDGET(result_window));
+	attach_send_insecure(0);
+	return TRUE; /* stop other handlers, do not destroy the window */
+}
+
 void 
 on_window_destroy(GtkObject* ATTR_UNUSED(object),
 	gpointer ATTR_UNUSED(user_data))
@@ -220,13 +228,12 @@ on_statusicon_activate(GtkStatusIcon* ATTR_UNUSED(status_icon),
 	}
 }
 
-void 
-on_unsafe_dialog_destroy(GtkObject* ATTR_UNUSED(object),
-	gpointer ATTR_UNUSED(user_data))
+gboolean
+on_unsafe_dialog_delete_event(GtkWidget* widget, GdkEvent* event, gpointer user_data)
 {
-	/* user clicked close button, like the user chose the safe option */
 	gtk_widget_hide(GTK_WIDGET(unsafe_dialog));
 	attach_send_insecure(0);
+	return TRUE; /* stop other handlers, do not destroy dialog */
 }
 
 void on_disconnect_button_clicked(GtkButton *ATTR_UNUSED(button), gpointer

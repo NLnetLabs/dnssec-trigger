@@ -1,3 +1,10 @@
+17 Aug 2011: Wouter
+	- noaction option that takes no action but pretends.
+	- fix linefeed in resolv.conf printout.
+	- unsafe test option works reliably.
+	- fix dialog destroy that deletes the dialog.
+	- alert icon has nicer exclamation mark.
+
 16 Aug 2011: Wouter
 	- detect localhost in DHCP DNS servers and skip them, because a loop
 	  from the resolver to itself is not good.  Since localhost resolver

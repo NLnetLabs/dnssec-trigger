@@ -65,6 +65,7 @@ struct cfg* cfg_create(const char* cfgfile)
 	cfg->control_key_file=strdup("keys""/dnssec_trigger_control.key");
 	cfg->control_cert_file=strdup("keys""/dnssec_trigger_control.pem");
 	cfg->unbound_control = strdup("echo unbound-control");
+	cfg->resolvconf = strdup("test.resconf");
 
 	if(!cfg->unbound_control || !cfg->pidfile || !cfg->server_key_file ||
 		!cfg->server_cert_file || !cfg->control_key_file ||
