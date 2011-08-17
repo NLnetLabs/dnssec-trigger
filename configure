@@ -6798,7 +6798,13 @@ if test "${with_ldns+set}" = set; then :
 		LDNSLIBS="$ldnsdir/lib/libldns.a"
 	else
 		LDNSLIBS="-lldns"
-		RUNTIME_PATH="$RUNTIME_PATH -Wl,--rpath=$withval/lib -Wl,--rpath=$withval/.libs"
+
+	if test "x$enable_rpath" = xyes; then
+		if echo "$withval/lib" | grep "^/" >/dev/null; then
+			RUNTIME_PATH="$RUNTIME_PATH -R$withval/lib"
+		fi
+	fi
+
 	fi
 
 

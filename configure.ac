@@ -280,7 +280,7 @@ AC_ARG_WITH(ldns, AC_HELP_STRING([--with-ldns=PATH],
 		LDNSLIBS="$ldnsdir/lib/libldns.a"
 	else
 		LDNSLIBS="-lldns"
-		RUNTIME_PATH="$RUNTIME_PATH -Wl,--rpath=$withval/lib -Wl,--rpath=$withval/.libs"
+		ACX_RUNTIME_PATH_ADD([$withval/lib])
 	fi
 	AC_SUBST(ldnsdir)
 	AC_SUBST(LDNSLIBS)
