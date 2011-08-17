@@ -50,7 +50,15 @@ case "$enable_debug" in
 		# nothing to do.
 		;;
 esac
-ACX_CHECK_COMPILER_FLAG([export-dynamic], [echo support])
+AC_MSG_CHECKING([if -export-dynamic works])
+AC_LINK_IFELSE([AC_LANG_SOURCE([[
+int main(void) {
+	return 0;
+}
+]])], [
+	AC_MSG_RESULT(yes)
+	echo support
+], [AC_MSG_RESULT(no)])
 
 AC_C_INLINE
 ACX_CHECK_FORMAT_ATTRIBUTE
