@@ -50,7 +50,10 @@ case "$enable_debug" in
 		# nothing to do.
 		;;
 esac
+
 AC_MSG_CHECKING([if -export-dynamic works])
+bakld="$LDFLAGS"
+LDFLAGS="$LDFLAGS -export-dynamic"
 AC_LINK_IFELSE([AC_LANG_SOURCE([[
 int main(void) {
 	return 0;
@@ -59,6 +62,8 @@ int main(void) {
 	AC_MSG_RESULT(yes)
 	echo support
 ], [AC_MSG_RESULT(no)])
+LDFLAGS="$bakld"
+
 
 AC_C_INLINE
 ACX_CHECK_FORMAT_ATTRIBUTE

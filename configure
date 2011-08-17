@@ -4470,8 +4470,11 @@ $as_echo "#define DO_DEBUG /**/" >>confdefs.h
 		# nothing to do.
 		;;
 esac
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking if -export-dynamic works" >&5
 $as_echo_n "checking if -export-dynamic works... " >&6; }
+bakld="$LDFLAGS"
+LDFLAGS="$LDFLAGS -export-dynamic"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -4492,6 +4495,8 @@ $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
+LDFLAGS="$bakld"
+
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for inline" >&5
 $as_echo_n "checking for inline... " >&6; }
