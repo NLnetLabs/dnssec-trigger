@@ -65,6 +65,7 @@ usage(void)
 {
 	printf("usage:  dnssec-trigger-panel [options]\n");
 	printf(" -c config      use configfile, default is %s\n", CONFIGFILE);
+	printf(" -d		run from current directory (UIDIR=panel/)\n");
 	printf(" -h             this help\n");
 }
 
@@ -296,13 +297,17 @@ void panel_alert_state(int last_insecure, int now_insecure, int dark,
 
 }
 
+static GdkPixbuf* load_icon(const char* icon, int debug)
+{
+	char file[1024];
+	GError* error = NULL;
+	if(debug) snprintf(file, sizeof(file), "panel/%s", icon);
+	else snprintf(file, sizeof(file), "%s/%s", UIDIR, icon);
+	return gdk_pixbuf_new_from_file_at_size(file, 64, 64, &error);
+}
+
 static void make_tray_icon(void)
 {
-	GError* error = NULL;
-	normal_icon = gdk_pixbuf_new_from_file_at_size(
-		"panel/status-icon.png", 64, 64, &error);
-	alert_icon = gdk_pixbuf_new_from_file_at_size(
-		"panel/status-icon-alert.png", 64, 64, &error);
 	status_icon = gtk_status_icon_new_from_pixbuf(normal_icon);
 	g_signal_connect(G_OBJECT(status_icon), "activate",
 		G_CALLBACK(on_statusicon_activate), NULL);
@@ -312,19 +317,31 @@ static void make_tray_icon(void)
 	gtk_status_icon_set_visible(status_icon, TRUE);
 }
 
+/* build UI from xml */
+static GtkBuilder* load_ui_xml(int debug)
+{
+	const char* file;
+	GtkBuilder* builder = gtk_builder_new();
+	/* read xml with gui */
+	if(debug) file = "panel/pui.xml";
+	else	file = UIDIR"/pui.xml";
+	gtk_builder_add_from_file(builder, file, NULL);
+	return builder;
+}
+
 /** initialize the gui */
 static void
-init_gui(void)
+init_gui(int debug)
 {
-	GtkBuilder* builder;
-
-	/* read xml with gui */
-	builder = gtk_builder_new();
-	gtk_builder_add_from_file(builder, "panel/pui.xml", NULL);
+	GtkBuilder* builder = load_ui_xml(debug);
 
 	/* grab important widgets into global variables */
 	result_window = GTK_WIDGET(gtk_builder_get_object(builder,
 		"result_dialog"));
+	if(!result_window) {
+		printf("could not load the UI (-d to run from build dir)\n");
+		exit(1);
+	}
 	result_textview = GTK_TEXT_VIEW(gtk_builder_get_object(builder,
 		"result_textview"));
 	unsafe_dialog = GTK_WIDGET(gtk_builder_get_object(builder,
@@ -340,16 +357,18 @@ init_gui(void)
 	gtk_builder_connect_signals(builder, NULL);          
 	g_object_unref(G_OBJECT(builder));
 
-	/* create the status icon in the system tray, loads icons */
+	normal_icon = load_icon("status-icon.png", debug);
+	alert_icon = load_icon("status-icon-alert.png", debug);
+	/* create the status icon in the system tray */
 	make_tray_icon();
-	/* make tray icon loaded the icons, also good for our windows */
+	/* loaded the icons, also good for our windows */
 	gtk_window_set_icon(GTK_WINDOW(result_window), normal_icon);
 	gtk_window_set_icon(GTK_WINDOW(unsafe_dialog), alert_icon);
 }
 
 /** do main work */
 static void
-do_main_work(const char* cfgfile)
+do_main_work(const char* cfgfile, int debug)
 {
 	struct cfg* cfg = cfg_create(cfgfile);
 	if(!cfg) fatal_exit("cannot read config %s", cfgfile);
@@ -372,7 +391,7 @@ do_main_work(const char* cfgfile)
 	)
                 printf("install sighandler failed: %s\n", strerror(errno));
         /* start */
-	init_gui(); /* initializes the GUI objects */
+	init_gui(debug); /* initializes the GUI objects */
 	spawn_feed(cfg); /* starts connecting to the server in other thread */
 
 	gdk_threads_enter();
@@ -397,6 +416,7 @@ int main(int argc, char *argv[])
 {
         int c;
 	const char* cfgfile = CONFIGFILE;
+	int debug = 0;
 #ifdef USE_WINSOCK
 	int r;
 	WSADATA wsa_data;
@@ -408,9 +428,12 @@ int main(int argc, char *argv[])
 	gtk_init(&argc, &argv);
 	log_ident_set("dnssec-trigger-panel");
 	log_init(NULL, 0, NULL);
-        while( (c=getopt(argc, argv, "c:h")) != -1) {
+        while( (c=getopt(argc, argv, "c:dh")) != -1) {
                 switch(c) {
                 default:
+		case 'd':
+			debug = 1;
+			break;
 		case 'c':
 			cfgfile = optarg;
 			break;
@@ -432,7 +455,7 @@ int main(int argc, char *argv[])
 	(void)SSL_library_init();
 
 	/* show user interface */
-	do_main_work(cfgfile);
+	do_main_work(cfgfile, debug);
 #ifdef USE_WINSOCK
 	WSACleanup();
 #endif

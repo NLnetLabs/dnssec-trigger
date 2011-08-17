@@ -4,6 +4,7 @@
 	- unsafe test option works reliably.
 	- fix dialog destroy that deletes the dialog.
 	- alert icon has nicer exclamation mark.
+	- added configfile and example.conf.
 
 16 Aug 2011: Wouter
 	- detect localhost in DHCP DNS servers and skip them, because a loop

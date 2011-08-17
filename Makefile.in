@@ -43,6 +43,8 @@ netconfig_dispatcher_dir=@netconfig_dispatcher_dir@
 osx_launchagents_dir=/Library/LaunchAgents
 configfile=@configfile@
 keydir=@keydir@
+uidir=@uidir@
+pidfile=@pidfile@
 
 # override $U variable which is used by autotools for deansification (for
 # K&R C compilers), but causes problems if $U is defined in the env).
@@ -112,10 +114,14 @@ $(BUILD)%.o:    $(srcdir)/%.c
 	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
 	$Q$(COMPILE) -o $@ -c $<
 
-all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-panel$(EXEEXT) dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT) $(makehook)
+all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-panel$(EXEEXT) dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT) $(makehook) example.conf
 
 test:	
 	@echo done
+
+example.conf:	example.conf.in
+	rm -f $@
+	sed -e 's?0VERSION?$(VERSION)?' -e 's?0keydir0?$(keydir)?' -e 's?0pidfile0?$(pidfile)?' < example.conf.in > $@
 
 dnssec-trigger-control-setup:	dnssec-trigger-control-setup.sh.in
 	rm -f $@
@@ -183,7 +189,7 @@ clean:
 	rm -f *.o *.d *.lo *~ tags
 	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
 	rm -f dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT)
-	rm -f 01-dnssec-trigger-hook dnssec-trigger-osx.sh dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook
+	rm -f 01-dnssec-trigger-hook dnssec-trigger-osx.sh dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf
 	rm -rf autom4te.cache build
 
 realclean: clean
@@ -242,16 +248,26 @@ install:	all $(installhook)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)/man8
 	$(INSTALL) -m 755 -d $(DESTDIR)$(keydir)
+	$(INSTALL) -m 755 -d $(DESTDIR)$(uidir)
+	-$(INSTALL) -m 755 -d "`dirname $(DESTDIR)$(pidfile)`"
+	$(INSTALL) -c -m 644 panel/pui.xml $(DESTDIR)$(uidir)/pui.xml
+	$(INSTALL) -c -m 644 panel/status-icon.png $(DESTDIR)$(uidir)/status-icon.png
+	$(INSTALL) -c -m 644 panel/status-icon-alert.png $(DESTDIR)$(uidir)/status-icon-alert.png
 	$(INSTALL) -c -m 755 dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-trigger-panel$(EXEEXT)
 	$(INSTALL) -c -m 755 dnssec-trigger-control-setup $(DESTDIR)$(sbindir)/dnssec-trigger-control-setup
 	$(INSTALL) -c -m 755 dnssec-trigger-control$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-trigger-control$(EXEEXT)
 	$(INSTALL) -c -m 755 dnssec-triggerd$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
+	if test ! -f $(DESTDIR)$(configfile); then \
+		$(INSTALL) -c -m 644 example.conf $(DESTDIR)$(configfile); fi
 
 uninstall: $(uninstallhook)
 	rm -f -- $(DESTDIR)$(sbindir)/dnssec-trigger-panel$(EXEEXT)
 	rm -f -- $(DESTDIR)$(sbindir)/dnssec-trigger-control-setup
 	rm -f -- $(DESTDIR)$(sbindir)/dnssec-trigger-control$(EXEEXT)
 	rm -f -- $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
+	rm -f -- $(DESTDIR)$(uidir)/pui.xml
+	rm -f -- $(DESTDIR)$(uidir)/status-icon.png
+	rm -f -- $(DESTDIR)$(uidir)/status-icon-alert.png
 	@echo
 	@echo "You still need to remove ssl keys from $(DESTDIR)$(keydir) and $(DESTDIR)$(configfile) by hand"
 

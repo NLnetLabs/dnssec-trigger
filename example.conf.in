@@ -1,0 +1,45 @@
+# config for dnssec-trigger 0VERSION0.
+# this is a comment. there must be one statement per line.
+
+# logging detail, 0=only errors, 1=operations, 2=detail, 3,4 debug detail.
+# verbosity: 1
+
+# pidfile location
+# pidfile: "0pidfile0"
+
+# log to a file instead of syslog, default is to syslog
+# logfile: "/var/log/dnssec-trigger.log"
+
+# log to syslog, or (log to to stderr or a logfile if specified). yes or no.
+# use-syslog: yes
+
+# chroot to this directory
+# chroot: ""
+
+# the unbound-control binary if not found in PATH.
+# commandline options can be appended "unbound-control -c my.conf" if you wish.
+# unbound-control: "unbound-control"
+
+# where is resolv.conf to edit.
+# resolvconf: "/etc/resolv.conf"
+
+# the domain example.com line (if any) to add to resolv.conf(5). default none.
+# domain: ""
+
+# domain name search path to add to resolv.conf(5). default none.
+# the search path from DHCP is not picked up, it could be used to misdirect.
+# search: ""
+
+# do not perform actions (unbound-control or resolv.conf), for a dry-run.
+# noaction: no
+
+# port number to use for probe daemon.
+# port: 8955
+
+# these keys and certificates can be generated with the script
+# dnssec-trigger-control-setup
+# server-key-file: "0keydir0/dnssec_trigger_server.key"
+# server-cert-file: "0keydir0/dnssec_trigger_server.pem"
+# control-key-file: "0keydir0/dnssec_trigger_control.key"
+# control-cert-file: "0keydir0/dnssec_trigger_control.pem"
+

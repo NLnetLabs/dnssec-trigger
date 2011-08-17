@@ -41,6 +41,117 @@
 #include "config.h"
 #include "cfg.h"
 #include "log.h"
+#include <ctype.h>
+
+/** get arg in line */
+static char* get_arg(char* line)
+{
+	while(isspace(line[0]))
+		line++;
+	while(strlen(line) > 0 && isspace(line[strlen(line)-1]))
+		line[strlen(line)-1] = 0;
+	if(strlen(line) > 1 && line[0]=='"' && line[strlen(line)-1]=='"') {
+		line++;
+		line[strlen(line)-1] = 0;
+	} else if(strlen(line) > 1 && line[0]=='\''
+		&& line[strlen(line)-1]=='\'') {
+		line++;
+		line[strlen(line)-1] = 0;
+	}
+	return line;
+}
+
+/** strdup the argument on the line */
+static void str_arg(char** dest, char* line)
+{
+	char* s = strdup(get_arg(line));
+	if(!s)
+		fatal_exit("out of memory");
+	free(*dest);
+	*dest = s;
+}
+
+/** handle bool arg */
+static void bool_arg(int* dest, char* line)
+{
+	line = get_arg(line);
+	if(strcmp(line, "yes") != 0 && strcmp(line, "no") != 0) {
+		fatal_exit("expected yes or no, but got %s", line);
+	}
+	*dest = (strcmp(line, "yes")==0);
+}
+
+/** read keyword and put into cfg */
+static int
+keyword(struct cfg* cfg, char* p)
+{
+	if(strncmp(p, "verbosity:", 10) == 0) {
+		cfg->verbosity = atoi(get_arg(p+10));
+	} else if(strncmp(p, "pidfile:", 8) == 0) {
+		str_arg(&cfg->pidfile, p+8);
+	} else if(strncmp(p, "logfile:", 8) == 0) {
+		str_arg(&cfg->logfile, p+8);
+		cfg->use_syslog = 0;
+	} else if(strncmp(p, "use-syslog:", 11) == 0) {
+		bool_arg(&cfg->use_syslog, p+11);
+	} else if(strncmp(p, "chroot:", 7) == 0) {
+		str_arg(&cfg->chroot, p+7);
+	} else if(strncmp(p, "unbound-control:", 16) == 0) {
+		str_arg(&cfg->unbound_control, p+16);
+	} else if(strncmp(p, "resolvconf:", 11) == 0) {
+		str_arg(&cfg->resolvconf, p+11);
+	} else if(strncmp(p, "domain:", 7) == 0) {
+		str_arg(&cfg->rescf_domain, p+7);
+	} else if(strncmp(p, "search:", 7) == 0) {
+		str_arg(&cfg->rescf_search, p+7);
+	} else if(strncmp(p, "noaction:", 9) == 0) {
+		bool_arg(&cfg->noaction, p+9);
+	} else if(strncmp(p, "port:", 5) == 0) {
+		cfg->control_port = atoi(get_arg(p+5));
+	} else if(strncmp(p, "server-key-file:", 16) == 0) {
+		str_arg(&cfg->server_key_file, p+16);
+	} else if(strncmp(p, "server-cert-file:", 17) == 0) {
+		str_arg(&cfg->server_cert_file, p+17);
+	} else if(strncmp(p, "control-key-file:", 17) == 0) {
+		str_arg(&cfg->control_key_file, p+17);
+	} else if(strncmp(p, "control-cert-file:", 18) == 0) {
+		str_arg(&cfg->control_cert_file, p+18);
+	} else {
+		return 0;
+	}
+	return 1;
+}
+
+static void
+attempt_readfile(struct cfg* cfg, const char* file)
+{
+	FILE* in = fopen(file, "r");
+	int line = 0;
+	char buf[1024];
+	if(!in) {
+		if(errno == ENOENT) {
+			verbose(VERB_OPS, "no config file, using defaults");
+			return;
+		}
+		log_err("%s: %s", file, strerror(errno));
+		return;
+	}
+	while(fgets(buf, (int)sizeof(buf), in)) {
+		char* p = buf;
+		line++;
+		/* whitespace at start of line */
+		while(isspace(*p)) p++;
+		/* comment */
+		if(p[0] == '#' || p[0] == ';' || p[0] == 0)
+			continue;
+		/* keyword */
+		if(!keyword(cfg, p)) {
+			log_err("cannot read %s:%d %s", file, line, p);
+			exit(1);
+		}
+	}
+	fclose(in);
+}
 
 struct cfg* cfg_create(const char* cfgfile)
 {
@@ -48,24 +159,13 @@ struct cfg* cfg_create(const char* cfgfile)
 	if(!cfg) return NULL;
 	cfg->use_syslog = 1;
 	cfg->control_port = 8955;
-	//cfg->server_key_file=strdup(KEYDIR"/dnssec_trigger_server.key");
-	//cfg->server_cert_file=strdup(KEYDIR"/dnssec_trigger_server.pem");
-	//cfg->control_key_file=strdup(KEYDIR"/dnssec_trigger_control.key");
-	//cfg->control_cert_file=strdup(KEYDIR"/dnssec_trigger_control.pem");
-	//cfg->unbound_control = strdup("unbound-control");
-	//cfg->pidfile = strdup(PIDFILE);
+	cfg->server_key_file=strdup(KEYDIR"/dnssec_trigger_server.key");
+	cfg->server_cert_file=strdup(KEYDIR"/dnssec_trigger_server.pem");
+	cfg->control_key_file=strdup(KEYDIR"/dnssec_trigger_control.key");
+	cfg->control_cert_file=strdup(KEYDIR"/dnssec_trigger_control.pem");
+	cfg->unbound_control = strdup("unbound-control");
+	cfg->pidfile = strdup(PIDFILE);
 	cfg->resolvconf = strdup("/etc/resolv.conf");
-
-	/* test settings */
-	cfg->pidfile = strdup("test.pid");
-	cfg->use_syslog = 0;
-	//cfg->logfile = strdup("test.log");
-	cfg->server_key_file=strdup("keys""/dnssec_trigger_server.key");
-	cfg->server_cert_file=strdup("keys""/dnssec_trigger_server.pem");
-	cfg->control_key_file=strdup("keys""/dnssec_trigger_control.key");
-	cfg->control_cert_file=strdup("keys""/dnssec_trigger_control.pem");
-	cfg->unbound_control = strdup("echo unbound-control");
-	cfg->resolvconf = strdup("test.resconf");
 
 	if(!cfg->unbound_control || !cfg->pidfile || !cfg->server_key_file ||
 		!cfg->server_cert_file || !cfg->control_key_file ||
@@ -73,7 +173,8 @@ struct cfg* cfg_create(const char* cfgfile)
 		cfg_delete(cfg);
 		return NULL;
 	}
-	/* TODO read cfgfile */
+
+	attempt_readfile(cfg, cfgfile);
 
 	/* apply */
 	verbosity = cfg->verbosity;
@@ -128,11 +229,11 @@ cfg_setup_ctx_client(struct cfg* cfg, char* err, size_t errlen)
 	s_cert = cfg->server_cert_file;
 	c_key = cfg->control_key_file;
 	c_cert = cfg->control_cert_file;
-        ctx = SSL_CTX_new(SSLv23_client_method());
+	ctx = SSL_CTX_new(SSLv23_client_method());
 	if(!ctx)
 		return ctx_err_ret(ctx, err, errlen,
 			"could not allocate SSL_CTX pointer");
-        if(!(SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2) & SSL_OP_NO_SSLv2))
+	if(!(SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2) & SSL_OP_NO_SSLv2))
 		return ctx_err_ret(ctx, err, errlen, 
 			"could not set SSL_OP_NO_SSLv2");
 	if(!SSL_CTX_use_certificate_file(ctx,c_cert,SSL_FILETYPE_PEM) ||

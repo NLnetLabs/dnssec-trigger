@@ -187,6 +187,9 @@
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
+/* default pidfile name for dnssec-trigger */
+#undef PIDFILE
+
 /* Define as the return type of signal handlers (`int' or `void'). */
 #undef RETSIGTYPE
 
@@ -198,6 +201,9 @@
 
 /* Use win32 resources and API */
 #undef UB_ON_WINDOWS
+
+/* directory with UI xml and png for dnssec-trigger */
+#undef UIDIR
 
 /* Use builtin event system */
 #undef USE_MINI_EVENT

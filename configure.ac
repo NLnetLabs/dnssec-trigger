@@ -220,6 +220,17 @@ ACX_ESCAPE_BACKSLASH($keydir, keydir_esc)
 AC_DEFINE_UNQUOTED([KEYDIR], ["$keydir_esc"], [directory with ssl key files for dnssec-trigger])
 AC_SUBST(keydir)
 
+AC_ARG_WITH([uidir], AC_HELP_STRING([--with-uidir=path],
+[Set the directory where ui files (icon,xml) are kept, default prefix/share/dnssec-trigger]),,)
+uidir=`eval echo "$datadir/dnssec-trigger"`
+if test -n "$withval"; then
+	uidir="$withval"
+fi
+uidir2=`eval echo $uidir`
+ACX_ESCAPE_BACKSLASH($uidir2, uidir_esc)
+AC_DEFINE_UNQUOTED([UIDIR], ["$uidir_esc"], [directory with UI xml and png for dnssec-trigger])
+AC_SUBST(uidir)
+
 AC_ARG_WITH([configfile], AC_HELP_STRING([--with-configfile=path],
 [set the configfile to use, default keydir/dnssec-trigger.conf]),,)
 configfile="$keydir/dnssec-trigger.conf"
@@ -229,6 +240,16 @@ fi
 ACX_ESCAPE_BACKSLASH($configfile, configfile_esc)
 AC_DEFINE_UNQUOTED([CONFIGFILE], ["$configfile_esc"], [default config file name for dnssec-trigger])
 AC_SUBST(configfile)
+
+AC_ARG_WITH([pidfile], AC_HELP_STRING([--with-pidfile=path],
+[set the pidfile to use, default /var/run/dnssec-trigger.pid]),,)
+pidfile="/var/run/dnssec-trigger.pid"
+if test -n "$withval"; then
+	pidfile="$withval"
+fi
+ACX_ESCAPE_BACKSLASH($pidfile, pidfile_esc)
+AC_DEFINE_UNQUOTED([PIDFILE], ["$pidfile_esc"], [default pidfile name for dnssec-trigger])
+AC_SUBST(pidfile)
 
 # dependencies from crypto, eventlibs for ldns, unbound.
 ACX_WITH_SSL
