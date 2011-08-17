@@ -602,6 +602,27 @@ static void persist_cmd_insecure(int val)
 	svr_send_results(svr);
 }
 
+static void persist_cmd_reprobe(void)
+{
+	char buf[10240];
+	char* now = buf;
+	size_t left = sizeof(buf);
+	struct probe_ip* p;
+	buf[0]=0; /* safe, robust */
+	for(p = global_svr->probes; p; p = p->next) {
+		if(!p->to_auth) {
+			int len;
+			if(left < strlen(p->name)+3)
+				break; /* no space for more */
+			len = snprintf(now, left, "%s%s",
+				(now==buf)?"":" ", p->name);
+			left -= len;
+			now += len;
+		}
+	}
+	probe_start(buf);
+}
+
 static void sslconn_persist_command(struct sslconn* sc)
 {
 	char* str = (char*)ldns_buffer_begin(sc->buffer);
@@ -614,6 +635,8 @@ static void sslconn_persist_command(struct sslconn* sc)
 		persist_cmd_insecure(1);
 	} else if(strcmp(str, "insecure no") == 0) {
 		persist_cmd_insecure(0);
+	} else if(strcmp(str, "reprobe") == 0) {
+		persist_cmd_reprobe();
 	} else {
 		log_err("unknown command from panel: %s", str);
 	}

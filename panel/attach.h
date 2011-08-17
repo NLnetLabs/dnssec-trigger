@@ -85,6 +85,7 @@ void attach_stop(void);
 
 /** send insecure choice to the daemon */
 void attach_send_insecure(int val);
+void attach_send_reprobe(void);
 
 void panel_alert_state(int last_insecure, int now_insecure, int dark,
 	int cache, int auth, int disconn);

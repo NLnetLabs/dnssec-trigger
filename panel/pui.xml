@@ -66,6 +66,15 @@
   <object class="GtkMenu" id="statusmenu">
     <property name="visible">True</property>
     <child>
+      <object class="GtkMenuItem" id="reprobe">
+        <property name="visible">True</property>
+        <property name="use_action_appearance">False</property>
+        <property name="label" translatable="yes">Reprobe</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_reprobe_activate"/>
+      </object>
+    </child>
+    <child>
       <object class="GtkMenuItem" id="proberesults">
         <property name="visible">True</property>
         <property name="label" translatable="yes">Probe results</property>

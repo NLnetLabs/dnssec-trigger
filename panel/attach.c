@@ -275,14 +275,10 @@ static void attach_main(void)
 
 }
 
-void attach_send_insecure(int val)
+static void send_ssl_cmd(const char* cmd)
 {
 	g_mutex_lock(feed->lock);
 	if(feed->ssl_write) {
-		const char* cmd;
-		if(val) cmd = "insecure yes\n";
-		else	cmd = "insecure no\n";
-
 		if(SSL_write(feed->ssl_write, cmd, (int)strlen(cmd)) <= 0) {
 			log_err("could not SSL_write");
 			/* reconnect and try again */
@@ -296,3 +292,13 @@ void attach_send_insecure(int val)
 	g_mutex_unlock(feed->lock);
 }
 
+void attach_send_insecure(int val)
+{
+	if(val) send_ssl_cmd("insecure yes\n");
+	else	send_ssl_cmd("insecure no\n");
+}
+
+void attach_send_reprobe(void)
+{
+	send_ssl_cmd("reprobe\n");
+}

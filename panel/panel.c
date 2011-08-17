@@ -138,6 +138,12 @@ on_result_ok_button_clicked(GtkButton* ATTR_UNUSED(button),
 	gtk_widget_hide(GTK_WIDGET(result_window));
 }
 
+void on_reprobe_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
+	gpointer ATTR_UNUSED(user_data))
+{
+	attach_send_reprobe();
+}
+
 void on_proberesults_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 	gpointer ATTR_UNUSED(user_data))
 {
