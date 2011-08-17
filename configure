@@ -612,6 +612,7 @@ WINDRES
 UB_ON_WINDOWS
 LIBOBJS
 STRIP
+EXPORT_DYNAMIC
 debug_enabled
 DEPFLAG
 EGREP
@@ -4487,7 +4488,7 @@ if ac_fn_c_try_link "$LINENO"; then :
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-	echo support
+	EXPORT_DYNAMIC="-export-dynamic"
 
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5

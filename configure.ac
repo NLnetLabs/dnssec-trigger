@@ -60,10 +60,10 @@ int main(void) {
 }
 ]])], [
 	AC_MSG_RESULT(yes)
-	echo support
+	EXPORT_DYNAMIC="-export-dynamic"
 ], [AC_MSG_RESULT(no)])
 LDFLAGS="$bakld"
-
+AC_SUBST(EXPORT_DYNAMIC)
 
 AC_C_INLINE
 ACX_CHECK_FORMAT_ATTRIBUTE
