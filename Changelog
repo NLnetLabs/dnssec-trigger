@@ -1,3 +1,6 @@
+18 Aug 2011: Wouter
+	- INSTALL instructions.
+
 17 Aug 2011: Wouter
 	- noaction option that takes no action but pretends.
 	- fix linefeed in resolv.conf printout.

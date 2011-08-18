@@ -1,0 +1,68 @@
+Helpful install instructions for dnssec-trigger.
+
+Quick overview
+--------------
+The software installs several components
+* the dnssec-triggerd daemon that does probes, it needs to be started on boot.
+* the dnssec-trigger-panel that shows a status icon in the tray. it needs
+  to be in the user startup items.
+* some sort of hook script that catches DHCP updates, system specific.
+
+Before you install you need: gcc, openssl-dev, gtk2-dev, glib-dev and install
+unbound (as a server on 127.0.0.1 that starts on boot), and libldns-dev.
+
+The compile process is ./configure && make, as usual.
+
+There are a bunch of configure options to put files in different locations,
+and to change defaults.
+
+Install (Linux)
+---------------
+1. Install required libraries and get the dnssec-trigger package.
+2. ./configure
+   It needs to detect what sort of system you use - to hook into the DHCP
+   network updates.  For many linux systems, networkmanager or netconfig.
+   Default puts files in /usr/local
+3. make
+   It could complain about missing libraries here. Install them, back to 2.
+4. sudo make install
+   Install as root.  Note you can uninstall with make uninstall.
+5. sudo dnssec-trigger-control-setup
+   This should create the key files that dnssec-trigger uses to communicate
+   securely between its components.
+6. edit unbound.conf to allow remote-control:
+   sudo dnssec-trigger-control-setup -i
+   if you want you can edit by hand, we need root anchor and remote-control
+7. setup dnssec-triggerd to start on boot.
+   some script in /etc/rc.d or so.
+   Or you can start it with sudo dnssec-triggerd (just this once).
+   The startup script needs to call dnssec-trigger-control submit <ips>
+   with a list of nameserver IPs (it may be the empty list), this will
+   cause the server to initialise.  It may be possible to call the
+   DHCP change hook for this from the startup script.
+8. the dnssec-trigger-panel needs to start for users on login.
+   Something in startup applications list.
+   Or you can start it from the commandline (just this once).
+
+On uninstall you may need to chmod 644 /etc/resolv.conf
+so that it becomes writable again.
+
+Install (OSX)
+-------------
+Same as on Linux, but it needs different actions on step 7 and 8.
+launchd plist to start a server and startup-applications folder for the panel.
+
+Test (Demonstration)
+--------------------
+Since all the DHCP hook does is call dnssec-trigger-control submit <ip list>
+and then those caches are probed and configuration is changed, you can use
+that to test.  Simply sudo dnssec-trigger-control submit 127.0.0.3.
+Assuming there is nothing on that address (usually true), it times out and
+you see that the authority servers on the internet are used instead.
+If you want to test a failure of the network to allow DNSSEC traffic, you
+can use the command sudo dnssec-trigger-control unsafe.  It causes the
+daemon to use another couple 127.0.0.x addresses (that should not answer)
+and a second later think that DNSSEC does not work at all.  The popup window
+should show, if you select insecure, it then uses those 127.0.0.x addresses
+which will of course not really answer at all.  It demonstrates the GUI.
+
