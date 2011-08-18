@@ -2,6 +2,7 @@
 	- INSTALL instructions.
 	- fixed for ldns linkage.
 	- fix generated key permissions, world readable for user keys.
+	- tag 0.1
 
 17 Aug 2011: Wouter
 	- noaction option that takes no action but pretends.
