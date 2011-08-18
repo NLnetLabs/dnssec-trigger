@@ -16,6 +16,11 @@ The compile process is ./configure && make, as usual.
 There are a bunch of configure options to put files in different locations,
 and to change defaults.
 
+If you do not want to install libldns (for some reason) or libcrypto,
+you can use --enable-static-exe, and provide --with-ldns=<path to ldns
+install or build dir> and --with-ssl=<install ssl dir> options.  It will
+statically link with openssl and ldns.
+
 Install (Linux)
 ---------------
 1. Install required libraries and get the dnssec-trigger package.
