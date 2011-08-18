@@ -224,7 +224,7 @@ if [ "$DOWIN" = "yes" ]; then
         rm -r autom4te* || echo "ignored"
     fi
 
-    # procedure for making unbound installer on mingw. 
+    # procedure for making installer on mingw. 
     info "Creating windows dist dnssec-trigger $version"
     info "Calling configure"
     echo "$configure"' --enable-debug --enable-static-exe '"$* $cross_flag"
@@ -324,15 +324,15 @@ info "Renaming directory to dnssec-trigger-$version."
 cd ..
 mv dnssec-trigger dnssec-trigger-$version || error_cleanup "Failed to rename directory."
 
-tarfile="../dnssec-trigger-$version.tar.gz"
+tarfile="dnssec-trigger-$version.tar.gz"
 
-if [ -f $tarfile ]; then
-    (question "The file $tarfile already exists.  Overwrite?" \
-        && rm -f $tarfile) || error_cleanup "User abort."
+if [ -f ../$tarfile ]; then
+    (question "The file ../$tarfile already exists.  Overwrite?" \
+        && rm -f ../$tarfile) || error_cleanup "User abort."
 fi
 
 info "Creating tar dnssec-trigger-$version.tar.gz"
-tar czf $tarfile unbound-$version || error_cleanup "Failed to create tar file."
+tar czf ../$tarfile dnssec-trigger-$version || error_cleanup "Failed to create tar file."
 
 cleanup
 
