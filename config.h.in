@@ -54,8 +54,8 @@
 /* Define to 1 if you have the <iphlpapi.h> header file. */
 #undef HAVE_IPHLPAPI_H
 
-/* Define to 1 if you have the `ldns_buffer_new' function. */
-#undef HAVE_LDNS_BUFFER_NEW
+/* Define to 1 if you have the `ldns' library (-lldns). */
+#undef HAVE_LIBLDNS
 
 /* Define to 1 if you have the `localtime_r' function. */
 #undef HAVE_LOCALTIME_R

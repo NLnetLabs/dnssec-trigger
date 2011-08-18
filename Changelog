@@ -1,5 +1,6 @@
 18 Aug 2011: Wouter
 	- INSTALL instructions.
+	- fixed for ldns linkage.
 
 17 Aug 2011: Wouter
 	- noaction option that takes no action but pretends.
