@@ -1,6 +1,7 @@
 18 Aug 2011: Wouter
 	- INSTALL instructions.
 	- fixed for ldns linkage.
+	- fix generated key permissions, world readable for user keys.
 
 17 Aug 2011: Wouter
 	- noaction option that takes no action but pretends.
