@@ -305,7 +305,7 @@ AC_ARG_WITH(ldns, AC_HELP_STRING([--with-ldns=PATH],
 	AC_SUBST(ldnsdir)
 	AC_SUBST(LDNSLIBS)
 	], [
-	AC_CHECK_FUNCS([ldns_buffer_new],,[AC_MSG_ERROR([please install libldns-devel])])
+	AC_CHECK_FUNCS([ldns_buffer_new],,[AC_MSG_ERROR([please install ldns-devel])])
 	])
 
 # add option to disable the evil rpath
