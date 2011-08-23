@@ -132,6 +132,9 @@ dnssec-trigger-control-setup:	dnssec-trigger-control-setup.sh.in
 none-hook:
 	echo "no dhcp hooks available, need trigger script"
 
+windows-hook:
+	echo "TODO compile windows hooks"
+
 networkmanager-hook:	01-dnssec-trigger-hook
 
 01-dnssec-trigger-hook:	01-dnssec-trigger-hook.sh.in
@@ -219,6 +222,12 @@ none-hook-install:
 
 none-hook-uninstall:
 	echo "no hook to uninstall"
+
+windows-hook-install:
+	echo "TODO windows hook install"
+
+windows-hook-uninstall:
+	echo "TODO windows hook uninstall"
 
 networkmanager-hook-install:
 	$(INSTALL) -m 755 -d $(DESTDIR)$(networkmanager_dispatcher_dir)

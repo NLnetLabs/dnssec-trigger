@@ -185,7 +185,7 @@ AC_REPLACE_FUNCS(memmove)
 
 hooks="auto"
 AC_ARG_WITH([hooks], AC_HELP_STRING([--with-hooks],
-[Set the DHCP change hooks to use, default 'auto', can be 'osx', 'networkmanager', 'netconfig', or 'none']),,)
+[Set the DHCP change hooks to use, default 'auto', can be 'osx', 'networkmanager', 'netconfig', 'windows' or 'none']),,)
 if test -n "$withval"; then
 	hooks="$withval"
 fi
@@ -209,16 +209,20 @@ AC_MSG_CHECKING([for DHCP hooks])
 if test "$hooks" != "auto"; then
 	:
 else
-	if test -x "`which nmcli 2>&1`"; then
-	hooks="networkmanager"
+	if test "$on_mingw" = "yes"; then
+		hooks="windows"
 	else
-		if test `uname` = "Darwin"; then
-			hooks="osx"
+		if test -x "`which nmcli 2>&1`"; then
+		hooks="networkmanager"
 		else
-			if test -x /sbin/netconfig; then
-				hooks="netconfig"
+			if test `uname` = "Darwin"; then
+				hooks="osx"
 			else
-				hooks="none"
+				if test -x /sbin/netconfig; then
+					hooks="netconfig"
+				else
+					hooks="none"
+				fi
 			fi
 		fi
 	fi
