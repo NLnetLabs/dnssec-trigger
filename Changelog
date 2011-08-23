@@ -1,3 +1,6 @@
+23 Aug 2011: Wouter
+	- configure adapted for windows compile.
+
 18 Aug 2011: Wouter
 	- INSTALL instructions.
 	- fixed for ldns linkage.

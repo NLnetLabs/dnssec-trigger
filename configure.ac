@@ -18,10 +18,17 @@ case "$prefix" in
         ;;
 esac
 
+# are we on MinGW?
+if uname -s 2>&1 | grep MINGW32 >/dev/null; then on_mingw="yes"
+else
+	if echo $target | grep mingw32 >/dev/null; then on_mingw="yes"
+	else on_mingw="no"; fi
+fi
+
 AC_DEFINE(WINVER, 0x0502, [the version of the windows API enabled])
 dnl compute package version for windows res files, the first four numbers.
 [
-wnvs=`echo $PACKAGE_VERSION | sed -e 's/^[^0-9]*\([0-9]\)[^0-9]*\([0-9]\)[^0-9]*\([0-9]\)[^0-9]*\([0-9]\).*$/\1,\2,\3,\4/' -e 's/^[^0-9]*\([0-9]\)[^0-9]*\([0-9]\)[^0-9]*\([0-9]\)[^0-9]*$/\1,\2,\3,0/' `
+wnvs=`echo $PACKAGE_VERSION.0.0 | sed -e 's/^[^0-9]*\([0-9]\)[^0-9]*\([0-9]\)[^0-9]*\([0-9]\)[^0-9]*\([0-9]\).*$/\1,\2,\3,\4/' -e 's/^[^0-9]*\([0-9]\)[^0-9]*\([0-9]\)[^0-9]*\([0-9]\)[^0-9]*$/\1,\2,\3,0/' `
 ]
 AC_DEFINE_UNQUOTED(RSRC_PACKAGE_VERSION, [$wnvs], [version number for resource files])
 
@@ -29,10 +36,6 @@ ACX_DEPFLAG
 ACX_DETERMINE_EXT_FLAGS_UNBOUND
 
 AC_CHECK_HEADERS([getopt.h time.h],,, [AC_INCLUDES_DEFAULT])
-
-# MinGW32 tests
-AC_CHECK_HEADERS([winsock2.h ws2tcpip.h],,, [AC_INCLUDES_DEFAULT])
-# end mingw32 tests
 
 # flag warnings.
 AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug], [Enable debug warnings, asserts, makefile-dependencies]))
@@ -78,6 +81,12 @@ AC_CHECK_TOOL(STRIP, strip)
 # Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS([stdarg.h stdbool.h netinet/in.h sys/param.h sys/socket.h sys/uio.h sys/resource.h arpa/inet.h syslog.h netdb.h sys/wait.h],,, [AC_INCLUDES_DEFAULT])
+# MinGW32 tests
+if test "$on_mingw" = "yes"; then
+	AC_CHECK_HEADERS([windows.h winsock2.h ws2tcpip.h],,,
+		[AC_INCLUDES_DEFAULT])
+fi
+# end mingw32 tests
 
 # check for types
 AC_CHECK_TYPE(int8_t, char)
@@ -93,7 +102,16 @@ AC_CHECK_TYPE(ssize_t, int)
 AC_TYPE_UID_T
 AC_TYPE_PID_T
 AC_TYPE_OFF_T
-AC_CHECK_TYPE(u_char, unsigned char)
+AC_CHECK_TYPE(u_char, , 
+        [AC_DEFINE([u_char], [unsigned char], [Define to 'unsigned char' if not defined])], [
+	AC_INCLUDES_DEFAULT
+#ifdef HAVE_SYS_SOCKET_H
+#  include <sys/socket.h>
+#endif
+#ifdef HAVE_WS2TCPIP_H
+#  include <ws2tcpip.h>
+#endif
+])
 ACX_TYPE_RLIM_T
 ACX_TYPE_SOCKLEN_T
 ACX_TYPE_IN_ADDR_T
@@ -110,6 +128,13 @@ AC_ARG_ENABLE(static-exe, AC_HELP_STRING([--enable-static-exe],
 	, )
 if test x_$enable_static_exe = x_yes; then
 	staticexe="yes"
+	if test "$on_mingw" = yes; then
+		staticexe="-all-static"
+		# for static crosscompile, include gdi32 and zlib here.
+		if test "`uname`" = "Linux"; then
+			LIBS="$LIBS -lgdi32 -lz"
+		fi
+	fi
 fi
 
 AC_FUNC_MALLOC
