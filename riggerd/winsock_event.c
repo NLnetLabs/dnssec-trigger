@@ -41,8 +41,9 @@
 #include "config.h"
 #ifdef USE_WINSOCK
 #include <signal.h>
-#include "util/winsock_event.h"
-#include "util/fptr_wlist.h"
+#include "winsock_event.h"
+#include "fptr_wlist.h"
+#include "log.h"
 
 int mini_ev_cmp(const void* a, const void* b)
 {

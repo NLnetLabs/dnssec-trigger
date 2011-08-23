@@ -4456,6 +4456,9 @@ $as_echo "#define DO_DEBUG /**/" >>confdefs.h
 		;;
 esac
 
+if test "$on_mingw" = "yes"; then
+	EXPORT_DYNAMIC="--export-all-symbols"
+else
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking if -export-dynamic works" >&5
 $as_echo_n "checking if -export-dynamic works... " >&6; }
 bakld="$LDFLAGS"
@@ -4482,6 +4485,7 @@ rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LDFLAGS="$bakld"
 
+fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for inline" >&5
 $as_echo_n "checking for inline... " >&6; }
@@ -5236,7 +5240,8 @@ if test x_$enable_static_exe = x_yes; then
 	fi
 fi
 
-for ac_header in stdlib.h
+
+	for ac_header in stdlib.h
 do :
   ac_fn_c_check_header_mongrel "$LINENO" "stdlib.h" "ac_cv_header_stdlib_h" "$ac_includes_default"
 if test "x$ac_cv_header_stdlib_h" = x""yes; then :
@@ -5302,6 +5307,14 @@ $as_echo "#define malloc rpl_malloc" >>confdefs.h
 
 fi
 
+
+	if test "$ac_cv_func_malloc_0_nonnull" = no; then
+
+cat >>confdefs.h <<_ACEOF
+#define malloc rpl_malloc_dnssectrigger
+_ACEOF
+
+	fi
 
 for ac_header in unistd.h
 do :
@@ -6133,11 +6146,10 @@ else
 fi
 
 	LIBS="$LIBS -liphlpapi"
-else
+fi
 
 $as_echo "#define USE_MINI_EVENT 1" >>confdefs.h
 
-fi
 if test $ac_cv_func_getaddrinfo = no; then
 case " $LIBOBJS " in
   *" fake-rfc2553.$ac_objext "* ) ;;
@@ -6250,6 +6262,77 @@ _ACEOF
 
 fi
 done
+
+
+ac_fn_c_check_func "$LINENO" "inet_pton" "ac_cv_func_inet_pton"
+if test "x$ac_cv_func_inet_pton" = x""yes; then :
+  $as_echo "#define HAVE_INET_PTON 1" >>confdefs.h
+
+else
+  case " $LIBOBJS " in
+  *" inet_pton.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS inet_pton.$ac_objext"
+ ;;
+esac
+
+fi
+
+
+ac_fn_c_check_func "$LINENO" "inet_ntop" "ac_cv_func_inet_ntop"
+if test "x$ac_cv_func_inet_ntop" = x""yes; then :
+  $as_echo "#define HAVE_INET_NTOP 1" >>confdefs.h
+
+else
+  case " $LIBOBJS " in
+  *" inet_ntop.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS inet_ntop.$ac_objext"
+ ;;
+esac
+
+fi
+
+
+ac_fn_c_check_func "$LINENO" "snprintf" "ac_cv_func_snprintf"
+if test "x$ac_cv_func_snprintf" = x""yes; then :
+  $as_echo "#define HAVE_SNPRINTF 1" >>confdefs.h
+
+else
+  case " $LIBOBJS " in
+  *" snprintf.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS snprintf.$ac_objext"
+ ;;
+esac
+
+fi
+
+
+ac_fn_c_check_func "$LINENO" "strlcpy" "ac_cv_func_strlcpy"
+if test "x$ac_cv_func_strlcpy" = x""yes; then :
+  $as_echo "#define HAVE_STRLCPY 1" >>confdefs.h
+
+else
+  case " $LIBOBJS " in
+  *" strlcpy.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS strlcpy.$ac_objext"
+ ;;
+esac
+
+fi
+
+
+ac_fn_c_check_func "$LINENO" "memmove" "ac_cv_func_memmove"
+if test "x$ac_cv_func_memmove" = x""yes; then :
+  $as_echo "#define HAVE_MEMMOVE 1" >>confdefs.h
+
+else
+  case " $LIBOBJS " in
+  *" memmove.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS memmove.$ac_objext"
+ ;;
+esac
+
+fi
+
 
 
 hooks="auto"

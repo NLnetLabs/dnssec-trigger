@@ -62,7 +62,7 @@ enum verbosity_value verbosity = 0;
 /** the file logged to. */
 static FILE* logfile = 0;
 /** the identity of this executable/process */
-static const char* ident="unbound";
+static const char* ident="dnssec-trigger";
 #if defined(HAVE_SYSLOG_H) || defined(UB_ON_WINDOWS)
 /** are we using syslog(3) to log to */
 static int logging_to_syslog = 0;

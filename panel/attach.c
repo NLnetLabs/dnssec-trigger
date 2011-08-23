@@ -152,7 +152,7 @@ static int check_for_event(void)
 	/* select on it */
 	while(1) {
 		FD_ZERO(&r);
-		FD_SET(fd, &r);
+		FD_SET(FD_SET_T fd, &r);
 		if(select(fd+1, &r, NULL, NULL, NULL) < 0) {
 			if(errno == EAGAIN || errno == EINTR)
 				continue;

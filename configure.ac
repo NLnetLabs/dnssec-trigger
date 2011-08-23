@@ -54,6 +54,9 @@ case "$enable_debug" in
 		;;
 esac
 
+if test "$on_mingw" = "yes"; then
+	EXPORT_DYNAMIC="--export-all-symbols"
+else
 AC_MSG_CHECKING([if -export-dynamic works])
 bakld="$LDFLAGS"
 LDFLAGS="$LDFLAGS -export-dynamic"
@@ -67,6 +70,7 @@ int main(void) {
 ], [AC_MSG_RESULT(no)])
 LDFLAGS="$bakld"
 AC_SUBST(EXPORT_DYNAMIC)
+fi
 
 AC_C_INLINE
 ACX_CHECK_FORMAT_ATTRIBUTE
@@ -137,7 +141,7 @@ if test x_$enable_static_exe = x_yes; then
 	fi
 fi
 
-AC_FUNC_MALLOC
+ACX_FUNC_MALLOC([dnssectrigger])
 AC_FUNC_CHOWN
 AC_FUNC_FORK
 AC_TYPE_SIGNAL
@@ -154,9 +158,8 @@ if test "$USE_WINSOCK" = 1; then
 	])
 	AC_CHECK_TOOL(WINDRES, windres)
 	LIBS="$LIBS -liphlpapi"
-else
-	AC_DEFINE(USE_MINI_EVENT, 1, [Use builtin event system])
 fi
+AC_DEFINE(USE_MINI_EVENT, 1, [Use builtin event system])
 if test $ac_cv_func_getaddrinfo = no; then
 AC_LIBOBJ([fake-rfc2553])
 fi
@@ -173,6 +176,12 @@ if test $ac_cv_func_daemon = yes; then
 fi
 
 AC_CHECK_FUNCS([strftime localtime_r fcntl setsid])
+
+AC_REPLACE_FUNCS(inet_pton)
+AC_REPLACE_FUNCS(inet_ntop)
+AC_REPLACE_FUNCS(snprintf)
+AC_REPLACE_FUNCS(strlcpy)
+AC_REPLACE_FUNCS(memmove)
 
 hooks="auto"
 AC_ARG_WITH([hooks], AC_HELP_STRING([--with-hooks],
@@ -442,7 +451,18 @@ AH_BOTTOM([
 struct sockaddr_storage;
 #include "compat/fake-rfc2553.h"
 #endif
-
+]
+AHX_CONFIG_INET_PTON(dnssectrigger)
+AHX_CONFIG_INET_NTOP(dnssectrigger)
+AHX_CONFIG_MEMMOVE(dnssectrigger)
+AHX_CONFIG_STRLCPY(dnssectrigger)
+AHX_CONFIG_SNPRINTF(dnssectrigger)
+AHX_CONFIG_W32_SLEEP
+AHX_CONFIG_W32_USLEEP
+AHX_CONFIG_W32_RANDOM
+AHX_CONFIG_W32_SRANDOM
+AHX_CONFIG_W32_FD_SET_T
+[
 /* detect if we need to cast to unsigned int for FD_SET to avoid warnings */
 #ifdef HAVE_WINSOCK2_H
 #define FD_SET_T (u_int)

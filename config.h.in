@@ -45,6 +45,12 @@
 /* If you have HMAC_CTX_init */
 #undef HAVE_HMAC_CTX_INIT
 
+/* Define to 1 if you have the `inet_ntop' function. */
+#undef HAVE_INET_NTOP
+
+/* Define to 1 if you have the `inet_pton' function. */
+#undef HAVE_INET_PTON
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
@@ -63,6 +69,9 @@
 /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
    to 0 otherwise. */
 #undef HAVE_MALLOC
+
+/* Define to 1 if you have the `memmove' function. */
+#undef HAVE_MEMMOVE
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
@@ -91,6 +100,9 @@
 /* Define to 1 if you have the `setsid' function. */
 #undef HAVE_SETSID
 
+/* Define to 1 if you have the `snprintf' function. */
+#undef HAVE_SNPRINTF
+
 /* Define if you have the SSL libraries installed. */
 #undef HAVE_SSL
 
@@ -114,6 +126,9 @@
 
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
+
+/* Define to 1 if you have the `strlcpy' function. */
+#undef HAVE_STRLCPY
 
 /* Define to 1 if you have the <syslog.h> header file. */
 #undef HAVE_SYSLOG_H
@@ -288,7 +303,7 @@
 /* Define to `char' if <sys/types.h> does not define. */
 #undef int8_t
 
-/* Define to rpl_malloc if the replacement function should be used. */
+/* Define if replacement function should be used. */
 #undef malloc
 
 /* Define to `long int' if <sys/types.h> does not define. */
@@ -432,6 +447,68 @@
 struct sockaddr_storage;
 #include "compat/fake-rfc2553.h"
 #endif
+
+
+#ifndef HAVE_INET_PTON
+#define inet_pton inet_pton_dnssectrigger
+int inet_pton(int af, const char* src, void* dst);
+#endif /* HAVE_INET_PTON */
+
+
+#ifndef HAVE_INET_NTOP
+#define inet_ntop inet_ntop_dnssectrigger
+const char *inet_ntop(int af, const void *src, char *dst, size_t size);
+#endif
+
+
+#ifndef HAVE_MEMMOVE
+#define memmove memmove_dnssectrigger
+void *memmove(void *dest, const void *src, size_t n);
+#endif
+
+
+#ifndef HAVE_STRLCPY
+#define strlcpy strlcpy_dnssectrigger
+size_t strlcpy(char *dst, const char *src, size_t siz);
+#endif
+
+
+#ifndef HAVE_SNPRINTF
+#define snprintf snprintf_dnssectrigger
+#define vsnprintf vsnprintf_dnssectrigger
+#include <stdarg.h>
+int snprintf (char *str, size_t count, const char *fmt, ...);
+int vsnprintf (char *str, size_t count, const char *fmt, va_list arg);
+#endif /* HAVE_SNPRINTF */
+
+
+#ifndef HAVE_SLEEP
+#define sleep(x) Sleep((x)*1000) /* on win32 */
+#endif /* HAVE_SLEEP */
+
+
+#ifndef HAVE_USLEEP
+#define usleep(x) Sleep((x)/1000 + 1) /* on win32 */
+#endif /* HAVE_USLEEP */
+
+
+#ifndef HAVE_RANDOM
+#define random rand /* on win32, for tests only (bad random) */
+#endif /* HAVE_RANDOM */
+
+
+#ifndef HAVE_SRANDOM
+#define srandom(x) srand(x) /* on win32, for tests only (bad random) */
+#endif /* HAVE_SRANDOM */
+
+
+/* detect if we need to cast to unsigned int for FD_SET to avoid warnings */
+#ifdef HAVE_WINSOCK2_H
+#define FD_SET_T (u_int)
+#else
+#define FD_SET_T 
+#endif
+
 
 /* detect if we need to cast to unsigned int for FD_SET to avoid warnings */
 #ifdef HAVE_WINSOCK2_H

@@ -72,7 +72,9 @@ usage(void)
 static RETSIGTYPE record_sigh(int sig)
 {
 	switch(sig) {
+#ifdef SIGHUP
 	case SIGHUP:
+#endif
 	case SIGTERM:
 #ifdef SIGQUIT
 	case SIGQUIT:
