@@ -148,6 +148,18 @@ AC_TYPE_SIGNAL
 AC_FUNC_FSEEKO
 ACX_SYS_LARGEFILE
 
+# check for OpenSSL
+ACX_WITH_SSL
+ACX_LIB_SSL
+AC_CHECK_HEADERS([openssl/conf.h],,, [AC_INCLUDES_DEFAULT])
+AC_CHECK_HEADERS([openssl/engine.h],,, [AC_INCLUDES_DEFAULT])
+if test "$staticexe" = "yes"; then
+	LIBS="`echo $LIBS | sed -e 's/ -lcrypto//'`"
+	LIBS="$ssldir/lib/libssl.a $ssldir/lib/libcrypto.a $LIBS"
+else
+	LIBS="-lssl $LIBS"
+fi
+
 ACX_CHECK_GETADDRINFO_WITH_INCLUDES
 if test "$USE_WINSOCK" = 1; then
 	AC_DEFINE(UB_ON_WINDOWS, 1, [Use win32 resources and API])
@@ -302,18 +314,6 @@ fi
 ACX_ESCAPE_BACKSLASH($pidfile, pidfile_esc)
 AC_DEFINE_UNQUOTED([PIDFILE], ["$pidfile_esc"], [default pidfile name for dnssec-trigger])
 AC_SUBST(pidfile)
-
-# dependencies from crypto, eventlibs for ldns, unbound.
-ACX_WITH_SSL
-ACX_LIB_SSL
-AC_CHECK_HEADERS([openssl/conf.h],,, [AC_INCLUDES_DEFAULT])
-AC_CHECK_HEADERS([openssl/engine.h],,, [AC_INCLUDES_DEFAULT])
-if test "$staticexe" = "yes"; then
-	LIBS="`echo $LIBS | sed -e 's/ -lcrypto//'`"
-	LIBS="$ssldir/lib/libssl.a $ssldir/lib/libcrypto.a $LIBS"
-else
-	LIBS="-lssl $LIBS"
-fi
 
 # GTK
 GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`

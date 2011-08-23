@@ -1,5 +1,6 @@
 23 Aug 2011: Wouter
 	- configure adapted for windows compile.
+	- panel compiles and GUI shows with libGTK+-2.0 on windows.
 
 18 Aug 2011: Wouter
 	- INSTALL instructions.

@@ -118,12 +118,17 @@ spawn_feed(struct cfg* cfg)
 	if(!thr) fatal_exit("cannot create thread: %s", err->message);
 }
 
+/* the G_MODULE_EXPORT makes the routine exported on windows for dynamic
+ * linking to gtk.  On linux the -export-dynamic flag to the linker does that.
+ */
+G_MODULE_EXPORT
 void on_quit_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 	gpointer ATTR_UNUSED(user_data))
 {
 	gtk_main_quit();
 }
 
+G_MODULE_EXPORT
 gboolean
 on_result_dialog_delete_event(GtkWidget* ATTR_UNUSED(widget),
 	GdkEvent* ATTR_UNUSED(event), gpointer ATTR_UNUSED(user_data))
@@ -133,6 +138,7 @@ on_result_dialog_delete_event(GtkWidget* ATTR_UNUSED(widget),
 	return TRUE; /* stop other handlers, do not destroy the window */
 }
 
+G_MODULE_EXPORT
 void 
 on_result_ok_button_clicked(GtkButton* ATTR_UNUSED(button),
 	gpointer ATTR_UNUSED(user_data)) 
@@ -140,12 +146,14 @@ on_result_ok_button_clicked(GtkButton* ATTR_UNUSED(button),
 	gtk_widget_hide(GTK_WIDGET(result_window));
 }
 
+G_MODULE_EXPORT
 void on_reprobe_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 	gpointer ATTR_UNUSED(user_data))
 {
 	attach_send_reprobe();
 }
 
+G_MODULE_EXPORT
 void on_proberesults_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 	gpointer ATTR_UNUSED(user_data))
 {
@@ -204,16 +212,25 @@ void on_proberesults_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 	gtk_widget_show(GTK_WIDGET(result_window));
 }
 
+G_MODULE_EXPORT
 void 
 on_statusicon_popup_menu(GtkStatusIcon* ATTR_UNUSED(status_icon),
 	guint button, guint activate_time,
 	gpointer ATTR_UNUSED(user_data))
 {
+#ifndef UB_ON_WINDOWS
 	gtk_menu_popup(GTK_MENU(statusmenu), NULL, NULL,
 		&gtk_status_icon_position_menu, status_icon,
 		button, activate_time);
+#else
+	/* on windows, the statusicon is not good to center on, use the
+	   mouse position */
+	gtk_menu_popup(GTK_MENU(statusmenu), NULL, NULL,
+		NULL, NULL, button, activate_time);
+#endif
 }
 
+G_MODULE_EXPORT
 void 
 on_statusicon_activate(GtkStatusIcon* ATTR_UNUSED(status_icon),
 	gpointer ATTR_UNUSED(user_data))
@@ -233,6 +250,7 @@ on_statusicon_activate(GtkStatusIcon* ATTR_UNUSED(status_icon),
 	}
 }
 
+G_MODULE_EXPORT
 gboolean
 on_unsafe_dialog_delete_event(GtkWidget* ATTR_UNUSED(widget),
 	GdkEvent* ATTR_UNUSED(event), gpointer ATTR_UNUSED(user_data))
@@ -243,6 +261,7 @@ on_unsafe_dialog_delete_event(GtkWidget* ATTR_UNUSED(widget),
 	return TRUE; /* stop other handlers, do not destroy dialog */
 }
 
+G_MODULE_EXPORT
 void on_disconnect_button_clicked(GtkButton *ATTR_UNUSED(button), gpointer
 	ATTR_UNUSED(user_data))
 {
@@ -251,6 +270,7 @@ void on_disconnect_button_clicked(GtkButton *ATTR_UNUSED(button), gpointer
 	attach_send_insecure(0);
 }
 
+G_MODULE_EXPORT
 void on_insecure_button_clicked(GtkButton *ATTR_UNUSED(button), gpointer
 	ATTR_UNUSED(user_data))
 {
@@ -374,6 +394,16 @@ init_gui(int debug)
 	gtk_window_set_icon(GTK_WINDOW(unsafe_dialog), alert_icon);
 }
 
+/** remove GUI stuff on exit */
+static void
+stop_gui(void)
+{
+	gtk_widget_hide(GTK_WIDGET(unsafe_dialog));
+	gtk_widget_hide(GTK_WIDGET(result_window));
+	gtk_widget_hide(GTK_WIDGET(statusmenu));
+	gtk_status_icon_set_visible(status_icon, FALSE);
+}
+
 /** do main work */
 static void
 do_main_work(const char* cfgfile, int debug)
@@ -405,6 +435,7 @@ do_main_work(const char* cfgfile, int debug)
 	gdk_threads_enter();
 	gtk_main();
 	gdk_threads_leave();
+	stop_gui();
 	attach_stop(); /* stop the other thread */
 }
 

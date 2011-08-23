@@ -242,6 +242,29 @@ if [ "$DOWIN" = "yes" ]; then
     make strip || error_exit "could not strip"
     cd tmp.$$
     # TODO files and crosscompile
+    # DLLs linked with the panel on windows (ship DLLs:)
+    # libgdk-win32-2.0-0.dll  -> /opt/gtk/bin/libgdk-win32-2.0-0.dll
+    # libgdk_pixbuf-2.0-0.dll -> /opt/gtk/bin/libgdk_pixbuf-2.0-0.dll
+    # libglib-2.0-0.dll       -> /opt/gtk/bin/libglib-2.0-0.dll
+    # libgobject-2.0-0.dll    -> /opt/gtk/bin/libgobject-2.0-0.dll
+    # libgthread-2.0-0.dll    -> /opt/gtk/bin/libgthread-2.0-0.dll
+    # libgtk-win32-2.0-0.dll  -> /opt/gtk/bin/libgtk-win32-2.0-0.dll
+    # libatk-1.0-0.dll        -> /opt/gtk/bin/libatk-1.0-0.dll
+    # libcairo-2.dll  -> /opt/gtk/bin/libcairo-2.dll
+    # intl.dll        -> /opt/gtk/bin/intl.dll
+    # libgio-2.0-0.dll        -> /opt/gtk/bin/libgio-2.0-0.dll
+    # libgmodule-2.0-0.dll    -> /opt/gtk/bin/libgmodule-2.0-0.dll
+    # libpango-1.0-0.dll      -> /opt/gtk/bin/libpango-1.0-0.dll
+    # libpangocairo-1.0-0.dll -> /opt/gtk/bin/libpangocairo-1.0-0.dll
+    # libpangowin32-1.0-0.dll -> /opt/gtk/bin/libpangowin32-1.0-0.dll
+    # libpng14-14.dll -> /opt/gtk/bin/libpng14-14.dll
+    # zlib1.dll       -> /opt/gtk/bin/zlib1.dll
+    # libpangoft2-1.0-0.dll   -> /opt/gtk/bin/libpangoft2-1.0-0.dll
+    # libfontconfig-1.dll     -> /opt/gtk/bin/libfontconfig-1.dll
+    # freetype6.dll   -> /opt/gtk/bin/freetype6.dll
+    # libexpat-1.dll  -> /usr/local/bin/libexpat-1.dll
+
+
     cp ../example.conf example.conf
     cp ../dnssec-triggerd.exe ../dnssec-trigger-control.exe ../dnssec-trigger-panel.exe .
     # zipfile
