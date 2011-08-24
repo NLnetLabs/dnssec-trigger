@@ -97,11 +97,20 @@
 /* Define to 1 if you have the <openssl/ssl.h> header file. */
 #undef HAVE_OPENSSL_SSL_H
 
+/* Define to 1 if you have the `random' function. */
+#undef HAVE_RANDOM
+
 /* Define to 1 if you have the `setsid' function. */
 #undef HAVE_SETSID
 
+/* Define to 1 if you have the `sleep' function. */
+#undef HAVE_SLEEP
+
 /* Define to 1 if you have the `snprintf' function. */
 #undef HAVE_SNPRINTF
+
+/* Define to 1 if you have the `srandom' function. */
+#undef HAVE_SRANDOM
 
 /* Define if you have the SSL libraries installed. */
 #undef HAVE_SSL
@@ -159,6 +168,9 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Define to 1 if you have the `usleep' function. */
+#undef HAVE_USLEEP
 
 /* Define to 1 if you have the `vfork' function. */
 #undef HAVE_VFORK
