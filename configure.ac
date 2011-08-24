@@ -197,7 +197,7 @@ AC_REPLACE_FUNCS(memmove)
 
 hooks="auto"
 AC_ARG_WITH([hooks], AC_HELP_STRING([--with-hooks],
-[Set the DHCP change hooks to use, default 'auto', can be 'osx', 'networkmanager', 'netconfig', 'windows' or 'none']),,)
+[Set the DHCP change hooks to use, default 'auto', can be 'osx', 'networkmanager', 'netconfig', 'windows' or 'none']),, withval="")
 if test -n "$withval"; then
 	hooks="$withval"
 fi
@@ -206,14 +206,14 @@ fi
 networkmanager_dispatcher_dir="$sysconfdir/NetworkManager/dispatcher.d"
 AC_ARG_WITH([networkmanager-dispatch], AC_HELP_STRING([--with-networkmanager-dispatch],
 	[Set the networkmanager dhcp dispatcher dir, default tests prefix/etc/NetworkManager/dispatcher.d and /etc/NetworkManager/dispatcher.d]),
-	, )
+	, withval="")
 with_nm_dispatch="$withval"
 AC_SUBST(networkmanager_dispatcher_dir)
 
 netconfig_dispatcher_dir="$sysconfdir/netconfig.d"
 AC_ARG_WITH([netconfig-dispatch], AC_HELP_STRING([--with-netconfig-dispatch],
 	[Set the netconfig dhcp dispatcher dir, default tests prefix/etc/netconfig.d and /etc/netconfig.d]),
-	, )
+	, withval="")
 with_netconfig_dispatch="$withval"
 AC_SUBST(netconfig_dispatcher_dir)
 
@@ -275,7 +275,7 @@ if test "$hooks" = "none"; then
 fi
 
 AC_ARG_WITH([keydir], AC_HELP_STRING([--with-keydir=path],
-[Set the directory where ssl key files are kept, read by daemon and other tools, default prefix/etc]),,)
+[Set the directory where ssl key files are kept, read by daemon and other tools, default prefix/etc]),, withval="")
 keydir=`eval echo "$sysconfdir"`
 if test -n "$withval"; then
 	keydir="$withval"
@@ -285,7 +285,7 @@ AC_DEFINE_UNQUOTED([KEYDIR], ["$keydir_esc"], [directory with ssl key files for 
 AC_SUBST(keydir)
 
 AC_ARG_WITH([uidir], AC_HELP_STRING([--with-uidir=path],
-[Set the directory where ui files (icon,xml) are kept, default prefix/share/dnssec-trigger]),,)
+[Set the directory where ui files (icon,xml) are kept, default prefix/share/dnssec-trigger]),, withval="")
 uidir=`eval echo "$datadir/dnssec-trigger"`
 if test -n "$withval"; then
 	uidir="$withval"
@@ -296,7 +296,7 @@ AC_DEFINE_UNQUOTED([UIDIR], ["$uidir_esc"], [directory with UI xml and png for d
 AC_SUBST(uidir)
 
 AC_ARG_WITH([configfile], AC_HELP_STRING([--with-configfile=path],
-[set the configfile to use, default keydir/dnssec-trigger.conf]),,)
+[set the configfile to use, default keydir/dnssec-trigger.conf]),, withval="")
 configfile="$keydir/dnssec-trigger.conf"
 if test -n "$withval"; then
 	configfile="$withval"
@@ -306,7 +306,7 @@ AC_DEFINE_UNQUOTED([CONFIGFILE], ["$configfile_esc"], [default config file name 
 AC_SUBST(configfile)
 
 AC_ARG_WITH([pidfile], AC_HELP_STRING([--with-pidfile=path],
-[set the pidfile to use, default /var/run/dnssec-trigger.pid]),,)
+[set the pidfile to use, default /var/run/dnssec-trigger.pid]),, withval="")
 pidfile="/var/run/dnssec-trigger.pid"
 if test -n "$withval"; then
 	pidfile="$withval"

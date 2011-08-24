@@ -6774,6 +6774,8 @@ hooks="auto"
 # Check whether --with-hooks was given.
 if test "${with_hooks+set}" = set; then :
   withval=$with_hooks;
+else
+  withval=""
 fi
 
 if test -n "$withval"; then
@@ -6786,6 +6788,8 @@ networkmanager_dispatcher_dir="$sysconfdir/NetworkManager/dispatcher.d"
 # Check whether --with-networkmanager-dispatch was given.
 if test "${with_networkmanager_dispatch+set}" = set; then :
   withval=$with_networkmanager_dispatch;
+else
+  withval=""
 fi
 
 with_nm_dispatch="$withval"
@@ -6796,6 +6800,8 @@ netconfig_dispatcher_dir="$sysconfdir/netconfig.d"
 # Check whether --with-netconfig-dispatch was given.
 if test "${with_netconfig_dispatch+set}" = set; then :
   withval=$with_netconfig_dispatch;
+else
+  withval=""
 fi
 
 with_netconfig_dispatch="$withval"
@@ -6869,6 +6875,8 @@ fi
 # Check whether --with-keydir was given.
 if test "${with_keydir+set}" = set; then :
   withval=$with_keydir;
+else
+  withval=""
 fi
 
 keydir=`eval echo "$sysconfdir"`
@@ -6888,6 +6896,8 @@ _ACEOF
 # Check whether --with-uidir was given.
 if test "${with_uidir+set}" = set; then :
   withval=$with_uidir;
+else
+  withval=""
 fi
 
 uidir=`eval echo "$datadir/dnssec-trigger"`
@@ -6908,6 +6918,8 @@ _ACEOF
 # Check whether --with-configfile was given.
 if test "${with_configfile+set}" = set; then :
   withval=$with_configfile;
+else
+  withval=""
 fi
 
 configfile="$keydir/dnssec-trigger.conf"
@@ -6927,6 +6939,8 @@ _ACEOF
 # Check whether --with-pidfile was given.
 if test "${with_pidfile+set}" = set; then :
   withval=$with_pidfile;
+else
+  withval=""
 fi
 
 pidfile="/var/run/dnssec-trigger.pid"
