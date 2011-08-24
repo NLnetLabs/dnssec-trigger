@@ -1,3 +1,6 @@
+24 Aug 2011: Wouter
+	- configure fixed --with.. and test for sleep and random.
+
 23 Aug 2011: Wouter
 	- configure adapted for windows compile.
 	- panel compiles and GUI shows with libGTK+-2.0 on windows.
