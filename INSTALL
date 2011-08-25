@@ -54,8 +54,12 @@ so that it becomes writable again.
 
 Install (OSX)
 -------------
-Same as on Linux, but it needs different actions on step 7 and 8.
-launchd plist to start a server and startup-applications folder for the panel.
+Same as on Linux, but step 7 and 8 are taken care of by putting plist files
+in the LaunchAgents folder.  On OSX prior to 10.5 it puts the user login
+start item enabled for you, but make uninstall cannot disable it, you have
+to manually perform this from the user-account control panel.  On OSX 10.5
+and later, a launchAgent plist item does the job and is installed and
+uninstalled for you.
 
 Test (Demonstration)
 --------------------
