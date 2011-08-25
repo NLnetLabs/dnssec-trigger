@@ -1,3 +1,6 @@
+25 Aug 2011: Wouter
+	- OSX launchd and loginitem installed.
+
 24 Aug 2011: Wouter
 	- configure fixed --with.. and test for sleep and random.
 

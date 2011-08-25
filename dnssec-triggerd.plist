@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC -//Apple Computer//DTD PLIST 1.0//EN http://www.apple.com/DTDs/PropertyList-1.0.dtd >
+<plist version="1.0">
+<!-- 
+plist file for use by MacOSX launchd(8) using launchctl(1).
+Copy this file to /Library/LaunchDaemons.  Launchd keeps the daemon running.
+User root because it has to write to resolv.conf.
+-->
+<dict>
+	<key>Label</key>
+	<string>dnssec-triggerd</string>
+
+	<key>ProgramArguments</key>
+	<array>
+		<string>dnssec-triggerd</string>
+		<string>-d</string>
+	</array>
+
+	<key>UserName</key>
+	<string>root</string>
+
+	<key>KeepAlive</key>
+	<true/>
+
+	<key>RunAtLoad</key>
+	<true/>
+
+</dict>
+</plist>
