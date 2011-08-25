@@ -127,7 +127,7 @@ example.conf:	example.conf.in
 
 dnssec-trigger-control-setup:	dnssec-trigger-control-setup.sh.in
 	rm -f $@
-	sed -e 's?0SHELL0?$(SHELL)?' -e 's?0keydir0?$(keydir)?' < dnssec-trigger-control-setup.sh.in > $@
+	sed -e 's?0SHELL0?$(SHELL)?' -e 's?0keydir0?$(keydir)?' -e 's?0configfile0?$(configfile)?' < dnssec-trigger-control-setup.sh.in > $@
 	chmod +x $@
 
 none-hook:
@@ -239,15 +239,16 @@ networkmanager-hook-uninstall:
 
 osx-hook-install:
 	$(INSTALL) -m 755 -d $(DESTDIR)$(osx_launchagents_dir)
+	$(INSTALL) -m 755 -d $(DESTDIR)$(osx_launchdaemons_dir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(libexecdir)
 	$(INSTALL) -c -m 644 dnssec-trigger-hook.plist $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-hook.plist
 	$(INSTALL) -c -m 755 dnssec-trigger-osx.sh $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
 	$(INSTALL) -c -m 644 dnssec-triggerd.plist $(DESTDIR)$(osx_launchdaemons_dir)/dnssec-triggerd.plist
-	if "`uname -r | cut -d . -f 1`" -lt 9; then \
-		echo install the panel to launch for the user, goes into Library/Preferences/com.apple.loginwindow.plist. ; \
+	if test "`uname -r | cut -d . -f 1`" -lt 9; then \
+		echo "install the panel to launch for the user, goes into Library/Preferences/com.apple.loginwindow.plist." ; \
 		defaults write loginwindow AutoLaunchedApplicationDictionary -array-add "<dict><key>Hide</key><false/><key>Path</key><string>$(DESTDIR)$(sbindir)/dnssec-trigger-panel$(EXEEXT)</string></dict>" ; \
 	else \
-		echo install panel in osx 10.5 and later mode ; \
+		echo "install panel in osx 10.5 and later mode" ; \
 		$(INSTALL) -c -m 644 dnssec-trigger-panel.plist $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-panel.plist ; \
 	fi
 
@@ -256,9 +257,9 @@ osx-hook-uninstall:
 	rm -f -- $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
 	rm -f -- $(DESTDIR)$(osx_launchdaemons_dir)/dnssec-triggerd.plist
 	rm -f -- $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-panel.plist
-	if "`uname -r | cut -d . -f 1`" -lt 9; then \
-		echo there is no way to delete dnssec-trigger-panel from Library/Preferences/com.apple.loginwindow.plist with the defaults tool. ; \
-		echo you have to manually remove it (from the accounts-LoginItems controlpanel pane) ; \
+	if test "`uname -r | cut -d . -f 1`" -lt 9; then \
+		echo "there is no way to delete dnssec-trigger-panel from Library/Preferences/com.apple.loginwindow.plist with the defaults tool." ; \
+		echo "you have to manually remove it (from the accounts-LoginItems controlpanel pane)" ; \
 	fi
 
 netconfig-hook-install:

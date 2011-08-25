@@ -48,7 +48,7 @@
 
 static void prline(FILE* out, const char* line)
 {
-	int r = fprintf(out, line);
+	int r = fprintf(out, "%s", line);
 	if(r < 0) {
 		log_err("cannot write resolvconf: %s", strerror(errno));
 	} else if(r != (int)strlen(line)) {

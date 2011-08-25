@@ -116,18 +116,26 @@ find_unbound_rootkey ( ) {
 
 # install action
 if test "$action" = "install"; then
+	if unbound-checkconf $ubconf ; then
+		:
+	else
+		echo "unbound config $ubconf fails, run again when you fix it"
+		exit 1
+	fi
 	find_unbound_config
 	find_unbound_rootkey
 	echo "checking if unbound-control needs to be enabled"
 	if test "`unbound-checkconf -o control-enable $ubconf`" = "no"; then
-		echo "setup unbound control keys"
+		echo "setup unbound control keys: unbound-control-setup"
 		unbound-control-setup
+		echo "add to $ubconf: control-enable: yes"
 		echo "remote-control: control-enable: yes # linetag-dnssec-trigger" >> $ubconf
 	fi
 	echo "checking if root trust anchor needs to be enabled"
 	if test -z "`unbound-checkconf -o auto-trust-anchor-file $ubconf`"; then
-		echo "fetching or updating root trust anchor"
+		echo "fetching or updating root trust anchor: unbound-anchor"
 		unbound-anchor
+		echo "add to $ubconf: auto-trust-anchor-file: \"$rootkey\""
 		echo "server: auto-trust-anchor-file: "$rootkey" # linetag-dnssec-trigger" >> $ubconf
 	fi
 	echo "check for search path in resolv.conf and edit $configfile"
@@ -135,6 +143,7 @@ if test "$action" = "install"; then
 		if grep "^search: " $configfile >/dev/null; then
 			:
 		else
+			echo "add search path to $configfile"
 			echo >> $configfile
 			echo 'search: "'`grep "^search " /etc/resolv.conf | sed -e "s/^search //"`'"' >> $configfile
 			tail -1 $configfile
@@ -145,6 +154,7 @@ if test "$action" = "install"; then
 		if grep "^domain: " $configfile >/dev/null; then
 			:
 		else
+			echo "add domain to $configfile"
 			echo >> $configfile
 			echo 'domain: "'`grep "^domain " /etc/resolv.conf | sed -e "s/^domain //"`'"' >> $configfile
 			tail -1 $configfile
