@@ -249,7 +249,7 @@ osx-hook-install:
 	else \
 		echo install panel in osx 10.5 and later mode ; \
 		$(INSTALL) -c -m 644 dnssec-trigger-panel.plist $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-panel.plist ; \
-	fi \
+	fi
 
 osx-hook-uninstall:
 	rm -f -- $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-hook.plist
