@@ -59,7 +59,7 @@ set_dns_osx(struct cfg* cfg, char* iplist)
 	else if(cfg->rescf_search && cfg->rescf_search[0]) {
 		snprintf(dm, sizeof(dm), "%s", cfg->rescf_search);
 		if(strchr(dm, ' '))
-			strchr(dm, ' ')[0] = 0; /* stop at first word */
+			strchr(dm, ' ')[0] = 0; /* use first word as domain */
 		domain = dm;
 	}
 	snprintf(cmd, sizeof(cmd), "%s/dnssec-trigger-setdns.sh %s %s",
