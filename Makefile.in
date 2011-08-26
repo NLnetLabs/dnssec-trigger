@@ -117,7 +117,7 @@ $(BUILD)%.o:    $(srcdir)/%.c
 	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
 	$Q$(COMPILE) -o $@ -c $<
 
-all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-panel$(EXEEXT) dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT) $(makehook) example.conf
+all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-panel$(EXEEXT) dnssec-trigger-control$(EXEEXT) dnssec-trigger-control-setup $(makehook) example.conf
 
 test:	
 	@echo done
@@ -144,15 +144,23 @@ networkmanager-hook:	01-dnssec-trigger-hook
 	sed -e 's?0SHELL0?$(SHELL)?' < 01-dnssec-trigger-hook.sh.in > $@
 	chmod +x $@
 
-osx-hook:	dnssec-trigger-hook.plist dnssec-trigger-osx.sh
+osx-hook:	dnssec-trigger-hook.plist dnssec-trigger-osx.sh dnssec-triggerd.plist dnssec-trigger-panel.plist
 
-dnssec-trigger-hook.plist:	dnssec-trigger-hook.plist.in
+dnssec-trigger-hook.plist:	osx/dnssec-trigger-hook.plist.in
 	rm -f $@
-	sed -e 's?0libexecdir0?$(libexecdir)?' < dnssec-trigger-hook.plist.in > $@
+	sed -e 's?0libexecdir0?$(libexecdir)?' < osx/dnssec-trigger-hook.plist.in > $@
 
-dnssec-trigger-osx.sh:	dnssec-trigger-osx.sh.in
+dnssec-trigger-panel.plist:	osx/dnssec-trigger-panel.plist.in
 	rm -f $@
-	sed -e 's?0SHELL0?$(SHELL)?' < dnssec-trigger-osx.sh.in > $@
+	sed -e 's?0bindir0?$(bindir)?' < osx/dnssec-trigger-panel.plist.in > $@
+
+dnssec-triggerd.plist:	osx/dnssec-triggerd.plist.in
+	rm -f $@
+	sed -e 's?0sbindir0?$(sbindir)?' < osx/dnssec-triggerd.plist.in > $@
+
+dnssec-trigger-osx.sh:	osx/dnssec-trigger-osx.sh.in
+	rm -f $@
+	sed -e 's?0SHELL0?$(SHELL)?' -e 's?0sbindir0?$(sbindir)?' < osx/dnssec-trigger-osx.sh.in > $@
 	chmod +x $@
 
 netconfig-hook:	dnssec-trigger-netconfig-hook
@@ -195,7 +203,7 @@ clean:
 	rm -f *.o *.d *.lo *~ tags
 	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
 	rm -f dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT)
-	rm -f 01-dnssec-trigger-hook dnssec-trigger-osx.sh dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf
+	rm -f 01-dnssec-trigger-hook dnssec-trigger-osx.sh dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf dnssec-triggerd.plist dnssec-trigger-panel.plist
 	rm -rf autom4te.cache build
 
 realclean: clean
@@ -242,19 +250,20 @@ osx-hook-install:
 	$(INSTALL) -m 755 -d $(DESTDIR)$(osx_launchagents_dir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(osx_launchdaemons_dir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(libexecdir)
-	$(INSTALL) -c -m 644 dnssec-trigger-hook.plist $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-hook.plist
+	$(INSTALL) -c -m 644 dnssec-trigger-hook.plist $(DESTDIR)$(osx_launchdaemons_dir)/dnssec-trigger-hook.plist
 	$(INSTALL) -c -m 755 dnssec-trigger-osx.sh $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
 	$(INSTALL) -c -m 644 dnssec-triggerd.plist $(DESTDIR)$(osx_launchdaemons_dir)/dnssec-triggerd.plist
 	if test "`uname -r | cut -d . -f 1`" -lt 9; then \
 		echo "install the panel to launch for the user, goes into Library/Preferences/com.apple.loginwindow.plist." ; \
-		defaults write loginwindow AutoLaunchedApplicationDictionary -array-add "<dict><key>Hide</key><false/><key>Path</key><string>$(DESTDIR)$(sbindir)/dnssec-trigger-panel$(EXEEXT)</string></dict>" ; \
+		defaults write loginwindow AutoLaunchedApplicationDictionary -array-add "<dict><key>Hide</key><false/><key>Path</key><string>$(bindir)/dnssec-trigger-panel$(EXEEXT)</string></dict>" ; \
 	else \
 		echo "install panel in osx 10.5 and later mode" ; \
 		$(INSTALL) -c -m 644 dnssec-trigger-panel.plist $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-panel.plist ; \
 	fi
+	echo "To start the daemon, trigger and panel you can reboot; (after dnssec-trigger-control-setup)"
 
 osx-hook-uninstall:
-	rm -f -- $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-hook.plist
+	rm -f -- $(DESTDIR)$(osx_launchdaemons_dir)/dnssec-trigger-hook.plist
 	rm -f -- $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
 	rm -f -- $(DESTDIR)$(osx_launchdaemons_dir)/dnssec-triggerd.plist
 	rm -f -- $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-panel.plist
@@ -280,15 +289,16 @@ install:	all $(installhook)
 	$(INSTALL) -c -m 644 panel/pui.xml $(DESTDIR)$(uidir)/pui.xml
 	$(INSTALL) -c -m 644 panel/status-icon.png $(DESTDIR)$(uidir)/status-icon.png
 	$(INSTALL) -c -m 644 panel/status-icon-alert.png $(DESTDIR)$(uidir)/status-icon-alert.png
-	$(INSTALL) -c -m 755 dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-trigger-panel$(EXEEXT)
+	$(INSTALL) -c -m 755 dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
 	$(INSTALL) -c -m 755 dnssec-trigger-control-setup $(DESTDIR)$(sbindir)/dnssec-trigger-control-setup
 	$(INSTALL) -c -m 755 dnssec-trigger-control$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-trigger-control$(EXEEXT)
 	$(INSTALL) -c -m 755 dnssec-triggerd$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
 	if test ! -f $(DESTDIR)$(configfile); then \
 		$(INSTALL) -c -m 644 example.conf $(DESTDIR)$(configfile); fi
+	echo "It is probably good to run dnssec-trigger-control-setup to generate keys now, and possibly run dnssec-trigger-control-setup -i to edit unbound.conf if it does not have a trust anchor and remote-control"
 
 uninstall: $(uninstallhook)
-	rm -f -- $(DESTDIR)$(sbindir)/dnssec-trigger-panel$(EXEEXT)
+	rm -f -- $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
 	rm -f -- $(DESTDIR)$(sbindir)/dnssec-trigger-control-setup
 	rm -f -- $(DESTDIR)$(sbindir)/dnssec-trigger-control$(EXEEXT)
 	rm -f -- $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)

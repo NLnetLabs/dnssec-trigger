@@ -58,4 +58,10 @@ void hook_resolv_localhost(struct cfg* cfg);
  */
 void hook_resolv_iplist(struct cfg* cfg, struct probe_ip* list);
 
+/**
+ * Flush the DNS caches on the system, if somehow possible
+ * @param cfg: with config options.
+ */
+void hook_resolv_flush(struct cfg* cfg);
+
 #endif /* RESHOOKS_H */

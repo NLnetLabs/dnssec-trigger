@@ -2,6 +2,7 @@
 	- status control command shows the latest probe results (and exits).
 	- use full path for unbound-control (for install in /opt of unbound).
 	- icons at 22px on OSX.
+	- osx dir and osx fixes: full paths, flush cache when secure again.
 
 25 Aug 2011: Wouter
 	- OSX launchd and loginitem installed.

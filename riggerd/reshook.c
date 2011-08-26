@@ -123,3 +123,16 @@ void hook_resolv_iplist(struct cfg* cfg, struct probe_ip* list)
 	}
 	close_rescf(cfg, out);
 }
+
+void hook_resolv_flush(struct cfg* cfg)
+{
+	/* attempt to flush OS specific caches, because we go from
+	 * insecure to secure mode */
+	(void)cfg;
+#if HOOKS_OSX
+	/* dscacheutil on 10.5 an later, lookupd before that */
+	system("dscacheutil -flushcache || lookupd -flushcache");
+#else
+	/* TODO */
+#endif
+}

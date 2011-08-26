@@ -12,7 +12,7 @@ User root because it has to write to resolv.conf.
 
 	<key>ProgramArguments</key>
 	<array>
-		<string>dnssec-triggerd</string>
+		<string>0sbindir0/dnssec-triggerd</string>
 		<string>-d</string>
 	</array>
 

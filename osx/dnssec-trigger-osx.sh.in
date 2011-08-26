@@ -58,5 +58,5 @@ done
 ips=`echo $ips`
 
 logger "dnssec-trigger(osx) detected $ifs DNS $ips"
-dnssec-trigger-control submit "$ips"
+0sbindir0/dnssec-trigger-control submit "$ips"
 exit 0

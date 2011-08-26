@@ -41,6 +41,7 @@
 #include "log.h"
 #include "cfg.h"
 #include "svr.h"
+#include "reshook.h"
 #include "netevent.h"
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
@@ -190,6 +191,9 @@ do_main_work(const char* cfgfile, int nodaemonize, int verb)
 		detach();
 	store_pid(cfg->pidfile);
 	log_info("%s start", PACKAGE_STRING);
+	/* start 127.0.0.1 service (assumes not left in insecure mode),
+	 * unbound starts in authority-direct mode by default */
+	hook_resolv_localhost(cfg);
 	svr_service(svr);
 	unlink_pid(cfg->pidfile);
 	log_info("%s stop", PACKAGE_STRING);

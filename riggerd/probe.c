@@ -806,6 +806,7 @@ probe_all_done(void)
 		/* set unbound to process directly */
 		verbose(VERB_OPS, "probe done: DNSSEC to auth direct");
 		svr->res_state = res_auth;
+		if(svr->insecure_state) hook_resolv_flush(svr->cfg);
 		svr->insecure_state = 0;
 		hook_unbound_auth(svr->cfg);
 		/* set resolv.conf to 127.0.0.1 */
@@ -843,6 +844,7 @@ probe_all_done(void)
 	} else {
 		verbose(VERB_OPS, "probe done: DNSSEC to cache");
 		svr->res_state = res_cache;
+		if(svr->insecure_state) hook_resolv_flush(svr->cfg);
 		svr->insecure_state = 0;
 		/* send the working servers to unbound */
 		hook_unbound_cache_list(svr->cfg, svr->probes);

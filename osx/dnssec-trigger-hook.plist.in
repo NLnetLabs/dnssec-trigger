@@ -4,10 +4,14 @@
 <plist version="1.0">
 <dict>
 	<key>Label</key>
-	<string>nl.nlnetlabs.dnssec-trigger.panel</string>
+	<string>dnssec-trigger-hook</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>dnssec-trigger-panel</string>
+		<string>0libexecdir0/dnssec-trigger-osx.sh</string>
+	</array>
+	<key>WatchPaths</key>
+	<array>
+		<string>/Library/Preferences/SystemConfiguration</string>
 	</array>
 </dict>
 </plist>
