@@ -52,11 +52,16 @@ static void
 set_dns_osx(struct cfg* cfg, char* iplist)
 {
 	char cmd[10240];
+	char dm[1024];
 	char* domain = "nothing.invalid";
-	if(cfg->domain && cfg->domain[0])
-		domain = cfg->domain;
-	else if(cfg->search && cfg->search[0])
-		domain = cfg->search;
+	if(cfg->rescf_domain && cfg->rescf_domain[0])
+		domain = cfg->rescf_domain;
+	else if(cfg->rescf_search && cfg->rescf_search[0]) {
+		snprintf(dm, sizeof(dm), "%s", cfg->rescf_search);
+		if(strchr(dm, ' '))
+			strchr(dm, ' ') = 0; /* stop at first word */
+		domain = dm;
+	}
 	snprintf(cmd, sizeof(cmd), "%s/dnssec-trigger-setdns.sh %s %s",
 		LIBEXEC_DIR, domain, iplist);
 	verbose(VERB_QUERY, "%s", cmd);
