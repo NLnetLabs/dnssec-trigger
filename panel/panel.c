@@ -331,7 +331,12 @@ static GdkPixbuf* load_icon(const char* icon, int debug)
 	GError* error = NULL;
 	if(debug) snprintf(file, sizeof(file), "panel/%s", icon);
 	else snprintf(file, sizeof(file), "%s/%s", UIDIR, icon);
+#ifdef HOOKS_OSX
+	/* smaller icons on OSX because of its tray icon size issues */
+	return gdk_pixbuf_new_from_file_at_size(file, 22, 22, &error);
+#else
 	return gdk_pixbuf_new_from_file_at_size(file, 64, 64, &error);
+#endif
 }
 
 static void make_tray_icon(void)

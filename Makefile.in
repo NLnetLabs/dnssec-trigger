@@ -46,6 +46,7 @@ configfile=@configfile@
 keydir=@keydir@
 uidir=@uidir@
 pidfile=@pidfile@
+unbound_control_path=@unbound_control_path@
 
 # override $U variable which is used by autotools for deansification (for
 # K&R C compilers), but causes problems if $U is defined in the env).
@@ -123,7 +124,7 @@ test:
 
 example.conf:	example.conf.in
 	rm -f $@
-	sed -e 's?0VERSION?$(VERSION)?' -e 's?0keydir0?$(keydir)?' -e 's?0pidfile0?$(pidfile)?' < example.conf.in > $@
+	sed -e 's?0VERSION?$(VERSION)?' -e 's?0keydir0?$(keydir)?' -e 's?0pidfile0?$(pidfile)?' -e 's?0unbound_control_path0?$(unbound_control_path)?' < example.conf.in > $@
 
 dnssec-trigger-control-setup:	dnssec-trigger-control-setup.sh.in
 	rm -f $@

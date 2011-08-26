@@ -193,6 +193,9 @@
 /* Define to 1 if you have the <ws2tcpip.h> header file. */
 #undef HAVE_WS2TCPIP_H
 
+/* we are on OSX, use that os specific funcs */
+#undef HOOKS_OSX
+
 /* directory with ssl key files for dnssec-trigger */
 #undef KEYDIR
 
@@ -234,6 +237,9 @@
 
 /* directory with UI xml and png for dnssec-trigger */
 #undef UIDIR
+
+/* unbound-control to call */
+#undef UNBOUND_CONTROL
 
 /* Use builtin event system */
 #undef USE_MINI_EVENT

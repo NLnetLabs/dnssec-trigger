@@ -18,7 +18,7 @@
 
 # the unbound-control binary if not found in PATH.
 # commandline options can be appended "unbound-control -c my.conf" if you wish.
-# unbound-control: "unbound-control"
+# unbound-control: "0unbound_control_path0"
 
 # where is resolv.conf to edit.
 # resolvconf: "/etc/resolv.conf"

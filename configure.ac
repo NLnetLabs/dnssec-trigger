@@ -270,6 +270,9 @@ if test "$hooks" = "netconfig"; then
 	fi
 	AC_MSG_RESULT([$netconfig_dispatcher_dir])
 fi
+if test "$hooks" = "osx"; then
+	AC_DEFINE([HOOKS_OSX], 1, [we are on OSX, use that os specific funcs])
+fi
 if test "$hooks" = "none"; then
 	AC_MSG_WARN([have no DHCP hooks, cannot detect network changes])
 fi
@@ -314,6 +317,23 @@ fi
 ACX_ESCAPE_BACKSLASH($pidfile, pidfile_esc)
 AC_DEFINE_UNQUOTED([PIDFILE], ["$pidfile_esc"], [default pidfile name for dnssec-trigger])
 AC_SUBST(pidfile)
+
+AC_ARG_WITH([unbound-control], AC_HELP_STRING([--with-unbound-control=path],
+[set the unbound-control to use, default what configure finds in its path]),, withval="")
+AC_MSG_CHECKING([for unbound-control])
+unbound_control_path=`which unbound-control 2>&1`
+if test -n "$withval"; then
+	unbound_control_path="$withval"
+fi
+if test -x "$unbound_control_path"; then
+	AC_MSG_RESULT($unbound_control_path)
+else
+	AC_MSG_RESULT([not found: try "unbound-control" in runtime PATH])
+	unbound_control_path="unbound-control"
+fi
+ACX_ESCAPE_BACKSLASH($unbound_control_path, unbound_control_esc)
+AC_DEFINE_UNQUOTED([UNBOUND_CONTROL], ["$unbound_control_esc"], [unbound-control to call])
+AC_SUBST(unbound_control_path)
 
 # GTK
 GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`

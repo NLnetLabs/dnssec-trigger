@@ -71,6 +71,7 @@ usage()
 	printf("  submit <ips>	submit a list of DHCP provided DNS servers,\n");
 	printf("		separated by spaces, these are then probed.\n");
 	printf("  unsafe	test option that pretends that dnssec fails\n");
+	printf("  status	shows the latest probe results\n");
 	printf("  results	continuous feed of probe results\n");
 	printf("  cmdtray	command channel for gui panel\n");
 	printf("Version %s\n", PACKAGE_VERSION);

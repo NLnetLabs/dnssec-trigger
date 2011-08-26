@@ -117,6 +117,8 @@ struct sslconn {
 	struct ldns_struct_buffer* buffer;
 	/** have to fetch another status update right away */
 	int fetch_another_update;
+	/** close after writing one set of results */
+	int close_me;
 };
 
 extern struct svr* global_svr;

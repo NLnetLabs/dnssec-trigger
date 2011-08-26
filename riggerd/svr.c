@@ -448,6 +448,10 @@ int control_callback(struct comm_point* c, void* arg, int err,
 			return 0;
 		}
 		/* nothing more to write */
+		if(s->close_me) {
+			sslconn_shutdown(s);
+			return 0;
+		}
 		comm_point_listen_for_rw(c, 1, 0);
 		s->line_state = persist_write_checkclose;
 	} else if(s->line_state == persist_write_checkclose) {
@@ -683,6 +687,12 @@ static void handle_results_cmd(struct sslconn* sc)
 	send_results_to_con(global_svr, sc);
 }
 
+static void handle_status_cmd(struct sslconn* sc)
+{
+	sc->close_me = 1;
+	handle_results_cmd(sc);
+}
+
 static void handle_cmdtray_cmd(struct sslconn* sc)
 {
 	/* turn into persist read */
@@ -716,6 +726,8 @@ static void sslconn_command(struct sslconn* sc)
 		sslconn_shutdown(sc);
 	} else if(strncmp(str, "results", 7) == 0) {
 		handle_results_cmd(sc);
+	} else if(strncmp(str, "status", 7) == 0) {
+		handle_status_cmd(sc);
 	} else if(strncmp(str, "cmdtray", 7) == 0) {
 		handle_cmdtray_cmd(sc);
 	} else if(strncmp(str, "unsafe", 6) == 0) {

@@ -163,7 +163,7 @@ struct cfg* cfg_create(const char* cfgfile)
 	cfg->server_cert_file=strdup(KEYDIR"/dnssec_trigger_server.pem");
 	cfg->control_key_file=strdup(KEYDIR"/dnssec_trigger_control.key");
 	cfg->control_cert_file=strdup(KEYDIR"/dnssec_trigger_control.pem");
-	cfg->unbound_control = strdup("unbound-control");
+	cfg->unbound_control = strdup(UNBOUND_CONTROL);
 	cfg->pidfile = strdup(PIDFILE);
 	cfg->resolvconf = strdup("/etc/resolv.conf");
 
