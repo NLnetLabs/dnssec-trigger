@@ -46,6 +46,24 @@
 #include "cfg.h"
 #include "probe.h"
 
+#ifdef HOOKS_OSX
+/** set the DNS the OSX way */
+static void
+set_dns_osx(struct cfg* cfg, char* iplist)
+{
+	char cmd[10240];
+	char* domain = "nothing.invalid";
+	if(cfg->domain && cfg->domain[0])
+		domain = cfg->domain;
+	else if(cfg->search && cfg->search[0])
+		domain = cfg->search;
+	snprintf(cmd, sizeof(cmd), "%s/dnssec-trigger-setdns.sh %s %s",
+		LIBEXEC_DIR, domain, iplist);
+	verbose(VERB_QUERY, "%s", cmd);
+	system(cmd);
+}
+#endif /* HOOKS_OSX */
+
 static void prline(FILE* out, const char* line)
 {
 	int r = fprintf(out, "%s", line);
@@ -102,12 +120,19 @@ void hook_resolv_localhost(struct cfg* cfg)
 	/* write the nameserver records */
 	prline(out, "nameserver 127.0.0.1\n");
 	close_rescf(cfg, out);
+#ifdef HOOKS_OSX
+	set_dns_osx(cfg, "127.0.0.1");
+#endif
 }
 
 void hook_resolv_iplist(struct cfg* cfg, struct probe_ip* list)
 {
 	char line[1024];
 	FILE* out;
+#ifdef HOOKS_OSX
+	char iplist[10240];
+	iplist[0] = 0;
+#endif
 	if(cfg->noaction)
 		return;
 	out = open_rescf(cfg);
@@ -118,10 +143,18 @@ void hook_resolv_iplist(struct cfg* cfg, struct probe_ip* list)
 			snprintf(line, sizeof(line), "nameserver %s\n",
 				list->name);
 			prline(out, line);
+#ifdef HOOKS_OSX
+			snprintf(iplist+strlen(iplist),
+				sizeof(iplist)-strlen(iplist), "%s%s",
+				((iplist[0]==0)?"":" "), list->name);
+#endif
 		}
 		list = list->next;
 	}
 	close_rescf(cfg, out);
+#ifdef HOOKS_OSX
+	set_dns_osx(cfg, iplist);
+#endif
 }
 
 void hook_resolv_flush(struct cfg* cfg)

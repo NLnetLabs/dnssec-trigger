@@ -144,7 +144,7 @@ networkmanager-hook:	01-dnssec-trigger-hook
 	sed -e 's?0SHELL0?$(SHELL)?' < 01-dnssec-trigger-hook.sh.in > $@
 	chmod +x $@
 
-osx-hook:	dnssec-trigger-hook.plist dnssec-trigger-osx.sh dnssec-triggerd.plist dnssec-trigger-panel.plist
+osx-hook:	dnssec-trigger-hook.plist dnssec-trigger-osx.sh dnssec-triggerd.plist dnssec-trigger-panel.plist dnssec-trigger-setdns.sh
 
 dnssec-trigger-hook.plist:	osx/dnssec-trigger-hook.plist.in
 	rm -f $@
@@ -161,6 +161,11 @@ dnssec-triggerd.plist:	osx/dnssec-triggerd.plist.in
 dnssec-trigger-osx.sh:	osx/dnssec-trigger-osx.sh.in
 	rm -f $@
 	sed -e 's?0SHELL0?$(SHELL)?' -e 's?0sbindir0?$(sbindir)?' < osx/dnssec-trigger-osx.sh.in > $@
+	chmod +x $@
+
+dnssec-trigger-setdns.sh:	osx/dnssec-trigger-setdns.sh.in
+	rm -f $@
+	sed -e 's?0SHELL0?$(SHELL)?' < osx/dnssec-trigger-setdns.sh.in > $@
 	chmod +x $@
 
 netconfig-hook:	dnssec-trigger-netconfig-hook
@@ -203,7 +208,7 @@ clean:
 	rm -f *.o *.d *.lo *~ tags
 	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
 	rm -f dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT)
-	rm -f 01-dnssec-trigger-hook dnssec-trigger-osx.sh dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf dnssec-triggerd.plist dnssec-trigger-panel.plist
+	rm -f 01-dnssec-trigger-hook dnssec-trigger-osx.sh dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf dnssec-triggerd.plist dnssec-trigger-panel.plist dnssec-trigger-setdns.sh
 	rm -rf autom4te.cache build
 
 realclean: clean
@@ -252,6 +257,7 @@ osx-hook-install:
 	$(INSTALL) -m 755 -d $(DESTDIR)$(libexecdir)
 	$(INSTALL) -c -m 644 dnssec-trigger-hook.plist $(DESTDIR)$(osx_launchdaemons_dir)/dnssec-trigger-hook.plist
 	$(INSTALL) -c -m 755 dnssec-trigger-osx.sh $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
+	$(INSTALL) -c -m 755 dnssec-trigger-osx.sh $(DESTDIR)$(libexecdir)/dnssec-trigger-setdns.sh
 	$(INSTALL) -c -m 644 dnssec-triggerd.plist $(DESTDIR)$(osx_launchdaemons_dir)/dnssec-triggerd.plist
 	if test "`uname -r | cut -d . -f 1`" -lt 9; then \
 		echo "install the panel to launch for the user, goes into Library/Preferences/com.apple.loginwindow.plist." ; \
@@ -265,6 +271,7 @@ osx-hook-install:
 osx-hook-uninstall:
 	rm -f -- $(DESTDIR)$(osx_launchdaemons_dir)/dnssec-trigger-hook.plist
 	rm -f -- $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
+	rm -f -- $(DESTDIR)$(libexecdir)/dnssec-trigger-setdns.sh
 	rm -f -- $(DESTDIR)$(osx_launchdaemons_dir)/dnssec-triggerd.plist
 	rm -f -- $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-panel.plist
 	if test "`uname -r | cut -d . -f 1`" -lt 9; then \

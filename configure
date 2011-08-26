@@ -3526,6 +3526,9 @@ case "$prefix" in
 		prefix="/usr/local"
         ;;
 esac
+if test "$exec_prefix" == "NONE"; then
+	exec_prefix="$prefix"
+fi
 
 # are we on MinGW?
 if uname -s 2>&1 | grep MINGW32 >/dev/null; then on_mingw="yes"
@@ -6866,6 +6869,15 @@ cat >>confdefs.h <<_ACEOF
 #define KEYDIR "$keydir_esc"
 _ACEOF
 
+
+
+libexec_store_dir=`eval echo "$libexecdir"`
+libexec_store_dir_esc="`echo $libexec_store_dir | sed -e 's/\\\\/\\\\\\\\/g'`"
+
+
+cat >>confdefs.h <<_ACEOF
+#define LIBEXEC_DIR "$libexec_store_dir_esc"
+_ACEOF
 
 
 

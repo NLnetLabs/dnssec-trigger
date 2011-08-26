@@ -17,6 +17,9 @@ case "$prefix" in
 		prefix="/usr/local"
         ;;
 esac
+if test "$exec_prefix" == "NONE"; then
+	exec_prefix="$prefix"
+fi
 
 # are we on MinGW?
 if uname -s 2>&1 | grep MINGW32 >/dev/null; then on_mingw="yes"
@@ -286,6 +289,10 @@ fi
 ACX_ESCAPE_BACKSLASH($keydir, keydir_esc)
 AC_DEFINE_UNQUOTED([KEYDIR], ["$keydir_esc"], [directory with ssl key files for dnssec-trigger])
 AC_SUBST(keydir)
+
+libexec_store_dir=`eval echo "$libexecdir"`
+ACX_ESCAPE_BACKSLASH($libexec_store_dir, libexec_store_dir_esc)
+AC_DEFINE_UNQUOTED([LIBEXEC_DIR], ["$libexec_store_dir_esc"], [directory with scripts for dnssec-trigger])
 
 AC_ARG_WITH([uidir], AC_HELP_STRING([--with-uidir=path],
 [Set the directory where ui files (icon,xml) are kept, default prefix/share/dnssec-trigger]),, withval="")

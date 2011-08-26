@@ -1,0 +1,27 @@
+#!0SHELL0
+# dnssec-trigger shell script to set DNS servers on OSX.
+# must run as root.
+#
+# usage:  example.com 192.0.2.1 192.0.2.2
+
+domain="$1"
+shift
+# remaining arguments are the servers to set
+servers="$*"
+
+logger "dnssec-trigger-setdns to $domain and $servers"
+# find the ids of the networkservices that are running or important
+# output like: State:/Network/Service/AB5ED934-29E2-4E1B-BEDC-9167410B49A0/DNS
+ids=`echo "list State:/Network/Service/[^/]+/DNS" | scutil | sed -e "s?^.* = ??"`
+# set the nameservers of all those entries (and the global one)
+for i in $ids State:/Network/Global/DNS; do
+	scutil <<END
+open
+d.init
+d.add ServerAddresses * $servers
+d.add DomainName $domain
+set $i
+quit
+END
+done
+

@@ -199,6 +199,9 @@
 /* directory with ssl key files for dnssec-trigger */
 #undef KEYDIR
 
+/* directory with scripts for dnssec-trigger */
+#undef LIBEXEC_DIR
+
 /* Define to the maximum message length to pass to syslog. */
 #undef MAXSYSLOGMSGLEN
 
