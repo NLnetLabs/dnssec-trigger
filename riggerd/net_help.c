@@ -38,7 +38,6 @@
  */
 
 #include "config.h"
-#include "ldns/ldns.h"
 #include "net_help.h"
 #include "log.h"
 #include <fcntl.h>
