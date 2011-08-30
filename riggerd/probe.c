@@ -46,7 +46,7 @@
 #include "net_help.h"
 #include "ubhook.h"
 #include "reshook.h"
-#include <ldns/packet.h>
+#include <ldns/ldns.h>
 
 /* create probes for the ip addresses in the string */
 static void probe_spawn(const char* ip, int recurse);
