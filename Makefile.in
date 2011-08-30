@@ -144,7 +144,32 @@ networkmanager-hook:	01-dnssec-trigger-hook
 	sed -e 's?0SHELL0?$(SHELL)?' < 01-dnssec-trigger-hook.sh.in > $@
 	chmod +x $@
 
-osx-hook:	dnssec-trigger-hook.plist dnssec-trigger-osx.sh dnssec-triggerd.plist dnssec-trigger-panel.plist dnssec-trigger-setdns.sh
+osx/RiggerStatusItem/log.c:	riggerd/log.c
+	cp $< $@
+
+osx/RiggerStatusItem/cfg.c:	riggerd/cfg.c
+	cp $< $@
+
+osx/RiggerStatusItem/net_help.c:	riggerd/net_help.c
+	cp $< $@
+
+osx/RiggerStatusItem/log.h:	riggerd/log.h
+	cp $< $@
+
+osx/RiggerStatusItem/cfg.h:	riggerd/cfg.h
+	cp $< $@
+
+osx/RiggerStatusItem/net_help.h:	riggerd/net_help.h
+	cp $< $@
+
+osx/RiggerStatusItem/config.h:	config.h
+	echo TODO
+
+osx/osx-riggerapp: osx/RiggerStatusItem/cfg.c osx/RiggerStatusItem/cfg.h osx/RiggerStatusItem/net_help.c osx/RiggerStatusItem/net_help.h osx/RiggerStatusItem/log.c osx/RiggerStatusItem/log.h osx/RiggerStatusItem/config.h osx/RiggerStatusItem/main.m osx/RiggerStatusItem/RiggerApp.h osx/RiggerStatusItem/RiggerApp.m osx/RiggerStatusItem/osxattach.h osx/RiggerStatusItem/osxattach.m
+	(cd osx/RiggerStatusItem; xcodebuild -project RiggerStatusItem.xcodeproj -alltargets)
+	touch osx/osx-riggerapp
+
+osx-hook:	dnssec-trigger-hook.plist dnssec-trigger-osx.sh dnssec-triggerd.plist dnssec-trigger-panel.plist dnssec-trigger-setdns.sh osx/osx-riggerapp
 
 dnssec-trigger-hook.plist:	osx/dnssec-trigger-hook.plist.in
 	rm -f $@

@@ -1,3 +1,6 @@
+30 Aug 2011: Wouter
+	- osx xcode status item.
+
 26 Aug 2011: Wouter
 	- status control command shows the latest probe results (and exits).
 	- use full path for unbound-control (for install in /opt of unbound).
