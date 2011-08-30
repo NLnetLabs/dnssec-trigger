@@ -494,13 +494,6 @@ AHX_CONFIG_W32_RANDOM
 AHX_CONFIG_W32_SRANDOM
 AHX_CONFIG_W32_FD_SET_T
 [
-/* detect if we need to cast to unsigned int for FD_SET to avoid warnings */
-#ifdef HAVE_WINSOCK2_H
-#define FD_SET_T (u_int)
-#else
-#define FD_SET_T 
-#endif
-
 #include "ldns/ldns.h"
 ])
 

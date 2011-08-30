@@ -531,12 +531,5 @@ int vsnprintf (char *str, size_t count, const char *fmt, va_list arg);
 #endif
 
 
-/* detect if we need to cast to unsigned int for FD_SET to avoid warnings */
-#ifdef HAVE_WINSOCK2_H
-#define FD_SET_T (u_int)
-#else
-#define FD_SET_T 
-#endif
-
 #include "ldns/ldns.h"
 
