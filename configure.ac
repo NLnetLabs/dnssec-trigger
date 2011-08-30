@@ -441,6 +441,10 @@ AH_BOTTOM([
 #include <openssl/rand.h>
 #endif
 
+#ifdef HAVE_OPENSSL_SSL_H
+#include <openssl/ssl.h>
+#endif
+
 #ifdef HAVE_ATTR_FORMAT
 #  define ATTR_FORMAT(archetype, string_index, first_to_check) \
     __attribute__ ((format (archetype, string_index, first_to_check)))
@@ -493,9 +497,7 @@ AHX_CONFIG_W32_USLEEP
 AHX_CONFIG_W32_RANDOM
 AHX_CONFIG_W32_SRANDOM
 AHX_CONFIG_W32_FD_SET_T
-[
-#include "ldns/ldns.h"
-])
+)
 
 DATE=`date +%x`
 AC_SUBST(DATE)
