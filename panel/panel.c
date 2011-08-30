@@ -333,7 +333,7 @@ static GdkPixbuf* load_icon(const char* icon, int debug)
 	else snprintf(file, sizeof(file), "%s/%s", UIDIR, icon);
 #ifdef HOOKS_OSX
 	/* smaller icons on OSX because of its tray icon size issues */
-	return gdk_pixbuf_new_from_file_at_size(file, 22, 22, &error);
+	return gdk_pixbuf_new_from_file_at_size(file, 18, 18, &error);
 #else
 	return gdk_pixbuf_new_from_file_at_size(file, 64, 64, &error);
 #endif
