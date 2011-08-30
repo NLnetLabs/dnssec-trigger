@@ -11,6 +11,8 @@
 #include "osxattach.h"
 #import "RiggerApp.h"
 
+extern char* test_config_file;
+
 /** basically these are the commandline arguments to PanelAlert */
 struct alertinfo {
 	NSLock* lock;
@@ -35,6 +37,8 @@ static void cleanup(void)
 awakeFromNib
 {
 	char* cfgfile = CONFIGFILE;
+	if(test_config_file)
+		cfgfile = test_config_file;
 	
 	/* Setup the status icon in the tray */
 	riggeritem = [[[NSStatusBar	systemStatusBar]

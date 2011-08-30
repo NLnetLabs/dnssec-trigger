@@ -1,5 +1,8 @@
 30 Aug 2011: Wouter
 	- osx xcode status item.
+	- you can test the Cocoa GUI with: cd osx/RiggerStatusItem/
+	  Build/Release and then open RiggerStatusItem.app --args -c /full/
+	  path/to/test.conf.  And have full paths inside test.conf as well.
 
 26 Aug 2011: Wouter
 	- status control command shows the latest probe results (and exits).
