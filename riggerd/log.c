@@ -321,13 +321,6 @@ log_hex(const char* msg, void* data, size_t length)
 	log_hex_f(verbosity, msg, data, length);
 }
 
-void log_buf(enum verbosity_value level, const char* msg, ldns_buffer* buf)
-{
-	if(verbosity < level)
-		return;
-	log_hex_f(level, msg, ldns_buffer_begin(buf), ldns_buffer_limit(buf));
-}
-
 #ifdef USE_WINSOCK
 char* wsa_strerror(DWORD err)
 {
