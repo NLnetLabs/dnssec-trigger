@@ -602,6 +602,7 @@ pidfile
 configfile
 uidir
 keydir
+xdg_autostart_dir
 GTK_LIBS
 GTK_CFLAGS
 gui
@@ -676,6 +677,7 @@ with_hooks
 with_networkmanager_dispatch
 with_netconfig_dispatch
 with_gui
+with_xdg_autostart
 with_keydir
 with_uidir
 with_configfile
@@ -1328,6 +1330,8 @@ Optional Packages:
                           prefix/etc/netconfig.d and /etc/netconfig.d
   --with-gui              Set the user interface style to use, default 'auto',
                           can be 'cocoa' (on OSX) or 'gtk'
+  --with-xdg-autostart    Set the GNOME autostart dir, default tests
+                          prefix/etc/xdg/autostart and /etc/xdg/autostart
   --with-keydir=path      Set the directory where ssl key files are kept, read
                           by daemon and other tools, default prefix/etc
   --with-uidir=path       Set the directory where ui files (icon,xml) are
@@ -6852,7 +6856,7 @@ $as_echo_n "checking for NetworkManager dispatch... " >&6; }
 	if test "$with_nm_dispatch" != ""; then
 		networkmanager_dispatcher_dir="$with_nm_dispatch"
 	else
-		if test -d $networkmanager_dispatcher_dir ; then
+		if test -d "$networkmanager_dispatcher_dir" ; then
 			:
 		else if test -d /etc/NetworkManager/dispatcher.d; then
 			networkmanager_dispatcher_dir="/etc/NetworkManager/dispatcher.d"
@@ -6868,7 +6872,7 @@ $as_echo_n "checking for netconfig.d... " >&6; }
 	if test "$with_netconfig_dispatch" != ""; then
 		netconfig_dispatcher_dir="$with_netconfig_dispatch"
 	else
-		if test -d $netconfig_dispatcher_dir ; then
+		if test -d "$netconfig_dispatcher_dir" ; then
 			:
 		else if test -d /etc/netconfig.d; then
 			netconfig_dispatcher_dir="/etc/netconfig.d"
@@ -6967,6 +6971,32 @@ if test "x$ac_cv_lib_gthread_2_0_g_thread_init" = x""yes; then :
   GTK_LIBS="$GTK_LIBS -lgthread-2.0"
 fi
  esac
+
+	xdg_autostart_dir="$sysconfdir/xdg/autostart"
+
+# Check whether --with-xdg-autostart was given.
+if test "${with_xdg_autostart+set}" = set; then :
+  withval=$with_xdg_autostart;
+else
+  withval=""
+fi
+
+	with_xdg_autostart="$withval"
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for autostart dir" >&5
+$as_echo_n "checking for autostart dir... " >&6; }
+	if test "$with_xdg_autostart" != ""; then
+		xdg_autostart_dir="$with_xdg_autostart"
+	else
+		if test -d "$xdg_autostart_dir" ; then
+			:
+		else if test -d /etc/xdg/autostart; then
+			xdg_autostart_dir="/etc/xdg/autostart"
+			fi
+		fi
+	fi
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $xdg_autostart_dir" >&5
+$as_echo "$xdg_autostart_dir" >&6; }
 fi
 
 

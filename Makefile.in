@@ -44,6 +44,7 @@ installgui=@gui@-gui-install
 uninstallgui=@gui@-gui-uninstall
 networkmanager_dispatcher_dir=@networkmanager_dispatcher_dir@
 netconfig_dispatcher_dir=@netconfig_dispatcher_dir@
+xdg_autostart_dir=@xdg_autostart_dir@
 osx_launchagents_dir=/Library/LaunchAgents
 osx_launchdaemons_dir=/Library/LaunchDaemons
 configfile=@configfile@
@@ -139,7 +140,11 @@ dnssec-trigger-control-setup:	dnssec-trigger-control-setup.sh.in
 	sed -e 's?0SHELL0?$(SHELL)?' -e 's?0keydir0?$(keydir)?' -e 's?0configfile0?$(configfile)?' < dnssec-trigger-control-setup.sh.in > $@
 	chmod +x $@
 
-gtk-gui:	dnssec-trigger-panel$(EXEEXT)
+dnssec-trigger-panel.desktop:	panel/dnssec-trigger-panel.desktop.in
+	rm -f $@
+	sed -e 's?0bindir0?$(bindir)?' -e 's?0uidir0?$(uidir)?' < panel/dnssec-trigger-panel.desktop.in > $@
+
+gtk-gui:	dnssec-trigger-panel$(EXEEXT) dnssec-trigger-panel.desktop
 
 cocoa-gui:	osx/osx-riggerapp dnssec-trigger-panel.plist
 
@@ -246,6 +251,7 @@ clean:
 	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
 	rm -f dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT)
 	rm -f 01-dnssec-trigger-hook dnssec-trigger-osx.sh dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf dnssec-triggerd.plist dnssec-trigger-panel.plist dnssec-trigger-setdns.sh osx/osx-riggerapp
+	rm -f dnssec-trigger-panel.desktop
 	rm -rf autom4te.cache build osx/RiggerStatusItem/build
 
 realclean: clean
@@ -337,12 +343,15 @@ gtk-gui-install:
 	$(INSTALL) -c -m 644 panel/status-icon.png $(DESTDIR)$(uidir)/status-icon.png
 	$(INSTALL) -c -m 644 panel/status-icon-alert.png $(DESTDIR)$(uidir)/status-icon-alert.png
 	$(INSTALL) -c -m 755 dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
+	$(INSTALL) -m 755 -d $(DESTDIR)$(xdg_autostart_dir)
+	$(INSTALL) -c -m 644 dnssec-trigger-panel.desktop $(DESTDIR)$(xdg_autostart_dir)/dnssec-trigger-panel.desktop
 
 gtk-gui-uninstall:
 	rm -f $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
 	rm -f $(DESTDIR)$(uidir)/pui.xml
 	rm -f $(DESTDIR)$(uidir)/status-icon.png
 	rm -f $(DESTDIR)$(uidir)/status-icon-alert.png
+	rm -f $(DESTDIR)$(xdg_autostart_dir)/dnssec-trigger-panel.desktop
 
 install:	all $(installgui) $(installhook)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(sbindir)

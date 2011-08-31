@@ -1,5 +1,6 @@
 31 Aug 2011: Wouter
 	- cocoa and gtk build and install and uninstall make targets
+	- GTK autostart .desktop entry.
 
 30 Aug 2011: Wouter
 	- osx xcode status item.
