@@ -286,7 +286,7 @@ networkmanager-hook-install:
 	$(INSTALL) -c -m 755 01-dnssec-trigger-hook $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger-hook
 
 networkmanager-hook-uninstall:
-	rm -f -- $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger-hook
+	rm -f $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger-hook
 
 osx-hook-install:
 	$(INSTALL) -m 755 -d $(DESTDIR)$(osx_launchdaemons_dir)
@@ -298,10 +298,10 @@ osx-hook-install:
 	echo "To start the daemon, trigger and panel you can reboot; (after dnssec-trigger-control-setup)"
 
 osx-hook-uninstall:
-	rm -f -- $(DESTDIR)$(osx_launchdaemons_dir)/dnssec-trigger-hook.plist
-	rm -f -- $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
-	rm -f -- $(DESTDIR)$(libexecdir)/dnssec-trigger-setdns.sh
-	rm -f -- $(DESTDIR)$(osx_launchdaemons_dir)/dnssec-triggerd.plist
+	rm -f $(DESTDIR)$(osx_launchdaemons_dir)/dnssec-trigger-hook.plist
+	rm -f $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
+	rm -f $(DESTDIR)$(libexecdir)/dnssec-trigger-setdns.sh
+	rm -f $(DESTDIR)$(osx_launchdaemons_dir)/dnssec-triggerd.plist
 	if test "`uname -r | cut -d . -f 1`" -lt 9; then \
 		echo "there is no way to delete dnssec-trigger-panel from Library/Preferences/com.apple.loginwindow.plist with the defaults tool." ; \
 		echo "you have to manually remove it (from the accounts-LoginItems controlpanel pane)" ; \
@@ -320,15 +320,15 @@ cocoa-gui-install:
 	(umask 0022 ; cp -r osx/RiggerStatusItem/build/Release/RiggerStatusItem.app $(DESTDIR)$(libexecdir)/. )
 
 cocoa-gui-uninstall:
-	rm -f -- $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-panel.plist
-	rm -rf -- $(DESTDIR)$(libexecdir)/RiggerStatusItem.app
+	rm -f $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-panel.plist
+	rm -rf $(DESTDIR)$(libexecdir)/RiggerStatusItem.app
 
 netconfig-hook-install:
 	$(INSTALL) -m 755 -d $(DESTDIR)$(netconfig_dispatcher_dir)
 	$(INSTALL) -c -m 755 dnssec-trigger-netconfig-hook $(DESTDIR)$(netconfig_dispatcher_dir)/dnssec-trigger-netconfig-hook
 
 netconfig-hook-uninstall:
-	rm -f -- $(DESTDIR)$(netconfig_dispatcher_dir)/dnssec-trigger-netconfig-hook
+	rm -f $(DESTDIR)$(netconfig_dispatcher_dir)/dnssec-trigger-netconfig-hook
 
 gtk-gui-install:
 	$(INSTALL) -m 755 -d $(DESTDIR)$(bindir)
@@ -339,10 +339,10 @@ gtk-gui-install:
 	$(INSTALL) -c -m 755 dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
 
 gtk-gui-uninstall:
-	rm -f -- $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
-	rm -f -- $(DESTDIR)$(uidir)/pui.xml
-	rm -f -- $(DESTDIR)$(uidir)/status-icon.png
-	rm -f -- $(DESTDIR)$(uidir)/status-icon-alert.png
+	rm -f $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
+	rm -f $(DESTDIR)$(uidir)/pui.xml
+	rm -f $(DESTDIR)$(uidir)/status-icon.png
+	rm -f $(DESTDIR)$(uidir)/status-icon-alert.png
 
 install:	all $(installgui) $(installhook)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(sbindir)
@@ -358,9 +358,9 @@ install:	all $(installgui) $(installhook)
 	echo "It is probably good to run dnssec-trigger-control-setup to generate keys now, and possibly run dnssec-trigger-control-setup -i to edit unbound.conf if it does not have a trust anchor and remote-control"
 
 uninstall:	$(uninstallgui) $(uninstallhook)
-	rm -f -- $(DESTDIR)$(sbindir)/dnssec-trigger-control-setup
-	rm -f -- $(DESTDIR)$(sbindir)/dnssec-trigger-control$(EXEEXT)
-	rm -f -- $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
+	rm -f $(DESTDIR)$(sbindir)/dnssec-trigger-control-setup
+	rm -f $(DESTDIR)$(sbindir)/dnssec-trigger-control$(EXEEXT)
+	rm -f $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
 	chmod 644 /etc/resolv.conf
 	@echo
 	@echo "You still need to remove ssl keys from $(DESTDIR)$(keydir) and $(DESTDIR)$(configfile) by hand"
