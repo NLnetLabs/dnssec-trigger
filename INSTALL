@@ -5,11 +5,13 @@ Quick overview
 The software installs several components
 * the dnssec-triggerd daemon that does probes, it needs to be started on boot.
 * the dnssec-trigger-panel that shows a status icon in the tray. it needs
-  to be in the user startup items.
+  to be in the user startup items.  It can be gtk or cocoa.
 * some sort of hook script that catches DHCP updates, system specific.
+  it can be networkmanager, netconfig, osx or windows.
 
 Before you install you need: gcc, openssl-dev, gtk2-dev, glib-dev and install
 unbound (as a server on 127.0.0.1 that starts on boot), and libldns-dev.
+On OSX, gtk2 and glib are not needed, but XCode is used for cocoa.
 
 The compile process is ./configure && make, as usual.
 
@@ -46,7 +48,7 @@ Install (Linux)
    cause the server to initialise.  It may be possible to call the
    DHCP change hook for this from the startup script.
 8. the dnssec-trigger-panel needs to start for users on login.
-   Something in startup applications list.
+   to this end a .desktop file is installed in /etc/xdg/autostart for GNOME.
    Or you can start it from the commandline (just this once).
 
 On uninstall you may need to chmod 644 /etc/resolv.conf
@@ -60,6 +62,17 @@ start item enabled for you, but make uninstall cannot disable it, you have
 to manually perform this from the user-account control panel.  On OSX 10.5
 and later, a launchAgent plist item does the job and is installed and
 uninstalled for you.
+
+On OSX a cocoa user interface is built instead of GTK, to display the status
+icon on the top right of the menu bar.
+
+On OSX resolv.conf is not the main way to set the DNS server, instead it uses
+system settings.  It is likely that the settings from DHCP are received via
+the same way that the settings are overridden, and that thus in the meantime
+a hole exists where insecure servers are used.  To fix this better system
+integration would be necessary.
+
+Resolv.conf is written to, just to be sure, on MacOSX.
 
 Test (Demonstration)
 --------------------

@@ -343,6 +343,9 @@ if [ "$RECONFIGURE" = "yes" ]; then
     rm -r autom4te* || error_cleanup "Failed to remove autoconf cache directory."
 fi
 
+# fix date at date of tarball release.
+replace_text "dnssec-trigger.8.in" "0DATE0" "`date +%F`"
+
 info "Renaming directory to dnssec-trigger-$version."
 cd ..
 mv dnssec-trigger dnssec-trigger-$version || error_cleanup "Failed to rename directory."
