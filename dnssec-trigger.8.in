@@ -73,13 +73,13 @@ system by providing a (fake) list of DNS server IP addresses.
 The \fBdnssec\-trigger\-control\-setup\fR tool is used to setup the SSL keys
 that the daemon and user panel use to communicate securely.  It must be run
 once after installation.
-.SH "THE CONFIG FILE"
+.SH "THE DNSSEC\-TRIGGER.CONF FILE"
 .LP
 The config file contains options.  It is fairly simple, key: value.
 You can make comments with '#' and have empty lines.  The parser is
 simple and expects one statement per line.
 .TP
-.B verbosity: <num>
+.B verbosity: \fR<num>
 Amount of logging, 1 is default. 0 is only errors, 2 is more detail,
 4 for debug.
 .TP
@@ -89,7 +89,7 @@ The filename where the pid of the dnssec\-triggerd is stored.  Default is 0pidfi
 .B logfile: \fR"<file>"
 Log to a file instead of syslog, default is to syslog.
 .TP
-.B use\-syslog: <yes or no>
+.B use\-syslog: \fR<yes or no>
 Log to syslog, default is yes.  Set to no logs to stderr (if no logfile) or
 the configured logfile.
 .TP
@@ -102,9 +102,10 @@ i.e. "/usr/local/bin/unbound\-control \-c my.conf".
 .B resolvconf: \fR"/etc/resolv.conf"
 The resolv.conf file to edit (on posix systems).  The daemon keeps the file
 readonly and only make it writable shortly to change it itself.  This is
-to keep other software from interfering.  This is known to fail on MacOSX,
-the system has a different network configuration that contains the DHCP
-information before the daemon intercepts it.
+to keep other software from interfering.  On OSX (if compiled in) also the
+DNS settings are changed in the runtime network configuration machinery,
+but because this is also where the DHCP info comes from there may be periods
+where the DNS server override does not exist.
 .TP
 .B domain: \fR"example.com"
 The domain to set in resolv.conf.  See \fIresolv.conf\fR(5).  Picked up
@@ -116,11 +117,11 @@ The domain name search path to set in resolv.conf.  See \fIresolv.conf\fR(5).
 Picked up once during installation, and not from DHCP since it allows
 directing traffic elsewhere.
 .TP
-.B noaction: <yes or no>
+.B noaction: \fR<yes or no>
 Default is no.  If yes, no action is taken to change unbound\-control or
 resolv.conf.  The probe results are available for inspection.
 .TP
-.B port: <8955>
+.B port: \fR<8955>
 Port number to use for communication with dnssec\-triggerd.  Communication
 uses 127.0.0.1 (the loopback interface).  SSL is used to secure it,
 and the keys are stored on the disk (see below).  The other tools read this
@@ -163,7 +164,7 @@ increase verbosity of dnssec\-trigger\-control.
 .PP
 Commands:
 .TP
-.B submit <ips>
+.B submit \fR<ips>
 Submit a list of space separated IP addresses (from DHCP) that are the DNS
 servers that the daemon will probe.  IPv4 and IPv6 addresses can be used.
 .TP
