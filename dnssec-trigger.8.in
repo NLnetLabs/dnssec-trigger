@@ -1,0 +1,216 @@
+.TH "dnssec-trigger" "8" "0DATE0" "NLnet Labs" "dnssec-trigger 0VERSION0"
+.\"
+.\" dnssec-trigger.8 -- dnssec trigger manual
+.\"
+.\" Copyright (c) 2011, NLnet Labs. All rights reserved.
+.\"
+.\" See LICENSE for the license.
+.\"
+.\"
+.SH "NAME"
+.LP
+.B dnssec-trigger,
+.B dnssec-triggerd,
+.B dnssec-trigger-panel,
+.B dnssec-trigger-control,
+.B dnssec-trigger-control-setup,
+.B dnssec-trigger.conf
+\- check DNS servers for DNSSEC support and adjust to compensate.
+.SH "SYNOPSIS"
+.LP
+.B dnssec-triggerd
+.RB [ \-d ]
+.RB [ \-v ]
+.RB [ \-c 
+.IR file ]
+.LP
+.B dnssec-trigger-control
+.RB [ \-c 
+.IR file ]
+.RB [ \-s 
+ip[@port] ] command [arguments]
+.LP
+.B dnssec-trigger-panel
+.RB [ \-d ]
+.RB [ \-c 
+.IR file ]
+.SH "DESCRIPTION"
+.LP
+The \fBdnssec\-trigger\fR programs steer \fIunbound\fR(8)
+towards DNSSEC capable DNS servers.  A DHCP hook installed on the
+system calls \fBdnssec\-trigger\-control\fR that contacts the daemon
+\fBdnssec\-triggerd\fR that probes the list of servers.  The daemon then
+adjusts a running unbound through \fIunbound\-control\fR(8) and notifies
+the user applet \fBdnssec\-trigger\-panel\fR for GUI display.
+.SH "THE DNSSEC\-TRIGGERD DAEMON"
+.LP
+Thus the dnssec\-triggerd daemon runs continually, and is started after
+boot.  It receives a list of IP addresses, probes them, and adjusts
+unbound and resolv.conf.  Unbound acts as the validating local resolver,
+running on 127.0.0.1.  And resolv.conf is modified to point to 127.0.0.1.
+.TP
+.B \-c\fI cfgfile
+Set the config file with settings for the dnssec\-triggerd to read
+instead of reading the file at the default location, 0configfile0. The
+syntax is described below.
+.TP
+.B \-d
+Debug flag, do not fork into the background, but stay attached to the console.
+.TP
+.B \-v
+Increase verbosity. If given multiple times, more information is logged.
+This is in addition to the verbosity (if any) from the config file.
+.B
+.P
+The dnssec\-trigger\-panel runs after user login, displays notifications and
+status to the user.  It may popup a warning if no DNSSEC capable servers
+are available, with options to disconnect or to connect insecurely.
+.P
+The dnssec\-trigger\-control tool is used in the background by scripts to
+notify the daemon of new (DHCP) DNS servers.  It can be used to test the
+system by providing a (fake) list of DNS server IP addresses.
+.P
+The \fBdnssec\-trigger\-control\-setup\fR tool is used to setup the SSL keys
+that the daemon and user panel use to communicate securely.  It must be run
+once after installation.
+.SH "THE CONFIG FILE"
+.LP
+The config file contains options.  It is fairly simple, key: value.
+You can make comments with '#' and have empty lines.  The parser is
+simple and expects one statement per line.
+.TP
+.B verbosity: <num>
+Amount of logging, 1 is default. 0 is only errors, 2 is more detail,
+4 for debug.
+.TP
+.B pidfile: \fR"<file>"
+The filename where the pid of the dnssec\-triggerd is stored.  Default is 0pidfile0.
+.TP
+.B logfile: \fR"<file>"
+Log to a file instead of syslog, default is to syslog.
+.TP
+.B use\-syslog: <yes or no>
+Log to syslog, default is yes.  Set to no logs to stderr (if no logfile) or
+the configured logfile.
+.TP
+.B unbound\-control: \fR"<command>"
+The string gives the command to execute.  It can be "unbound\-control"
+to search the runtime PATH, or a full pathname.  With a space
+after the command arguments can be configured to the command,
+i.e. "/usr/local/bin/unbound\-control \-c my.conf".
+.TP
+.B resolvconf: \fR"/etc/resolv.conf"
+The resolv.conf file to edit (on posix systems).  The daemon keeps the file
+readonly and only make it writable shortly to change it itself.  This is
+to keep other software from interfering.  This is known to fail on MacOSX,
+the system has a different network configuration that contains the DHCP
+information before the daemon intercepts it.
+.TP
+.B domain: \fR"example.com"
+The domain to set in resolv.conf.  See \fIresolv.conf\fR(5).  Picked up
+once during installation, and not from DHCP since it allows directing
+traffic elsewhere.
+.TP
+.B search: \fR"example.com"
+The domain name search path to set in resolv.conf.  See \fIresolv.conf\fR(5).
+Picked up once during installation, and not from DHCP since it allows
+directing traffic elsewhere.
+.TP
+.B noaction: <yes or no>
+Default is no.  If yes, no action is taken to change unbound\-control or
+resolv.conf.  The probe results are available for inspection.
+.TP
+.B port: <8955>
+Port number to use for communication with dnssec\-triggerd.  Communication
+uses 127.0.0.1 (the loopback interface).  SSL is used to secure it,
+and the keys are stored on the disk (see below).  The other tools read this
+config file to find the port number and key locations.
+.TP
+.B server\-key\-file: \fR"0keydir0/dnssec_trigger_server.key"
+.TP
+.B server\-cert\-file: \fR"0keydir0/dnssec_trigger_server.pem"
+.TP
+.B control\-key\-file: \fR"0keydir0/dnssec_trigger_control.key"
+.TP
+.B control\-cert\-file: \fR"0keydir0/dnssec_trigger_control.pem"
+The files used for SSL secured communication with dnssec\-triggerd.  These
+files can be created with dnssec\-trigger\-control\-setup (run as root).
+.SH "THE DNSSEC\-TRIGGER\-PANEL"
+The dnssec\-trigger\-panel is an applet that runs in the tray.  It shows
+the DNSSEC status.  It can be invoked with \-d to test in the build
+directory.  The \-c \fIcfgfile\fR option can set the config file away
+from the default.  The applet keeps an SSL connection to the daemon
+and displays the status, and can show the user dialogs.  The applet
+has a small menu.  The menu item \fBReprobe\fR causes the daemon to
+probe the last seen DHCP DNS servers again, which may now work after a
+hotspot signon.  The \fBProbe Result\fR menu item shows the results of the
+previous probe to the user, for technical help with network difficulties.
+.SH "THE DNSSEC\-TRIGGER\-CONTROL TOOL"
+The dnssec\-trigger\-control tool can be used to test.  It is also used
+inside DHCP scripts (platform specific).  It can send commands to the daemon.
+.PP
+Options:
+.TP
+.B \-c \fIcfgfile
+Set the config file to use away from the default.
+.TP
+.B \-s \fIip[@port]
+Default connects to 127.0.0.1 with the port from config file, but this
+options overrides that with an IPv4 or IPv6 address and optional a port.
+.TP
+.B \-v
+increase verbosity of dnssec\-trigger\-control.
+.PP
+Commands:
+.TP
+.B submit <ips>
+Submit a list of space separated IP addresses (from DHCP) that are the DNS
+servers that the daemon will probe.  IPv4 and IPv6 addresses can be used.
+.TP
+.B unsafe
+Test command that probes some 127/8 addresses in a way that makes the daemon
+conclude that no DNSSEC works.  Presents user with 'Insecure?' dialog.
+.TP
+.B status
+Shows the last probe results.
+.TP
+.B results
+continuous feed of probe results.
+.TP
+.B cmdtray
+Continuous input feed, used by the tray icon to send commands to the daemon.
+.SH "THE DNSSEC\-TRIGGER\-CONTROL\-SETUP TOOL"
+This tool aids setup of files.  Without arguments it creates the key files.
+If key files already exist, it resigns certificates with existing private keys.
+With \-d dir the files are placed in the given directory.
+.PP
+With \-i the tool changes configuration files.  It tests if unbound has
+\fBremote\-control\fR: \fBcontrol\-enable\fR: yes and if not appends
+lines to unbound.conf that enable unbound\-control, and it runs
+unbound\-control\-setup to generate the keys for unbound\-control.
+It tests if unbound has a trust anchor, if not it enables the root.key as
+\fBauto\-trust\-anchor\-file\fR and runs \fIunbound\-anchor\fR(8) to
+initialize the key.  It picks up the domain and search from resolv.conf and
+configures the dnssec\-trigger.conf to use that.
+.PP
+Note the tool trusts the domain and search path at install time.  You should
+review them or perform configuration manually.
+.PP
+With \-u it removes the options it enabled in \fIunbound.conf\fR(5).
+.SH "FILES"
+.TP
+.I 0configfile0
+The default configuration file.
+.TP
+.I 0keydir0
+Directory with keys used for SSL connections to dnssec\-triggerd.
+.TP
+.I 0pidfile0
+Default pidfile with the pid of the running dnssec\-triggerd.
+.SH "SEE ALSO"
+\fIunbound.conf\fR(5), 
+\fIresolv.conf\fR(5), 
+\fIunbound\-control\fR(8),
+\fIunbound\fR(8).
+.SH "AUTHORS"
+This program was developed by Wouter Wijngaards at NLnet Labs.

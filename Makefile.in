@@ -126,14 +126,18 @@ $(BUILD)%.o:    $(srcdir)/%.c
 	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
 	$Q$(COMPILE) -o $@ -c $<
 
-all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-control$(EXEEXT) dnssec-trigger-control-setup $(makehook) $(makegui) example.conf
+all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-control$(EXEEXT) dnssec-trigger-control-setup $(makehook) $(makegui) example.conf dnssec-trigger.8
 
 test:	
 	@echo done
 
 example.conf:	example.conf.in
 	rm -f $@
-	sed -e 's?0VERSION?$(VERSION)?' -e 's?0keydir0?$(keydir)?' -e 's?0pidfile0?$(pidfile)?' -e 's?0unbound_control_path0?$(unbound_control_path)?' < example.conf.in > $@
+	sed -e 's?0VERSION0?$(VERSION)?' -e 's?0keydir0?$(keydir)?' -e 's?0pidfile0?$(pidfile)?' -e 's?0unbound_control_path0?$(unbound_control_path)?' < example.conf.in > $@
+
+dnssec-trigger.8:	dnssec-trigger.8.in
+	rm -f $@
+	sed -e 's?0VERSION0?$(VERSION)?' -e 's?0DATE0?'"`date +%F`"'?' -e 's?0keydir0?$(keydir)?' -e 's?0pidfile0?$(pidfile)?' -e 's?0configfile0?$(configfile)?' < dnssec-trigger.8.in > $@
 
 dnssec-trigger-control-setup:	dnssec-trigger-control-setup.sh.in
 	rm -f $@
@@ -251,7 +255,7 @@ clean:
 	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
 	rm -f dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT)
 	rm -f 01-dnssec-trigger-hook dnssec-trigger-osx.sh dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf dnssec-triggerd.plist dnssec-trigger-panel.plist dnssec-trigger-setdns.sh osx/osx-riggerapp
-	rm -f dnssec-trigger-panel.desktop
+	rm -f dnssec-trigger-panel.desktop dnssec-trigger.8
 	rm -rf autom4te.cache build osx/RiggerStatusItem/build
 
 realclean: clean
@@ -359,6 +363,7 @@ install:	all $(installgui) $(installhook)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)/man8
 	$(INSTALL) -m 755 -d $(DESTDIR)$(keydir)
 	-$(INSTALL) -m 755 -d "`dirname $(DESTDIR)$(pidfile)`"
+	$(INSTALL) -c -m 644 dnssec-trigger.8 $(DESTDIR)$(mandir)/man8/dnssec-trigger.8
 	$(INSTALL) -c -m 755 dnssec-trigger-control-setup $(DESTDIR)$(sbindir)/dnssec-trigger-control-setup
 	$(INSTALL) -c -m 755 dnssec-trigger-control$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-trigger-control$(EXEEXT)
 	$(INSTALL) -c -m 755 dnssec-triggerd$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
@@ -367,6 +372,7 @@ install:	all $(installgui) $(installhook)
 	echo "It is probably good to run dnssec-trigger-control-setup to generate keys now, and possibly run dnssec-trigger-control-setup -i to edit unbound.conf if it does not have a trust anchor and remote-control"
 
 uninstall:	$(uninstallgui) $(uninstallhook)
+	rm -f $(DESTDIR)$(mandir)/man8/dnssec-trigger.8
 	rm -f $(DESTDIR)$(sbindir)/dnssec-trigger-control-setup
 	rm -f $(DESTDIR)$(sbindir)/dnssec-trigger-control$(EXEEXT)
 	rm -f $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
