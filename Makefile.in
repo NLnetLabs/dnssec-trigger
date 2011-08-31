@@ -245,7 +245,7 @@ clean:
 	rm -f *.o *.d *.lo *~ tags
 	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
 	rm -f dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT)
-	rm -f 01-dnssec-trigger-hook dnssec-trigger-osx.sh dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf dnssec-triggerd.plist dnssec-trigger-panel.plist dnssec-trigger-setdns.sh
+	rm -f 01-dnssec-trigger-hook dnssec-trigger-osx.sh dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf dnssec-triggerd.plist dnssec-trigger-panel.plist dnssec-trigger-setdns.sh osx/osx-riggerapp
 	rm -rf autom4te.cache build osx/RiggerStatusItem/build
 
 realclean: clean
