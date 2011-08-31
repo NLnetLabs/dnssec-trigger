@@ -7,7 +7,7 @@
 	<string>dnssec-trigger-panel</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>0bindir0/dnssec-trigger-panel</string>
+		<string>0libexecdir0/RiggerStatusItem.app/Contents/MacOS/RiggerStatusItem</string>
 	</array>
 </dict>
 </plist>

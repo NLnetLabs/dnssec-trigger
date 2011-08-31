@@ -280,6 +280,39 @@ if test "$hooks" = "none"; then
 	AC_MSG_WARN([have no DHCP hooks, cannot detect network changes])
 fi
 
+gui="auto"
+AC_ARG_WITH([gui], AC_HELP_STRING([--with-gui],
+[Set the user interface style to use, default 'auto', can be 'cocoa' (on OSX) or 'gtk']),, withval="")
+if test -n "$withval"; then
+	hooks="$withval"
+fi
+AC_MSG_CHECKING([for gui])
+if test "$gui" != "auto"; then
+	:
+else
+	if test `uname` = "Darwin"; then
+		gui="cocoa"
+	else
+		gui="gtk"
+	fi
+fi
+AC_MSG_RESULT([$gui])
+AC_SUBST(gui)
+
+if test "$gui" = "gtk"; then
+	# GTK
+	GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
+	GTK_LIBS=`pkg-config --libs gtk+-2.0`
+	if test -z "$GTK_LIBS"; then
+		AC_MSG_WARN([No gtk+-2.0 detected, please install glib-dev, gtk2-dev])
+	fi
+	AC_SUBST(GTK_CFLAGS)
+	AC_SUBST(GTK_LIBS)
+	# check for missing -lgthread-2.0 in the GTK_LIBS string.
+	case "$GTK_LIBS" in *-lgthread* ) ;;
+	*) AC_CHECK_LIB(gthread-2.0, g_thread_init, [GTK_LIBS="$GTK_LIBS -lgthread-2.0"]) esac
+fi
+
 AC_ARG_WITH([keydir], AC_HELP_STRING([--with-keydir=path],
 [Set the directory where ssl key files are kept, read by daemon and other tools, default prefix/etc]),, withval="")
 keydir=`eval echo "$sysconfdir"`
@@ -341,18 +374,6 @@ fi
 ACX_ESCAPE_BACKSLASH($unbound_control_path, unbound_control_esc)
 AC_DEFINE_UNQUOTED([UNBOUND_CONTROL], ["$unbound_control_esc"], [unbound-control to call])
 AC_SUBST(unbound_control_path)
-
-# GTK
-GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
-GTK_LIBS=`pkg-config --libs gtk+-2.0`
-if test -z "$GTK_LIBS"; then
-	AC_MSG_WARN([No gtk+-2.0 detected, please install glib-dev, gtk2-dev])
-fi
-AC_SUBST(GTK_CFLAGS)
-AC_SUBST(GTK_LIBS)
-# check for missing -lgthread-2.0 in the GTK_LIBS string.
-case "$GTK_LIBS" in *-lgthread* ) ;;
-*) AC_CHECK_LIB(gthread-2.0, g_thread_init, [GTK_LIBS="$GTK_LIBS -lgthread-2.0"]) esac
 
 LDNSLIBS=""
 AC_ARG_WITH(ldns, AC_HELP_STRING([--with-ldns=PATH], 
@@ -509,7 +530,7 @@ if test "$hooks" = "none"; then
 	echo "WARNING NO DHCP HOOKS DETECTED CANNOT SETUP TRIGGER"
 fi
 [
-echo "configure completed with $hooks hooks, now you can"
+echo "configure completed with $hooks hooks and $gui gui, now you can"
 echo "	make | make all		: compile the code"
 echo "	make install 		: install files"
 echo "	make uninstall 		: uninstall files"
