@@ -150,7 +150,7 @@ dnssec-trigger-panel.desktop:	panel/dnssec-trigger-panel.desktop.in
 
 gtk-gui:	dnssec-trigger-panel$(EXEEXT) dnssec-trigger-panel.desktop
 
-cocoa-gui:	osx/osx-riggerapp dnssec-trigger-panel.plist
+cocoa-gui:	osx/osx-riggerapp nl.nlnetlabs.dnssec-trigger-panel.plist
 
 none-hook:
 	echo "no dhcp hooks available, need trigger script"
@@ -190,19 +190,19 @@ osx/osx-riggerapp: osx/RiggerStatusItem/cfg.c osx/RiggerStatusItem/cfg.h osx/Rig
 	(cd osx/RiggerStatusItem; xcodebuild -project RiggerStatusItem.xcodeproj -alltargets)
 	touch osx/osx-riggerapp
 
-osx-hook:	dnssec-trigger-hook.plist dnssec-trigger-osx.sh dnssec-triggerd.plist dnssec-trigger-setdns.sh
+osx-hook:	nl.nlnetlabs.dnssec-trigger-hook.plist dnssec-trigger-osx.sh nl.nlnetlabs.dnssec-triggerd.plist dnssec-trigger-setdns.sh
 
-dnssec-trigger-hook.plist:	osx/dnssec-trigger-hook.plist.in
+nl.nlnetlabs.dnssec-trigger-hook.plist:	osx/nl.nlnetlabs.dnssec-trigger-hook.plist.in
 	rm -f $@
-	sed -e 's?0libexecdir0?$(libexecdir)?' < osx/dnssec-trigger-hook.plist.in > $@
+	sed -e 's?0libexecdir0?$(libexecdir)?' < osx/nl.nlnetlabs.dnssec-trigger-hook.plist.in > $@
 
-dnssec-trigger-panel.plist:	osx/dnssec-trigger-panel.plist.in
+nl.nlnetlabs.dnssec-trigger-panel.plist:	osx/nl.nlnetlabs.dnssec-trigger-panel.plist.in
 	rm -f $@
-	sed -e 's?0libexecdir0?$(libexecdir)?' < osx/dnssec-trigger-panel.plist.in > $@
+	sed -e 's?0libexecdir0?$(libexecdir)?' < osx/nl.nlnetlabs.dnssec-trigger-panel.plist.in > $@
 
-dnssec-triggerd.plist:	osx/dnssec-triggerd.plist.in
+nl.nlnetlabs.dnssec-triggerd.plist:	osx/nl.nlnetlabs.dnssec-triggerd.plist.in
 	rm -f $@
-	sed -e 's?0sbindir0?$(sbindir)?' < osx/dnssec-triggerd.plist.in > $@
+	sed -e 's?0sbindir0?$(sbindir)?' < osx/nl.nlnetlabs.dnssec-triggerd.plist.in > $@
 
 dnssec-trigger-osx.sh:	osx/dnssec-trigger-osx.sh.in
 	rm -f $@
@@ -254,7 +254,7 @@ clean:
 	rm -f *.o *.d *.lo *~ tags
 	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
 	rm -f dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT)
-	rm -f 01-dnssec-trigger-hook dnssec-trigger-osx.sh dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf dnssec-triggerd.plist dnssec-trigger-panel.plist dnssec-trigger-setdns.sh osx/osx-riggerapp
+	rm -f 01-dnssec-trigger-hook dnssec-trigger-osx.sh nl.nlnetlabs.dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf nl.nlnetlabs.dnssec-triggerd.plist nl.nlnetlabs.dnssec-trigger-panel.plist dnssec-trigger-setdns.sh osx/osx-riggerapp
 	rm -f dnssec-trigger-panel.desktop dnssec-trigger.8
 	rm -rf autom4te.cache build osx/RiggerStatusItem/build
 
@@ -301,17 +301,17 @@ networkmanager-hook-uninstall:
 osx-hook-install:
 	$(INSTALL) -m 755 -d $(DESTDIR)$(osx_launchdaemons_dir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(libexecdir)
-	$(INSTALL) -c -m 644 dnssec-trigger-hook.plist $(DESTDIR)$(osx_launchdaemons_dir)/dnssec-trigger-hook.plist
+	$(INSTALL) -c -m 644 nl.nlnetlabs.dnssec-trigger-hook.plist $(DESTDIR)$(osx_launchdaemons_dir)/nl.nlnetlabs.dnssec-trigger-hook.plist
 	$(INSTALL) -c -m 755 dnssec-trigger-osx.sh $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
 	$(INSTALL) -c -m 755 dnssec-trigger-setdns.sh $(DESTDIR)$(libexecdir)/dnssec-trigger-setdns.sh
-	$(INSTALL) -c -m 644 dnssec-triggerd.plist $(DESTDIR)$(osx_launchdaemons_dir)/dnssec-triggerd.plist
+	$(INSTALL) -c -m 644 nl.nlnetlabs.dnssec-triggerd.plist $(DESTDIR)$(osx_launchdaemons_dir)/nl.nlnetlabs.dnssec-triggerd.plist
 	echo "To start the daemon, trigger and panel you can reboot; (after dnssec-trigger-control-setup)"
 
 osx-hook-uninstall:
-	rm -f $(DESTDIR)$(osx_launchdaemons_dir)/dnssec-trigger-hook.plist
+	rm -f $(DESTDIR)$(osx_launchdaemons_dir)/nl.nlnetlabs.dnssec-trigger-hook.plist
 	rm -f $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
 	rm -f $(DESTDIR)$(libexecdir)/dnssec-trigger-setdns.sh
-	rm -f $(DESTDIR)$(osx_launchdaemons_dir)/dnssec-triggerd.plist
+	rm -f $(DESTDIR)$(osx_launchdaemons_dir)/nl.nlnetlabs.dnssec-triggerd.plist
 	if test "`uname -r | cut -d . -f 1`" -lt 9; then \
 		echo "there is no way to delete dnssec-trigger-panel from Library/Preferences/com.apple.loginwindow.plist with the defaults tool." ; \
 		echo "you have to manually remove it (from the accounts-LoginItems controlpanel pane)" ; \
@@ -325,12 +325,12 @@ cocoa-gui-install:
 		defaults write loginwindow AutoLaunchedApplicationDictionary -array-add "<dict><key>Hide</key><false/><key>Path</key><string>$(libexecdir)/RiggerStatusItem.app/Contents/MacOS/RiggerStatusItem</string></dict>" ; \
 	else \
 		echo "install panel in osx 10.5 and later mode" ; \
-		$(INSTALL) -c -m 644 dnssec-trigger-panel.plist $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-panel.plist ; \
+		$(INSTALL) -c -m 644 nl.nlnetlabs.dnssec-trigger-panel.plist $(DESTDIR)$(osx_launchagents_dir)/nl.nlnetlabs.dnssec-trigger-panel.plist ; \
 	fi
 	(umask 0022 ; cp -r osx/RiggerStatusItem/build/Release/RiggerStatusItem.app $(DESTDIR)$(libexecdir)/. )
 
 cocoa-gui-uninstall:
-	rm -f $(DESTDIR)$(osx_launchagents_dir)/dnssec-trigger-panel.plist
+	rm -f $(DESTDIR)$(osx_launchagents_dir)/nl.nlnetlabs.dnssec-trigger-panel.plist
 	rm -rf $(DESTDIR)$(libexecdir)/RiggerStatusItem.app
 
 netconfig-hook-install:

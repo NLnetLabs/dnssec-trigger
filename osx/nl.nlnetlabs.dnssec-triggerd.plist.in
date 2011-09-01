@@ -8,7 +8,7 @@ User root because it has to write to resolv.conf.
 -->
 <dict>
 	<key>Label</key>
-	<string>dnssec-triggerd</string>
+	<string>nl.nlnetlabs.dnssec-triggerd</string>
 
 	<key>ProgramArguments</key>
 	<array>
