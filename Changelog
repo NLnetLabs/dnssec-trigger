@@ -1,5 +1,7 @@
 1 Sep 2011: Wouter
 	- install backups and uninstall restores resolv.conf.
+	- watch on OSX the network.plist and airport.plist files and not
+	  the entire directory, which changes too often.
 
 31 Aug 2011: Wouter
 	- cocoa and gtk build and install and uninstall make targets
