@@ -304,7 +304,7 @@ if test "$gui" = "gtk"; then
 	GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
 	GTK_LIBS=`pkg-config --libs gtk+-2.0`
 	if test -z "$GTK_LIBS"; then
-		AC_MSG_WARN([No gtk+-2.0 detected, please install glib-dev, gtk2-dev])
+		AC_MSG_ERROR([No gtk+-2.0 detected, please install glib-dev, gtk2-dev])
 	fi
 	AC_SUBST(GTK_CFLAGS)
 	AC_SUBST(GTK_LIBS)
