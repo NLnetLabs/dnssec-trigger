@@ -367,6 +367,8 @@ install:	all $(installgui) $(installhook)
 	$(INSTALL) -c -m 755 dnssec-trigger-control-setup $(DESTDIR)$(sbindir)/dnssec-trigger-control-setup
 	$(INSTALL) -c -m 755 dnssec-trigger-control$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-trigger-control$(EXEEXT)
 	$(INSTALL) -c -m 755 dnssec-triggerd$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
+	if test ! -f $(DESTDIR)/etc/resolv.conf~ -a -f $(DESTDIR)/etc/resolv.conf; then \
+		cp $(DESTDIR)/etc/resolv.conf $(DESTDIR)/etc/resolv.conf~; fi
 	if test ! -f $(DESTDIR)$(configfile); then \
 		$(INSTALL) -c -m 644 example.conf $(DESTDIR)$(configfile); fi
 	echo "It is probably good to run dnssec-trigger-control-setup to generate keys now, and possibly run dnssec-trigger-control-setup -i to edit unbound.conf if it does not have a trust anchor and remote-control"
@@ -377,6 +379,8 @@ uninstall:	$(uninstallgui) $(uninstallhook)
 	rm -f $(DESTDIR)$(sbindir)/dnssec-trigger-control$(EXEEXT)
 	rm -f $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
 	chmod 644 /etc/resolv.conf
+	if test -f $(DESTDIR)/etc/resolv.conf~; then \
+		cp $(DESTDIR)/etc/resolv.conf~ $(DESTDIR)/etc/resolv.conf; fi
 	@echo
 	@echo "You still need to remove ssl keys from $(DESTDIR)$(keydir) and $(DESTDIR)$(configfile) by hand"
 
