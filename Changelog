@@ -3,6 +3,7 @@
 	- watch on OSX the network.plist and airport.plist files and not
 	  the entire directory, which changes too often.
 	- README and BSD LICENSE.
+	- renamed plist nl.nlnetlabs.x
 
 31 Aug 2011: Wouter
 	- cocoa and gtk build and install and uninstall make targets
