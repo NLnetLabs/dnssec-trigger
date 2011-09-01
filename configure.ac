@@ -312,24 +312,26 @@ if test "$gui" = "gtk"; then
 	case "$GTK_LIBS" in *-lgthread* ) ;;
 	*) AC_CHECK_LIB(gthread-2.0, g_thread_init, [GTK_LIBS="$GTK_LIBS -lgthread-2.0"]) esac
 
-	xdg_autostart_dir="$sysconfdir/xdg/autostart"
-	AC_ARG_WITH([xdg-autostart], AC_HELP_STRING([--with-xdg-autostart],
-		[Set the GNOME autostart dir, default tests prefix/etc/xdg/autostart and /etc/xdg/autostart]),
-		, withval="")
-	with_xdg_autostart="$withval"
-	AC_SUBST(xdg_autostart_dir)
-	AC_MSG_CHECKING([for autostart dir])
-	if test "$with_xdg_autostart" != ""; then
-		xdg_autostart_dir="$with_xdg_autostart"
-	else
-		if test -d "$xdg_autostart_dir" ; then
-			:
-		else if test -d /etc/xdg/autostart; then
-			xdg_autostart_dir="/etc/xdg/autostart"
+	if test "$on_mingw" = "no"; then
+		xdg_autostart_dir="$sysconfdir/xdg/autostart"
+		AC_ARG_WITH([xdg-autostart], AC_HELP_STRING([--with-xdg-autostart],
+			[Set the GNOME autostart dir, default tests prefix/etc/xdg/autostart and /etc/xdg/autostart]),
+			, withval="")
+		with_xdg_autostart="$withval"
+		AC_SUBST(xdg_autostart_dir)
+		AC_MSG_CHECKING([for autostart dir])
+		if test "$with_xdg_autostart" != ""; then
+			xdg_autostart_dir="$with_xdg_autostart"
+		else
+			if test -d "$xdg_autostart_dir" ; then
+				:
+			else if test -d /etc/xdg/autostart; then
+				xdg_autostart_dir="/etc/xdg/autostart"
+				fi
 			fi
 		fi
+		AC_MSG_RESULT([$xdg_autostart_dir])
 	fi
-	AC_MSG_RESULT([$xdg_autostart_dir])
 fi
 
 AC_ARG_WITH([keydir], AC_HELP_STRING([--with-keydir=path],

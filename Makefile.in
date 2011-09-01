@@ -347,15 +347,17 @@ gtk-gui-install:
 	$(INSTALL) -c -m 644 panel/status-icon.png $(DESTDIR)$(uidir)/status-icon.png
 	$(INSTALL) -c -m 644 panel/status-icon-alert.png $(DESTDIR)$(uidir)/status-icon-alert.png
 	$(INSTALL) -c -m 755 dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
-	$(INSTALL) -m 755 -d $(DESTDIR)$(xdg_autostart_dir)
-	$(INSTALL) -c -m 644 dnssec-trigger-panel.desktop $(DESTDIR)$(xdg_autostart_dir)/dnssec-trigger-panel.desktop
+	if test -n "$(xdg_autostart_dir)"; then \
+		$(INSTALL) -m 755 -d $(DESTDIR)$(xdg_autostart_dir) ; \
+		$(INSTALL) -c -m 644 dnssec-trigger-panel.desktop $(DESTDIR)$(xdg_autostart_dir)/dnssec-trigger-panel.desktop ; fi
 
 gtk-gui-uninstall:
 	rm -f $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
 	rm -f $(DESTDIR)$(uidir)/pui.xml
 	rm -f $(DESTDIR)$(uidir)/status-icon.png
 	rm -f $(DESTDIR)$(uidir)/status-icon-alert.png
-	rm -f $(DESTDIR)$(xdg_autostart_dir)/dnssec-trigger-panel.desktop
+	if test -n "$(xdg_autostart_dir)"; then \
+		rm -f $(DESTDIR)$(xdg_autostart_dir)/dnssec-trigger-panel.desktop ; fi
 
 install:	all $(installgui) $(installhook)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(sbindir)

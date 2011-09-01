@@ -6937,7 +6937,8 @@ if test "x$ac_cv_lib_gthread_2_0_g_thread_init" = x""yes; then :
 fi
  esac
 
-	xdg_autostart_dir="$sysconfdir/xdg/autostart"
+	if test "$on_mingw" = "no"; then
+		xdg_autostart_dir="$sysconfdir/xdg/autostart"
 
 # Check whether --with-xdg-autostart was given.
 if test "${with_xdg_autostart+set}" = set; then :
@@ -6946,22 +6947,23 @@ else
   withval=""
 fi
 
-	with_xdg_autostart="$withval"
+		with_xdg_autostart="$withval"
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for autostart dir" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for autostart dir" >&5
 $as_echo_n "checking for autostart dir... " >&6; }
-	if test "$with_xdg_autostart" != ""; then
-		xdg_autostart_dir="$with_xdg_autostart"
-	else
-		if test -d "$xdg_autostart_dir" ; then
-			:
-		else if test -d /etc/xdg/autostart; then
-			xdg_autostart_dir="/etc/xdg/autostart"
+		if test "$with_xdg_autostart" != ""; then
+			xdg_autostart_dir="$with_xdg_autostart"
+		else
+			if test -d "$xdg_autostart_dir" ; then
+				:
+			else if test -d /etc/xdg/autostart; then
+				xdg_autostart_dir="/etc/xdg/autostart"
+				fi
 			fi
 		fi
-	fi
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $xdg_autostart_dir" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $xdg_autostart_dir" >&5
 $as_echo "$xdg_autostart_dir" >&6; }
+	fi
 fi
 
 
