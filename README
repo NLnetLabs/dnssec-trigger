@@ -35,15 +35,14 @@ with DANE.
 
 The dnssec-trigger package thus runs alongside the unbound daemon.  It
 provides the user with the option to go to Insecure.  It selects DNSSEC
-service where possible.  This helps people run DNSSEC on their laptop
-or home machine.
+service where possible.  This helps people run DNSSEC.
 
 
 Normal usage
 ------------
 
 The user logs in and sees a status icon in the tray.  Most of the time
-it displays no ! but is quiet.  The icon can be ignored.
+it displays no ! (exclamation) but is quiet.  The icon can be ignored.
 
 When the user connects to a new network, the DHCP hooks notify the
 dnssec-trigger daemon.  This probes the network, and notifies unbound.
@@ -54,10 +53,10 @@ If the daemon probe fails to find DNSSEC capability, it tells unbound
 to stop talking to the network, and tells the statusicon to ask the user.
 A dialog pops up out of the tray icon.  If insecure, then the resolv.conf
 is changed to the insecure servers, unbound is inactive (loops to
-127.0.0.127).
+127.0.0.127).  The user can work normally on this network connection.
 
 For a hotspot, the probe would fail (after a second or two), then with
-in insecure mode the user can login to the hotspot.  With Reprobe menu
+insecure mode the user can login to the hotspot.  With Reprobe menu
 item the user can reprobe dnssec and if it works then (many hotspots
 provide good access once logged in) the icon is restored to safe.  The
 scripts would also reprobe on a DHCP change.
@@ -70,9 +69,43 @@ How the different platforms operate is described here.
 
 * unix - NetworkManager
 
+In /etc/NetworkManager/dispatcher.d a script sends DHCP changes to
+the daemon.  The script is a networkmanager dhcp hook script and uses
+dnssec-trigger-control to talk to the daemon.  The script uses nmcli
+to find the DNS info.
+
+GTK user interface.  In /etc/xdg/autostart/ a .desktop entry starts
+the user-side tray icon (dnssec-trigger-panel).  The daemon is started
+from /etc/rc.d like regular daemons.  The tray icon communicates with
+the daemon over a persistent SSL connection over loopback (127.0.0.1).
+It is possible to have multiple tray icons connected over SSL.
+
 * unix - Netconfig
+
+In /etc/netconfig.d a script sends DHCP changes to the daemon.  It greps
+the info out of /var/run/netconfig/* files.  It sends with
+dnssec-trigger-control to the daemon.
+
+GTK like networkmanager.
 
 * OSX
 
+In /Library/LaunchDaemons two plist files exist.  One starts the daemon.
+The other watches the /Library/Preferences/SystemConfiguration for changes
+and launches a script.  This script uses ifconfig and parses plist files
+and then sends the results with dnssec-trigger-control to the daemon.
+
+The daemon changes resolv.conf, but on OSX also scutil is used to change
+the runtime system configuration (the Apple stuff).  Note that user input
+in the control panel overrides this; you need to remove the user override
+to enable the daemon's results to appear.
+
+In /Library/LaunchAgents a plist file starts the tray icon (Cocoa app).
+It uses an SSL connection to the daemon over loopback (127.0.0.1).
+
 * Windows
+
+The daemon is a service.
+
+The tray icon is a GTK application.  It uses SSL to talk to the daemon.
 
