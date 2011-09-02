@@ -511,10 +511,10 @@ int main(int argc, char *argv[])
 	WSADATA wsa_data;
 	if((r = WSAStartup(MAKEWORD(2,2), &wsa_data)) != 0)
 		fatal_exit("WSAStartup failed: %s", wsa_strerror(r));
+	/* setup THEME */
+	/* if the theme uses an engine dll, set GTK_PATH to the directory
+	 * that contains 2.x.0/engines/libblabla.dll */
 #endif
-	g_thread_init(NULL);
-	gdk_threads_init();
-	gtk_init(&argc, &argv);
 	log_ident_set("dnssec-trigger-panel");
 	log_init(NULL, 0, NULL);
         while( (c=getopt(argc, argv, "c:dh")) != -1) {
@@ -522,6 +522,9 @@ int main(int argc, char *argv[])
                 default:
 		case 'd':
 			debug = 1;
+#ifdef USE_WINSOCK
+			putenv("GTK2_RC_FILES=./winrc/gtkrc");
+#endif
 			break;
 		case 'c':
 			cfgfile = optarg;
@@ -533,7 +536,12 @@ int main(int argc, char *argv[])
         }
         argc -= optind;
         argv += optind;
-        if(argc != 0) {
+
+       	g_thread_init(NULL);
+	gdk_threads_init();
+	gtk_init(&argc, &argv);
+
+ 	if(argc != 0) {
                 usage();
                 return 1;
 	}

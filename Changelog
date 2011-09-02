@@ -1,5 +1,6 @@
 2 Sep 2011: Wouter
 	- GUI tray icon works on windows.
+	- minimal theme on windows.
 
 1 Sep 2011: Wouter
 	- install backups and uninstall restores resolv.conf.
