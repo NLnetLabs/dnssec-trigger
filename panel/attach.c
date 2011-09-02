@@ -254,8 +254,13 @@ static void process_results(void)
 	g_mutex_unlock(feed->lock);
 
 	gdk_threads_enter();
+#ifndef USE_WINSOCK
 	panel_alert_state(feed_insecure, now_insecure, now_dark, now_cache,
 		now_auth, now_disconn);
+#else
+	call_panel_alert_state(feed_insecure, now_insecure, now_dark, now_cache,
+		now_auth, now_disconn);
+#endif
 	gdk_threads_leave();
 }
 

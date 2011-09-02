@@ -41,6 +41,7 @@
 #include "config.h"
 #ifdef USE_WINSOCK
 #include <signal.h>
+#include <sys/time.h>
 #include "winsock_event.h"
 #include "fptr_wlist.h"
 #include "log.h"

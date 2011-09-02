@@ -87,7 +87,12 @@ void attach_stop(void);
 void attach_send_insecure(int val);
 void attach_send_reprobe(void);
 
+/** tell panel to update itself with new state information */
 void panel_alert_state(int last_insecure, int now_insecure, int dark,
+	int cache, int auth, int disconn);
+/** call the above function from the main thread, in case the system
+ * is not threadsafe (windows) */
+void call_panel_alert_state(int last_insecure, int now_insecure, int dark,
 	int cache, int auth, int disconn);
 
 #endif /* ATTACH_H */

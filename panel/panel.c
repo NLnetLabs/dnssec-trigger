@@ -325,6 +325,49 @@ void panel_alert_state(int last_insecure, int now_insecure, int dark,
 
 }
 
+/* the parameters for the panel alert state */
+static GMutex* call_lock = NULL;
+static int cp_li, cp_ni, cp_d, cp_c, cp_a, cp_dis;
+
+gboolean call_alert(gpointer ATTR_UNUSED(arg))
+{
+	/* get params */
+	int last_insecure, now_insecure, dark, cache, auth, disconn;
+	g_mutex_lock(call_lock);
+	last_insecure = cp_li;
+	now_insecure = cp_ni;
+	dark = cp_d;
+	cache = cp_c;
+	auth = cp_a;
+	disconn = cp_dis;
+	g_mutex_unlock(call_lock);
+	panel_alert_state(last_insecure, now_insecure, dark, cache,
+		auth, disconn);
+	/* only call once, remove call_alert from the glib mainloop */
+	return FALSE;
+}
+
+/* schedule a call to the panel alert state from the main thread */
+void call_panel_alert_state(int last_insecure, int now_insecure, int dark,
+        int cache, int auth, int disconn)
+{
+	if(!call_lock) {
+		call_lock = g_mutex_new();
+	}
+	/* store parameters */
+	g_mutex_lock(call_lock);
+	cp_li = last_insecure;
+	cp_ni = now_insecure;
+	cp_d = dark;
+	cp_c = cache;
+	cp_a = auth;
+	cp_dis = disconn;
+	g_mutex_unlock(call_lock);
+	/* the  call_alert function will run from the main thread, because
+	 * GTK+ is not threadsafe on windows */
+	g_idle_add(&call_alert, NULL);
+}
+
 static GdkPixbuf* load_icon(const char* icon, int debug)
 {
 	char file[1024];
@@ -442,6 +485,8 @@ do_main_work(const char* cfgfile, int debug)
 	gdk_threads_leave();
 	stop_gui();
 	attach_stop(); /* stop the other thread */
+	if(call_lock) g_mutex_free(call_lock);
+	if(feed->lock) g_mutex_free(feed->lock);
 }
 
 
