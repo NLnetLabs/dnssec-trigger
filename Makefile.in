@@ -109,10 +109,12 @@ endif
 PANEL_OBJ=$(addprefix $(BUILD),$(PANEL_SRC:.c=.o)) $(COMPAT_OBJ)
 CONTROL_SRC=dnssec-trigger-control.c riggerd/cfg.c riggerd/log.c riggerd/net_help.c
 CONTROL_OBJ=$(addprefix $(BUILD),$(CONTROL_SRC:.c=.o)) $(COMPAT_OBJ)
+KEYGEN_SRC=dnssec-trigger-keygen.c
+KEYGEN_OBJ=$(addprefix $(BUILD),$(KEYGEN_SRC:.c=.o)) $(COMPAT_OBJ)
 RIGGERD_SRC=riggerd/riggerd.c riggerd/log.c riggerd/netevent.c riggerd/rbtree.c riggerd/mini_event.c riggerd/net_help.c riggerd/winsock_event.c riggerd/fptr_wlist.c riggerd/cfg.c riggerd/svr.c riggerd/probe.c riggerd/ubhook.c riggerd/reshook.c
 RIGGERD_OBJ=$(addprefix $(BUILD),$(RIGGERD_SRC:.c=.o)) $(COMPAT_OBJ)
 
-ALL_SRC=$(sort $(COMMON_SRC) $(PANEL_SRC) $(RIGGERD_SRC) $(CONTROL_SRC))
+ALL_SRC=$(sort $(COMMON_SRC) $(PANEL_SRC) $(RIGGERD_SRC) $(KEYGEN_SRC) $(CONTROL_SRC))
 ALL_OBJ=$(addprefix $(BUILD),$(ALL_SRC:.c=.o) \
 	$(addprefix compat/,$(LIBOBJS:.o=.o))) $(COMPAT_OBJ)
 
@@ -126,7 +128,7 @@ $(BUILD)%.o:    $(srcdir)/%.c
 	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
 	$Q$(COMPILE) -o $@ -c $<
 
-all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-control$(EXEEXT) dnssec-trigger-control-setup $(makehook) $(makegui) example.conf dnssec-trigger.8
+all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-control$(EXEEXT) dnssec-trigger-control-setup $(makehook) $(makegui) example.conf dnssec-trigger.8 dnssec-trigger-keygen
 
 test:	
 	@echo done
@@ -229,6 +231,10 @@ dnssec-trigger-control$(EXEEXT):	$(CONTROL_OBJ)
 	$(INFO) Link $@
 	$Q$(LINK) -o $@ $(sort $(CONTROL_OBJ)) $(LIBS)
 
+dnssec-trigger-keygen$(EXEEXT):	$(KEYGEN_OBJ)
+	$(INFO) Link $@
+	$Q$(LINK) -o $@ $(sort $(KEYGEN_OBJ)) $(LIBS)
+
 dnssec-trigger-panel$(EXEEXT):	$(PANEL_OBJ)
 	$(INFO) Link $@
 	$Q$(LINK) $(EXPORT_DYNAMIC) -o $@ $(sort $(PANEL_OBJ)) $(LIBS) $(GTK_LIBS)
@@ -255,7 +261,7 @@ clean:
 	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
 	rm -f dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT)
 	rm -f 01-dnssec-trigger-hook dnssec-trigger-osx.sh nl.nlnetlabs.dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf nl.nlnetlabs.dnssec-triggerd.plist nl.nlnetlabs.dnssec-trigger-panel.plist dnssec-trigger-setdns.sh osx/osx-riggerapp
-	rm -f dnssec-trigger-panel.desktop dnssec-trigger.8
+	rm -f dnssec-trigger-panel.desktop dnssec-trigger.8 dnssec-trigger-keygen
 	rm -rf autom4te.cache build osx/RiggerStatusItem/build
 
 realclean: clean

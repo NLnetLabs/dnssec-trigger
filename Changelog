@@ -1,3 +1,7 @@
+6 Sep 2011: Wouter
+	- dnssec-trigger-keygen that works without shellscripts.  Can also
+	  generate for unbound.
+
 2 Sep 2011: Wouter
 	- GUI tray icon works on windows.
 	- minimal theme on windows.

@@ -237,7 +237,7 @@ int main(int argc, char* argv[])
                         v = v*seed + (unsigned int)i;
                 }
                 RAND_seed(buf, 256);
-		log_warn("no entropy, seeding openssl PRNG with time\n");
+		log_warn("no entropy, seeding openssl PRNG with time");
 	}
 
 	/* parse the options */
