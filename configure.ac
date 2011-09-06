@@ -162,8 +162,8 @@ if test "$staticexe" = "yes"; then
 	# check if lz is needed
 	AC_MSG_CHECKING([if static libcrypto needs -lz])
 	AC_TRY_LINK(, [
-        	int HMAC_CTX_init(void);
-		(void)HMAC_CTX_init();
+		int SSL_library_init(void);
+		(void)SSL_library_init();
 	], [
 		AC_MSG_RESULT(no)
 	], [
