@@ -189,7 +189,7 @@ osx/RiggerStatusItem/config.h:	config.h
 	cp $< $@
 
 osx/osx-riggerapp: osx/RiggerStatusItem/cfg.c osx/RiggerStatusItem/cfg.h osx/RiggerStatusItem/net_help.c osx/RiggerStatusItem/net_help.h osx/RiggerStatusItem/log.c osx/RiggerStatusItem/log.h osx/RiggerStatusItem/config.h osx/RiggerStatusItem/main.m osx/RiggerStatusItem/RiggerApp.h osx/RiggerStatusItem/RiggerApp.m osx/RiggerStatusItem/osxattach.h osx/RiggerStatusItem/osxattach.m
-	(cd osx/RiggerStatusItem; xcodebuild -project RiggerStatusItem.xcodeproj -alltargets)
+	(cd osx/RiggerStatusItem; xcodebuild -project RiggerStatusItem.xcodeproj -alltargets arch=universal)
 	touch osx/osx-riggerapp
 
 osx-hook:	nl.nlnetlabs.dnssec-trigger-hook.plist dnssec-trigger-osx.sh nl.nlnetlabs.dnssec-triggerd.plist dnssec-trigger-setdns.sh
