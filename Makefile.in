@@ -109,7 +109,11 @@ endif
 PANEL_OBJ=$(addprefix $(BUILD),$(PANEL_SRC:.c=.o)) $(COMPAT_OBJ)
 CONTROL_SRC=dnssec-trigger-control.c riggerd/cfg.c riggerd/log.c riggerd/net_help.c
 CONTROL_OBJ=$(addprefix $(BUILD),$(CONTROL_SRC:.c=.o)) $(COMPAT_OBJ)
-KEYGEN_SRC=dnssec-trigger-keygen.c
+ifeq "$(hooks)" "windows"
+KEYGEN_SRC=winrc/dnssec-trigger-keygen.c
+else
+KEYGEN_SRC=
+endif
 KEYGEN_OBJ=$(addprefix $(BUILD),$(KEYGEN_SRC:.c=.o)) $(COMPAT_OBJ)
 RIGGERD_SRC=riggerd/riggerd.c riggerd/log.c riggerd/netevent.c riggerd/rbtree.c riggerd/mini_event.c riggerd/net_help.c riggerd/winsock_event.c riggerd/fptr_wlist.c riggerd/cfg.c riggerd/svr.c riggerd/probe.c riggerd/ubhook.c riggerd/reshook.c
 RIGGERD_OBJ=$(addprefix $(BUILD),$(RIGGERD_SRC:.c=.o)) $(COMPAT_OBJ)
@@ -128,7 +132,7 @@ $(BUILD)%.o:    $(srcdir)/%.c
 	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
 	$Q$(COMPILE) -o $@ -c $<
 
-all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-control$(EXEEXT) dnssec-trigger-control-setup $(makehook) $(makegui) example.conf dnssec-trigger.8 dnssec-trigger-keygen
+all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-control$(EXEEXT) dnssec-trigger-control-setup $(makehook) $(makegui) example.conf dnssec-trigger.8
 
 test:	
 	@echo done
@@ -157,7 +161,7 @@ cocoa-gui:	osx/osx-riggerapp nl.nlnetlabs.dnssec-trigger-panel.plist
 none-hook:
 	echo "no dhcp hooks available, need trigger script"
 
-windows-hook:
+windows-hook:	dnssec-trigger-keygen$(EXEEXT)
 	echo "TODO compile windows hooks"
 
 networkmanager-hook:	01-dnssec-trigger-hook
@@ -261,7 +265,7 @@ clean:
 	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
 	rm -f dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT)
 	rm -f 01-dnssec-trigger-hook dnssec-trigger-osx.sh nl.nlnetlabs.dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf nl.nlnetlabs.dnssec-triggerd.plist nl.nlnetlabs.dnssec-trigger-panel.plist dnssec-trigger-setdns.sh osx/osx-riggerapp
-	rm -f dnssec-trigger-panel.desktop dnssec-trigger.8 dnssec-trigger-keygen
+	rm -f dnssec-trigger-panel.desktop dnssec-trigger.8 dnssec-trigger-keygen$(EXEEXT)
 	rm -rf autom4te.cache build osx/RiggerStatusItem/build
 
 realclean: clean
@@ -284,6 +288,7 @@ strip:
 	$(STRIP) dnssec-trigger-panel$(EXEEXT)
 	$(STRIP) dnssec-triggerd$(EXEEXT)
 	$(STRIP) dnssec-trigger-control$(EXEEXT)
+	if test -f dnssec-trigger-keygen$(EXEEXT); then $(STRIP) dnssec-trigger-keygen$(EXEEXT); fi
 
 none-hook-install:
 	echo "no hook to install"
