@@ -6370,6 +6370,37 @@ done
 if test "$staticexe" = "yes"; then
 	LIBS="`echo $LIBS | sed -e 's/ -lcrypto//'`"
 	LIBS="$ssldir/lib/libssl.a $ssldir/lib/libcrypto.a $LIBS"
+	# check if lz is needed
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if static libcrypto needs -lz" >&5
+$as_echo_n "checking if static libcrypto needs -lz... " >&6; }
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+        	int HMAC_CTX_init(void);
+		(void)HMAC_CTX_init();
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+else
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+		LIBS="$LIBS -lz"
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 else
 	LIBS="-lssl $LIBS"
 fi

@@ -159,6 +159,17 @@ AC_CHECK_HEADERS([openssl/engine.h],,, [AC_INCLUDES_DEFAULT])
 if test "$staticexe" = "yes"; then
 	LIBS="`echo $LIBS | sed -e 's/ -lcrypto//'`"
 	LIBS="$ssldir/lib/libssl.a $ssldir/lib/libcrypto.a $LIBS"
+	# check if lz is needed
+	AC_MSG_CHECKING([if static libcrypto needs -lz])
+	AC_TRY_LINK(, [
+        	int HMAC_CTX_init(void);
+		(void)HMAC_CTX_init();
+	], [
+		AC_MSG_RESULT(no)
+	], [
+		AC_MSG_RESULT(yes)
+		LIBS="$LIBS -lz"
+	])
 else
 	LIBS="-lssl $LIBS"
 fi
