@@ -185,6 +185,7 @@ if test "$USE_WINSOCK" = 1; then
 	AC_CHECK_TOOL(WINDRES, windres)
 	LIBS="$LIBS -liphlpapi"
 	AC_CHECK_FUNC([EVP_PKEY_CTX_new_id],,[AC_ERROR(Need newer openssl)])
+	AC_CHECK_FUNCS([_beginthreadex])
 fi
 AC_DEFINE(USE_MINI_EVENT, 1, [Use builtin event system])
 if test $ac_cv_func_getaddrinfo = no; then

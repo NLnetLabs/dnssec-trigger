@@ -116,6 +116,9 @@ KEYGEN_SRC=
 endif
 KEYGEN_OBJ=$(addprefix $(BUILD),$(KEYGEN_SRC:.c=.o)) $(COMPAT_OBJ)
 RIGGERD_SRC=riggerd/riggerd.c riggerd/log.c riggerd/netevent.c riggerd/rbtree.c riggerd/mini_event.c riggerd/net_help.c riggerd/winsock_event.c riggerd/fptr_wlist.c riggerd/cfg.c riggerd/svr.c riggerd/probe.c riggerd/ubhook.c riggerd/reshook.c
+ifeq "$(hooks)" "windows"
+RIGGERD_SRC+=winrc/netlist.c
+endif
 RIGGERD_OBJ=$(addprefix $(BUILD),$(RIGGERD_SRC:.c=.o)) $(COMPAT_OBJ)
 
 ALL_SRC=$(sort $(COMMON_SRC) $(PANEL_SRC) $(RIGGERD_SRC) $(KEYGEN_SRC) $(CONTROL_SRC))
@@ -162,7 +165,6 @@ none-hook:
 	echo "no dhcp hooks available, need trigger script"
 
 windows-hook:	dnssec-trigger-keygen$(EXEEXT)
-	echo "TODO compile windows hooks"
 
 networkmanager-hook:	01-dnssec-trigger-hook
 

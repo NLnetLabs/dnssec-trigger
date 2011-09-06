@@ -6600,6 +6600,17 @@ else
   as_fn_error $? "Need newer openssl" "$LINENO" 5
 fi
 
+	for ac_func in _beginthreadex
+do :
+  ac_fn_c_check_func "$LINENO" "_beginthreadex" "ac_cv_func__beginthreadex"
+if test "x$ac_cv_func__beginthreadex" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE__BEGINTHREADEX 1
+_ACEOF
+
+fi
+done
+
 fi
 
 $as_echo "#define USE_MINI_EVENT 1" >>confdefs.h
