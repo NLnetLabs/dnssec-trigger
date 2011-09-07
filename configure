@@ -6846,7 +6846,7 @@ else
 	if test "$on_mingw" = "yes"; then
 		hooks="windows"
 	else
-		if test -x "`which nmcli 2>&1`"; then
+		if test -x "`which nmcli 2>&1`" -o -x "`which nm-tool 2>&1`"; then
 		hooks="networkmanager"
 		else
 			if test `uname` = "Darwin"; then
