@@ -1,5 +1,5 @@
 /*
- * winrc/win_svc.h - windows services API implementation for unbound
+ * winrc/win_svc.h - windows services API implementation for dnssec-trigger
  *
  * Copyright (c) 2009, NLnet Labs. All rights reserved.
  *
@@ -46,10 +46,10 @@
 
 #ifndef WINRC_WIN_SVC_H
 #define WINRC_WIN_SVC_H
-struct worker;
+struct comm_base;
 
 /** service name for unbound (internal to ServiceManager) */
-#define SERVICE_NAME "unbound"
+#define SERVICE_NAME "dnssectrigger"
 
 /** from gen_msg.h - success message record for windows message log */
 #define MSG_GENERIC_SUCCESS              ((DWORD)0x20010001L)
@@ -71,20 +71,31 @@ void wsvc_command_option(const char* wopt, const char* cfgfile, int v, int c);
 
 /**
  * Setup lead worker events.
- * @param worker: the worker
  */
-void wsvc_setup_worker(struct worker* worker);
+void wsvc_setup_worker(struct comm_base* base);
 
 /**
  * Desetup lead worker events.
- * @param worker: the worker
  */
-void wsvc_desetup_worker(struct worker* worker);
+void wsvc_desetup_worker(void);
 
 /** windows worker stop event callback handler */
 void worker_win_stop_cb(int fd, short ev, void* arg);
 
 /** windows cron timer callback handler */
 void wsvc_cron_cb(void* arg);
+
+/**
+ * Obtain registry string (if it exists).
+ * @param key: key string
+ * @param name: name of value to fetch.
+ * @return malloced string with the result or NULL if it did not
+ * exist on an error (logged) was encountered.
+ */
+char* lookup_reg_str(const char* key, const char* name);
+
+/** log a windows GetLastError message */
+void log_win_err(const char* str, DWORD err);
+
 
 #endif /* WINRC_WIN_SVC_H */

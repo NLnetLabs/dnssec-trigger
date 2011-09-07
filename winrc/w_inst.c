@@ -191,12 +191,12 @@ wsvc_install(FILE* out, const char* rename)
         SC_HANDLE scm;
         SC_HANDLE sv;
         TCHAR path[MAX_PATH+2+256];
-        if(out) fprintf(out, "installing unbound service\n");
+        if(out) fprintf(out, "installing %s service\n", SERVICE_NAME);
         if(!GetModuleFileName(NULL, path+1, MAX_PATH))
                 fatal_win(out, "could not GetModuleFileName");
         /* change 'unbound-service-install' to 'unbound' */
 	if(rename)
-        	change(out, path+1, sizeof(path)-1, rename, "unbound.exe");
+        	change(out, path+1, sizeof(path)-1, rename, "dnssec-triggerd.exe");
 
 	event_reg_install(out, path+1);
 
@@ -227,7 +227,7 @@ wsvc_install(FILE* out, const char* rename)
         }
         CloseServiceHandle(sv);
         CloseServiceHandle(scm);
-        if(out) fprintf(out, "unbound service installed\n");
+        if(out) fprintf(out, "%s service installed\n", SERVICE_NAME);
 }
 
 
@@ -237,7 +237,7 @@ wsvc_remove(FILE* out)
 {
         SC_HANDLE scm;
         SC_HANDLE sv;
-        if(out) fprintf(out, "removing unbound service\n");
+        if(out) fprintf(out, "removing %s service\n", SERVICE_NAME);
         scm = OpenSCManager(NULL, NULL, (int)SC_MANAGER_ALL_ACCESS);
         if(!scm) fatal_win(out, "could not OpenSCManager");
         sv = OpenService(scm, SERVICE_NAME, DELETE);
@@ -253,7 +253,7 @@ wsvc_remove(FILE* out)
         CloseServiceHandle(sv);
         CloseServiceHandle(scm);
 	event_reg_remove(out);
-        if(out) fprintf(out, "unbound service removed\n");
+        if(out) fprintf(out, "%s service removed\n", SERVICE_NAME);
 }
 
 
@@ -263,7 +263,7 @@ wsvc_rc_start(FILE* out)
 {
 	SC_HANDLE scm;
 	SC_HANDLE sv;
-        if(out) fprintf(out, "start unbound service\n");
+        if(out) fprintf(out, "start %s service\n", SERVICE_NAME);
 	scm = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
 	if(!scm) fatal_win(out, "could not OpenSCManager");
 	sv = OpenService(scm, SERVICE_NAME, SERVICE_START);
@@ -278,7 +278,7 @@ wsvc_rc_start(FILE* out)
 	}
 	CloseServiceHandle(sv);
 	CloseServiceHandle(scm);
-        if(out) fprintf(out, "unbound service started\n");
+        if(out) fprintf(out, "%s service started\n", SERVICE_NAME);
 }
 
 
@@ -289,7 +289,7 @@ wsvc_rc_stop(FILE* out)
 	SC_HANDLE scm;
 	SC_HANDLE sv;
 	SERVICE_STATUS st;
-        if(out) fprintf(out, "stop unbound service\n");
+        if(out) fprintf(out, "stop %s service\n", SERVICE_NAME);
 	scm = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
 	if(!scm) fatal_win(out, "could not OpenSCManager");
 	sv = OpenService(scm, SERVICE_NAME, SERVICE_STOP);
@@ -304,5 +304,5 @@ wsvc_rc_stop(FILE* out)
 	}
 	CloseServiceHandle(sv);
 	CloseServiceHandle(scm);
-        if(out) fprintf(out, "unbound service stopped\n");
+        if(out) fprintf(out, "%s service stopped\n", SERVICE_NAME);
 }

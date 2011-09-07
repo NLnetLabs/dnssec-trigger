@@ -46,7 +46,7 @@
 /** 
  * Install service in servicecontrolmanager, setup registry 
  * @param out: debug output printed here (errors). or NULL.
- * @param rename: if nonNULL this executable is not unbound.exe but this name.
+ * @param rename: if nonNULL this executable is not the .exe but this name.
  */
 void wsvc_install(FILE* out, const char* rename);
 

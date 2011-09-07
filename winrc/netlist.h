@@ -48,5 +48,7 @@ struct svr;
 void netlist_change_cb(int fd, short ev, void* arg);
 /** Start the netlist, adds event callback to the eventbase */
 void netlist_start(struct svr* svr);
+/** Stop netlist, removes event. */
+void netlist_stop(void);
 
 #endif /* NETLIST_H */

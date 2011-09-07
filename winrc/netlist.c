@@ -78,22 +78,8 @@ typedef struct _NLA_BLOB {
 static WSAOVERLAPPED netlist_overlap;
 static WSACOMPLETION netlist_complete;
 static WSAEVENT netlist_event;
-struct event netlist_ev;
-
-/** log a windows GetLastError message */
-static void log_win_err(const char* str, DWORD err)
-{
-	LPTSTR buf;
-	if(FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
-		FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
-		NULL, err, 0, (LPTSTR)&buf, 0, NULL) == 0) {
-		/* could not format error message */
-		log_err("%s, GetLastError=%d", str, (int)err);
-		return;
-	}
-	log_err("%s, (err=%d): %s", str, (int)err, buf);
-	LocalFree(buf);
-}
+static struct event netlist_ev;
+static HANDLE netlist_lookup;
 
 /** stop and close lookup */
 static void stop_lookup(HANDLE lookup)
@@ -246,10 +232,11 @@ netlist_add_event(HANDLE lookup, struct svr* svr)
 		&netlist_ev, &netlist_event, &netlist_change_cb, lookup)) {
 		fatal_exit("cannot register netlist event");
 	}
+	netlist_lookup = lookup;
 }
 
 /** remove and close netlist event */
-static void netlist_remove_event(HANDLE lookup, struct svr* svr)
+static void netlist_remove_event(HANDLE* lookup)
 {
 	winsock_unregister_wsaevent(&netlist_ev);
 	stop_lookup(lookup);
@@ -260,7 +247,7 @@ static void netlist_remove_event(HANDLE lookup, struct svr* svr)
 void netlist_change_cb(int ATTR_UNUSED(fd), short ATTR_UNUSED(ev), void* arg)
 {
 	HANDLE lookup = (HANDLE)arg;
-	netlist_remove_event(lookup, global_svr);
+	netlist_remove_event(lookup);
 	lookup = notify_nets();
 	while(!lookup) {
 		sleep(1); /* wait until netinfo is possible */
@@ -277,5 +264,10 @@ void netlist_start(struct svr* svr)
 		if(!lookup) sleep(1); /* wait until netinfo is possible */
 	}
 	netlist_add_event(lookup, svr);
+}
+
+void netlist_stop(void)
+{
+	netlist_remove_event(netlist_lookup);
 }
 

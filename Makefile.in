@@ -117,7 +117,7 @@ endif
 KEYGEN_OBJ=$(addprefix $(BUILD),$(KEYGEN_SRC:.c=.o)) $(COMPAT_OBJ)
 RIGGERD_SRC=riggerd/riggerd.c riggerd/log.c riggerd/netevent.c riggerd/rbtree.c riggerd/mini_event.c riggerd/net_help.c riggerd/winsock_event.c riggerd/fptr_wlist.c riggerd/cfg.c riggerd/svr.c riggerd/probe.c riggerd/ubhook.c riggerd/reshook.c
 ifeq "$(hooks)" "windows"
-RIGGERD_SRC+=winrc/netlist.c
+RIGGERD_SRC+=winrc/netlist.c winrc/win_svc.c winrc/w_inst.c
 endif
 RIGGERD_OBJ=$(addprefix $(BUILD),$(RIGGERD_SRC:.c=.o)) $(COMPAT_OBJ)
 

@@ -50,6 +50,7 @@
 #include "mini_event.h"
 #ifdef USE_WINSOCK
 #include "winrc/netlist.h"
+#include "winrc/win_svc.h"
 #endif
 
 int 
@@ -72,6 +73,9 @@ int
 fptr_whitelist_comm_timer(void (*fptr)(void*))
 {
 	if(fptr == &outq_timeout) return 1;
+#ifdef USE_WINSOCK
+	else if(fptr == &wsvc_cron_cb) return 1;
+#endif
 	return 0;
 }
 
@@ -95,6 +99,7 @@ fptr_whitelist_event(void (*fptr)(int, short, void *))
 	else if(fptr == &comm_point_raw_handle_callback) return 1;
 #ifdef USE_WINSOCK
 	else if(fptr == &netlist_change_cb) return 1;
+	else if(fptr == &worker_win_stop_cb) return 1;
 #endif
 	return 0;
 }

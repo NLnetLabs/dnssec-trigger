@@ -1,3 +1,7 @@
+7 Sep 2011: Wouter
+	- dnssec-triggerd can run as a windows service.
+	- windows DHCP hook on network changes.
+
 6 Sep 2011: Wouter
 	- dnssec-trigger-keygen that works without shellscripts.  Can also
 	  generate for unbound.

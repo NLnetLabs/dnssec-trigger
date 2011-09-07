@@ -56,6 +56,7 @@
 #endif
 #ifdef USE_WINSOCK
 #include "winrc/netlist.h"
+#include "winrc/win_svc.h"
 #endif
 
 /** print usage text */
@@ -67,6 +68,11 @@ usage(void)
 	printf(" -v		increase verbosity\n");
 	printf(" -d		do not fork into the background\n");
 	printf(" -c file	config file, default %s\n", CONFIGFILE);
+#ifdef USE_WINSOCK
+	printf("-w opt  windows option: \n");
+	printf("        install, remove - manage the services entry\n");
+	printf("        service - used to start from services control panel\n");
+#endif
 }
 
 /** sighandler.  Since we must have one
@@ -223,11 +229,11 @@ int main(int argc, char *argv[])
 	int c;
 	const char* cfgfile = CONFIGFILE;
 	int nodaemonize = 0, verb = 0;
+	const char* winopt = NULL;
 #ifdef USE_WINSOCK
+	int cmdline_cfg = 0;
 	int r;
 	WSADATA wsa_data;
-#endif
-#ifdef USE_WINSOCK
 	r = WSAStartup(MAKEWORD(2,2), &wsa_data);
 	if(r != 0) {
 		fatal_exit("could not init winsock. WSAStartup: %s",
@@ -237,14 +243,18 @@ int main(int argc, char *argv[])
 
 	log_ident_set("dnssec-triggerd");
 	log_init(NULL, 0, NULL);
-	while( (c=getopt(argc, argv, "c:dhv")) != -1) {
+	while( (c=getopt(argc, argv, "c:dhvw:")) != -1) {
 		switch(c) {
 		case 'c':
 			cfgfile = optarg;
+			cmdline_cfg = 1;
 			break;
 		case 'v':
 			verbosity++;
 			verb++;
+			break;
+		case 'w':
+			winopt = optarg;
 			break;
 		case 'd':
 			nodaemonize=1;
@@ -266,7 +276,16 @@ int main(int argc, char *argv[])
 	ERR_load_SSL_strings();
 	OpenSSL_add_all_algorithms();
 	(void)SSL_library_init();
-	do_main_work(cfgfile, nodaemonize, verb);
+
+	if(winopt) {
+#ifdef USE_WINSOCK
+		wsvc_command_option(winopt, cfgfile, verb, cmdline_cfg);
+#else
+		fatal_exit("option not supported");
+#endif
+	} else {
+		do_main_work(cfgfile, nodaemonize, verb);
+	}
 	EVP_cleanup();
 #ifdef HAVE_OPENSSL_ENGINE_H
 	ENGINE_cleanup();
