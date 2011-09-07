@@ -48,6 +48,9 @@
 #include "svr.h"
 #include "probe.h"
 #include "mini_event.h"
+#ifdef USE_WINSOCK
+#include "winrc/netlist.h"
+#endif
 
 int 
 fptr_whitelist_comm_point(comm_point_callback_t *fptr)
@@ -90,6 +93,9 @@ fptr_whitelist_event(void (*fptr)(int, short, void *))
 	else if(fptr == &comm_signal_callback) return 1;
 	else if(fptr == &comm_point_local_handle_callback) return 1;
 	else if(fptr == &comm_point_raw_handle_callback) return 1;
+#ifdef USE_WINSOCK
+	else if(fptr == &netlist_change_cb) return 1;
+#endif
 	return 0;
 }
 

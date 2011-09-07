@@ -40,10 +40,13 @@
  * exist.  Looksup the DHCPprovided nameserver IPs from the registry and
  * informs the dnssec-triggerdaemon about it.
  */
-#ifdef NETLIST_H
+#ifndef NETLIST_H
 #define NETLIST_H
+struct svr;
 
-/** Start the netlist, creates a thread. */
-void start_netlist(void);
+/** callback from netlist */
+void netlist_change_cb(int fd, short ev, void* arg);
+/** Start the netlist, adds event callback to the eventbase */
+void netlist_start(struct svr* svr);
 
 #endif /* NETLIST_H */

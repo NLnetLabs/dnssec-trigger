@@ -43,8 +43,13 @@
 #include <mswsock.h>
 #include <nspapi.h>
 #include "winrc/netlist.h"
+#include "winrc/win_svc.h"
 #include "riggerd/log.h"
 #include "riggerd/net_help.h"
+#include "riggerd/svr.h"
+#include "riggerd/probe.h"
+#include "riggerd/netevent.h"
+#include "riggerd/winsock_event.h"
 
 /* API constants for the Network Location Awareness API (winXP and later)
  * should be in mswsock.h but some crosscompile environments omit the API */
@@ -70,6 +75,11 @@ typedef struct _NLA_BLOB {
 } NLA_BLOB;
 #endif /* NS_NLA */
 
+static WSAOVERLAPPED netlist_overlap;
+static WSACOMPLETION netlist_complete;
+static WSAEVENT netlist_event;
+struct event netlist_ev;
+
 /** log a windows GetLastError message */
 static void log_win_err(const char* str, DWORD err)
 {
@@ -94,15 +104,39 @@ static void stop_lookup(HANDLE lookup)
 	}
 }
 
-/** process network adapter */
-static void process_adapter(const char* guid)
+/** replace characters with other characters */
+static void replace_str(char* s, char a, char b)
 {
-	if(1) {
-		/* debug print */
-		log_info("adapter %s", guid);
+	while(*s) {
+		if(*s == a)
+			*s = b;
+		s++;
 	}
-	/* TODO : registry lookups of the DNS servers */
-	
+}
+
+/** process network adapter */
+static void process_adapter(const char* guid, char* dest, size_t len)
+{
+	char key[256];
+	char* res;
+	verbose(VERB_ALGO, "adapter %s", guid);
+	/* registry lookups of the DNS servers */
+	/* replace , and ; with spaces */
+	/* append to the total string list */
+	snprintf(key, sizeof(key), "SYSTEM\\CurrentControlSet\\services"
+		"\\Tcpip\\Parameters\\Interfaces\\%s", guid);
+	res = lookup_reg_str(key, "DhcpNameServer");
+	if(res && strlen(res)>0) {
+		size_t dlen = strlen(dest);
+		replace_str(res, ',', ' ');
+		replace_str(res, ';', ' ');
+		verbose(VERB_ALGO, "dhcpnameserver %s", res);
+		if(dlen + strlen(res) + 1 < len) {
+			/* it fits in the dest array */
+			memmove(dest+dlen, res, strlen(res)+1);
+		}
+	}
+	free(res);
 }
 
 /** start lookup and notify daemon of the current list */
@@ -110,16 +144,20 @@ static HANDLE notify_nets(void)
 {
 	int r;
 	HANDLE lookup;
-	char buf[65535];
+	char result[10240];
+	char buf[20480];
 	WSAQUERYSET *qset = (WSAQUERYSET*)buf;
 	DWORD flags = LUP_DEEP | LUP_RETURN_ALL;
 	DWORD len;
 	GUID nlaguid = NLA_SERVICE_CLASS_GUID;
+	result[0]=0;
 	memset(qset, 0, sizeof(*qset));
 	qset->dwSize = sizeof(*qset);
 	qset->dwNameSpace = NS_NLA;
 	qset->lpServiceClassId = &nlaguid;
 	/* not set ServiceInstance to a single network name */
+
+	verbose(VERB_ALGO, "netlist sweep");
 
 	/* open it */
 	if(WSALookupServiceBegin(qset, flags, &lookup) != 0) {
@@ -128,25 +166,20 @@ static HANDLE notify_nets(void)
 		sleep(1);
 		return NULL;
 	}
-	log_info("done svc begin");
 
 	/* check for available networks */
 	memset(qset, 0, sizeof(*qset));
 	len = sizeof(buf);
 	while(WSALookupServiceNext(lookup, LUP_RETURN_ALL, &len, qset) == 0) {
-		log_info("svc next");
 		if(len > sizeof(buf)) {
 			/* sanity check on the buffer */
 			stop_lookup(lookup);
 			return NULL;
 		}
-		if(1) {
-			/* debug output */
-			log_info("service name %s",
+		verbose(VERB_ALGO, "service name %s",
 				qset->lpszServiceInstanceName);
-			log_info("comment %s", qset->lpszComment);
-			log_info("context %s", qset->lpszContext);
-		}
+		verbose(VERB_ALGO, "comment %s", qset->lpszComment);
+		verbose(VERB_ALGO, "context %s", qset->lpszContext);
 		/* obtain GUID of interface names of the networks */
 		if(qset->lpBlob != NULL) {
 			DWORD off = 0;
@@ -159,7 +192,8 @@ static HANDLE notify_nets(void)
 				if(p->header.type == NLA_INTERFACE) {
 					/* process it (registry lookup) */
 					process_adapter(p->data.
-						interfaceData.adapterName);
+						interfaceData.adapterName,
+						result, sizeof(result));
 				}
 				off = p->header.nextOffset;
 			} while(off != 0);
@@ -177,6 +211,8 @@ static HANDLE notify_nets(void)
 		|| r == WSA_E_NO_MORE
 #endif
 		) {
+		/* start the probe for the notified IPs from up networks */
+		probe_start(result);
 		return lookup;
 	}
 	/* we failed */
@@ -185,76 +221,61 @@ static HANDLE notify_nets(void)
 	return NULL;
 }
 
-/** wait for net list info to change */
-static void wait_for_change(HANDLE lookup)
+/** add an event to the server to wait for changes */
+static void
+netlist_add_event(HANDLE lookup, struct svr* svr)
 {
-	WSAOVERLAPPED overlap;
-	WSACOMPLETION complete;
 	DWORD bytesret = 0;
-	WSAEVENT event = WSACreateEvent();
-	if(event == WSA_INVALID_EVENT) {
-		log_err("WSACreateEvent: %s", wsa_strerror(WSAGetLastError()));
-		return;
+	netlist_event = WSACreateEvent();
+	if(netlist_event == WSA_INVALID_EVENT) {
+		fatal_exit("WSACreateEvent: %s", wsa_strerror(WSAGetLastError()));
 	}
-	overlap.hEvent = event;
-	complete.Type = NSP_NOTIFY_EVENT;
-	complete.Parameters.Event.lpOverlapped = &overlap;
+	netlist_overlap.hEvent = netlist_event;
+	netlist_complete.Type = NSP_NOTIFY_EVENT;
+	netlist_complete.Parameters.Event.lpOverlapped = &netlist_overlap;
 	if(WSANSPIoctl(lookup, SIO_NSP_NOTIFY_CHANGE, NULL, 0,
-		NULL, 0, &bytesret, &complete) != NO_ERROR) {
+		NULL, 0, &bytesret, &netlist_complete) != NO_ERROR) {
 		int r = WSAGetLastError();
 		if(r != WSA_IO_PENDING) {
-			log_err("WSANSPIoctl: %s",
+			WSACloseEvent(netlist_event);
+			fatal_exit("WSANSPIoctl: %s",
 				wsa_strerror(WSAGetLastError()));
-			WSACloseEvent(event);
-			return;
 		}
 	}
-	/* wait blockingly */
-	if(WSAWaitForMultipleEvents(1, &event, TRUE, WSA_INFINITE, FALSE)
-		== WSA_WAIT_FAILED) {
-		log_err("WSAWaitForMultipleEvents(NS_NLA): %s",
-			wsa_strerror(WSAGetLastError()));
+	if(!winsock_register_wsaevent(comm_base_internal(svr->base),
+		&netlist_ev, &netlist_event, &netlist_change_cb, lookup)) {
+		fatal_exit("cannot register netlist event");
 	}
-	WSACloseEvent(event);
-	/* the list in lookup is no longer valid, re-probe the list */
 }
 
-/** the netlist main function */
-static void* netlist_main(void* ATTR_UNUSED(arg))
+/** remove and close netlist event */
+static void netlist_remove_event(HANDLE lookup, struct svr* svr)
 {
-	log_info("netlist started");
-	while(1) {
-		HANDLE lookup = notify_nets();
-		if(!lookup) continue;
-		log_info("initiate wait");
-		wait_for_change(lookup);
-		log_info("wait done");
-		stop_lookup(lookup);
-	}
-	return NULL;
+	winsock_unregister_wsaevent(&netlist_ev);
+	stop_lookup(lookup);
+	WSACloseEvent(netlist_event);
 }
 
-void start_netlist(void)
+/** callback for change */
+void netlist_change_cb(int ATTR_UNUSED(fd), short ATTR_UNUSED(ev), void* arg)
 {
-	/* DEBUG */
-	netlist_main(NULL);
-	return;
-
-	HANDLE thr;
-	void* arg=NULL;
-#ifndef HAVE__BEGINTHREADEX
-	thr = CreateThread(NULL, /* default security (no inherit handle) */
-		0, /* default stack size */
-		(LPTHREAD_START_ROUTINE)&netlist_main, arg,
-		0, /* default flags, run immediately */
-		NULL); /* do not store thread identifier anywhere */
-#else
-	/* the begintheadex routine setups for the C lib; aligns stack */
-	thr=(HANDLE)_beginthreadex(NULL, 0, (void*)&netlist_main, arg, 0, NULL);
-#endif
-	if(thr == NULL) {
-		log_win_err("CreateThread failed", GetLastError());
-		fatal_exit("thread create failed");
+	HANDLE lookup = (HANDLE)arg;
+	netlist_remove_event(lookup, global_svr);
+	lookup = notify_nets();
+	while(!lookup) {
+		sleep(1); /* wait until netinfo is possible */
+		lookup = notify_nets();
 	}
+	netlist_add_event(lookup, global_svr);
+}
+
+void netlist_start(struct svr* svr)
+{
+	HANDLE lookup = NULL;
+	while(!lookup) {
+		lookup = notify_nets();
+		if(!lookup) sleep(1); /* wait until netinfo is possible */
+	}
+	netlist_add_event(lookup, svr);
 }
 

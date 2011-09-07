@@ -679,6 +679,7 @@ void winsock_unregister_wsaevent(struct event* ev)
 {
 	if(!ev || !ev->added) return;
 	log_assert(ev->added && ev->ev_base->max > 0)
+	zero_waitfor(ev->ev_base->waitfor, ev->hEvent);
 	/* remove item and compact the list */
 	ev->ev_base->items[ev->idx] = ev->ev_base->items[ev->ev_base->max-1];
 	ev->ev_base->items[ev->ev_base->max-1] = NULL;

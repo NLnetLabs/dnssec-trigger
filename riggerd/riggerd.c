@@ -190,12 +190,6 @@ do_main_work(const char* cfgfile, int nodaemonize, int verb)
 	svr = svr_create(cfg);
 	if(!svr) fatal_exit("could not init server");
 	log_init(cfg->logfile, cfg->use_syslog, cfg->chroot);
-
-#ifdef USE_WINSOCK
-	start_netlist(); /* debug */
-	exit(1);
-#endif
-
 	if(!nodaemonize)
 		detach();
 	store_pid(cfg->pidfile);
@@ -203,6 +197,9 @@ do_main_work(const char* cfgfile, int nodaemonize, int verb)
 	/* start 127.0.0.1 service (assumes not left in insecure mode),
 	 * unbound starts in authority-direct mode by default */
 	hook_resolv_localhost(cfg);
+#ifdef USE_WINSOCK
+	netlist_start(svr);
+#endif
 	svr_service(svr);
 	unlink_pid(cfg->pidfile);
 	log_info("%s stop", PACKAGE_STRING);
