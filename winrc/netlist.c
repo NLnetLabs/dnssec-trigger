@@ -99,7 +99,7 @@ static void process_adapter(const char* guid)
 {
 	if(1) {
 		/* debug print */
-		printf("adapter %s\n", guid);
+		log_info("adapter %s", guid);
 	}
 	/* TODO : registry lookups of the DNS servers */
 	
@@ -128,11 +128,13 @@ static HANDLE notify_nets(void)
 		sleep(1);
 		return NULL;
 	}
+	log_info("done svc begin");
 
 	/* check for available networks */
 	memset(qset, 0, sizeof(*qset));
 	len = sizeof(buf);
-	while(WSALookupServiceNext(lookup, flags, &len, qset) == 0) {
+	while(WSALookupServiceNext(lookup, LUP_RETURN_ALL, &len, qset) == 0) {
+		log_info("svc next");
 		if(len > sizeof(buf)) {
 			/* sanity check on the buffer */
 			stop_lookup(lookup);
@@ -140,10 +142,10 @@ static HANDLE notify_nets(void)
 		}
 		if(1) {
 			/* debug output */
-			printf("service name %s\n",
+			log_info("service name %s",
 				qset->lpszServiceInstanceName);
-			printf("comment %s\n", qset->lpszComment);
-			printf("context %s\n", qset->lpszContext);
+			log_info("comment %s", qset->lpszComment);
+			log_info("context %s", qset->lpszContext);
 		}
 		/* obtain GUID of interface names of the networks */
 		if(qset->lpBlob != NULL) {
@@ -220,13 +222,13 @@ static void wait_for_change(HANDLE lookup)
 /** the netlist main function */
 static void* netlist_main(void* ATTR_UNUSED(arg))
 {
-	printf("started netlist\n");
+	log_info("netlist started");
 	while(1) {
 		HANDLE lookup = notify_nets();
 		if(!lookup) continue;
-		printf("initiate wait\n");
+		log_info("initiate wait");
 		wait_for_change(lookup);
-		printf("wait done\n");
+		log_info("wait done");
 		stop_lookup(lookup);
 	}
 	return NULL;

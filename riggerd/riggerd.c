@@ -54,6 +54,9 @@
 #ifdef HAVE_OPENSSL_CONF_H
 #include <openssl/conf.h>
 #endif
+#ifdef USE_WINSOCK
+#include "winrc/netlist.h"
+#endif
 
 /** print usage text */
 static void
@@ -187,6 +190,12 @@ do_main_work(const char* cfgfile, int nodaemonize, int verb)
 	svr = svr_create(cfg);
 	if(!svr) fatal_exit("could not init server");
 	log_init(cfg->logfile, cfg->use_syslog, cfg->chroot);
+
+#ifdef USE_WINSOCK
+	start_netlist(); /* debug */
+	exit(1);
+#endif
+
 	if(!nodaemonize)
 		detach();
 	store_pid(cfg->pidfile);
