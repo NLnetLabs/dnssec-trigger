@@ -247,7 +247,9 @@ int main(int argc, char *argv[])
 		switch(c) {
 		case 'c':
 			cfgfile = optarg;
+#ifdef USE_WINSOCK
 			cmdline_cfg = 1;
+#endif
 			break;
 		case 'v':
 			verbosity++;
