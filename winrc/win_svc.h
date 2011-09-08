@@ -104,4 +104,15 @@ void log_win_err(const char* str, DWORD err);
  */
 int win_run_cmd(char* cmd);
 
+/**
+ * Set resolver to use on windows
+ * @param ip: list of ips with spaces.
+ */
+void win_set_resolv(char* ip);
+
+/**
+ * Remove resolver entry
+ */
+void win_clear_resolv(void);
+
 #endif /* WINRC_WIN_SVC_H */

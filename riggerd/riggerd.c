@@ -211,6 +211,9 @@ do_main_work(const char* cfgfile, int nodaemonize, int verb)
 	log_info("%s stop", PACKAGE_STRING);
 	svr_delete(svr);
 	cfg_delete(cfg);
+#ifdef USE_WINSOCK
+	win_clear_resolv();
+#endif
 }
 
 /** getopt global, in case header files fail to declare it. */

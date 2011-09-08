@@ -285,6 +285,7 @@ service_deinit(struct svr* svr, struct cfg* cfg)
 {
 	svr_delete(svr);
 	cfg_delete(cfg);
+	win_clear_resolv();
 }
 
 /**
@@ -566,4 +567,52 @@ int win_run_cmd(char* cmd)
 	CloseHandle(pinfo.hProcess);
 	CloseHandle(pinfo.hThread);
 	return ret;
+}
+
+void win_set_resolv(char* ip)
+{
+	const char* key = "SYSTEM\\CurrentControlSet\\Services\\Tcpip"
+		"\\Parameters";
+	HKEY hk;
+	if(RegCreateKeyEx(HKEY_LOCAL_MACHINE, (LPCTSTR)key,
+		0, /* reserved, mustbezero */
+		NULL, /* class of key, ignored */
+		REG_OPTION_NON_VOLATILE, /* values saved on disk */
+		KEY_WRITE, /* we want write permission */
+		NULL, /* use default security descriptor */
+		&hk, /* result */
+		NULL)) /* not interested if key new or existing */
+	{
+		log_win_err("could not create registry key", GetLastError());
+		return;
+	}
+	/* set NameServer */
+	if(RegSetValueEx(hk, (LPCTSTR)"NameServer", 0, REG_EXPAND_SZ,
+		(BYTE*)ip, (DWORD)strlen(ip)+1)) {
+		log_win_err("could not set regkey NameServer", GetLastError());
+	}
+	RegCloseKey(hk);
+}
+
+void win_clear_resolv(void)
+{
+	const char* key = "SYSTEM\\CurrentControlSet\\Services\\Tcpip"
+		"\\Parameters";
+	HKEY hk;
+	if(RegCreateKeyEx(HKEY_LOCAL_MACHINE, (LPCTSTR)key,
+		0, /* reserved, mustbezero */
+		NULL, /* class of key, ignored */
+		REG_OPTION_NON_VOLATILE, /* values saved on disk */
+		KEY_WRITE, /* we want write permission */
+		NULL, /* use default security descriptor */
+		&hk, /* result */
+		NULL)) /* not interested if key new or existing */
+	{
+		log_win_err("could not create registry key", GetLastError());
+		return;
+	}
+	if(RegDeleteKey(hk, (LPCTSTR)"NameServer")) {
+		log_win_err("could not del regkey NameServer", GetLastError());
+	}
+	RegCloseKey(hk);
 }

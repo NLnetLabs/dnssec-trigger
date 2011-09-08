@@ -45,6 +45,9 @@
 #include "log.h"
 #include "cfg.h"
 #include "probe.h"
+#ifdef USE_WINSOCK
+#include "winrc/win_svc.h"
+#endif
 
 #ifdef HOOKS_OSX
 /** set the DNS the OSX way */
@@ -69,6 +72,7 @@ set_dns_osx(struct cfg* cfg, char* iplist)
 }
 #endif /* HOOKS_OSX */
 
+#ifndef USE_WINSOCK
 static void prline(FILE* out, const char* line)
 {
 	int r = fprintf(out, "%s", line);
@@ -114,41 +118,54 @@ static void close_rescf(struct cfg* cfg, FILE* out)
 			strerror(errno));
 	}
 }
+#endif /* !USE_WINSOCK */
 
 void hook_resolv_localhost(struct cfg* cfg)
 {
+#ifndef USE_WINSOCK
 	FILE* out;
+#endif
 	if(cfg->noaction)
 		return;
+#ifdef USE_WINSOCK
+	win_set_resolv("127.0.0.1");
+#else
 	out = open_rescf(cfg);
 	if(!out) return;
 	/* write the nameserver records */
 	prline(out, "nameserver 127.0.0.1\n");
 	close_rescf(cfg, out);
-#ifdef HOOKS_OSX
+#  ifdef HOOKS_OSX
 	set_dns_osx(cfg, "127.0.0.1");
+#  endif
 #endif
 }
 
 void hook_resolv_iplist(struct cfg* cfg, struct probe_ip* list)
 {
+#ifndef USE_WINSOCK
 	char line[1024];
 	FILE* out;
-#ifdef HOOKS_OSX
+#endif
+#if defined(HOOKS_OSX) || defined(USE_WINSOCK)
 	char iplist[10240];
 	iplist[0] = 0;
 #endif
 	if(cfg->noaction)
 		return;
+#ifndef USE_WINSOCK
 	out = open_rescf(cfg);
 	if(!out) return;
+#endif
 	/* write the nameserver records */
 	while(list) {
 		if(!list->to_auth) {
+#ifndef USE_WINSOCK
 			snprintf(line, sizeof(line), "nameserver %s\n",
 				list->name);
 			prline(out, line);
-#ifdef HOOKS_OSX
+#endif
+#if defined(HOOKS_OSX) || defined(USE_WINSOCK)
 			snprintf(iplist+strlen(iplist),
 				sizeof(iplist)-strlen(iplist), "%s%s",
 				((iplist[0]==0)?"":" "), list->name);
@@ -156,9 +173,14 @@ void hook_resolv_iplist(struct cfg* cfg, struct probe_ip* list)
 		}
 		list = list->next;
 	}
+#ifndef USE_WINSOCK
 	close_rescf(cfg, out);
+#endif
 #ifdef HOOKS_OSX
 	set_dns_osx(cfg, iplist);
+#endif
+#ifdef USE_WINSOCK
+	win_set_resolv(iplist);
 #endif
 }
 
@@ -167,9 +189,11 @@ void hook_resolv_flush(struct cfg* cfg)
 	/* attempt to flush OS specific caches, because we go from
 	 * insecure to secure mode */
 	(void)cfg;
-#if HOOKS_OSX
+#ifdef HOOKS_OSX
 	/* dscacheutil on 10.5 an later, lookupd before that */
 	system("dscacheutil -flushcache || lookupd -flushcache");
+#elif defined(USE_WINSOCK)
+	win_run_cmd("ipconfig /flushdns");
 #else
 	/* TODO */
 #endif
