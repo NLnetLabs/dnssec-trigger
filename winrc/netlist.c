@@ -229,7 +229,7 @@ netlist_add_event(HANDLE lookup, struct svr* svr)
 		}
 	}
 	if(!winsock_register_wsaevent(comm_base_internal(svr->base),
-		&netlist_ev, &netlist_event, &netlist_change_cb, lookup)) {
+		&netlist_ev, netlist_event, &netlist_change_cb, lookup)) {
 		fatal_exit("cannot register netlist event");
 	}
 	netlist_lookup = lookup;
