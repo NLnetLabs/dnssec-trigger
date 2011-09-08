@@ -1,3 +1,7 @@
+8 Sep 2011: Wouter
+	- Fix that windows DHCP hook fires less often: only if list of network
+	  and GUID of adapter and IPs changes.
+
 7 Sep 2011: Wouter
 	- dnssec-triggerd can run as a windows service.
 	- windows DHCP hook on network changes.

@@ -80,6 +80,8 @@ static WSACOMPLETION netlist_complete;
 static WSAEVENT netlist_event;
 static struct event netlist_ev;
 static HANDLE netlist_lookup;
+static char* netlist_netnames = NULL;
+static char* netlist_ips = NULL;
 
 /** stop and close lookup */
 static void stop_lookup(HANDLE lookup)
@@ -88,6 +90,22 @@ static void stop_lookup(HANDLE lookup)
 		log_err("WSALookupServiceEnd: %s",
 			wsa_strerror(WSAGetLastError()));
 	}
+}
+
+static int has_changed(char* netnames, char* ips)
+{
+	if(!netlist_ips || !netlist_netnames ||
+		strcmp(netlist_ips, ips) != 0 ||
+		strcmp(netlist_netnames, netnames) != 0) {
+		verbose(VERB_DETAIL, "netlist is now: %s %s", netnames, ips);
+		free(netlist_ips);
+		free(netlist_netnames);
+		netlist_ips = strdup(ips);
+		netlist_netnames = strdup(netnames);
+		return 1;
+	}
+	verbose(VERB_DETAIL, "netlist unchanged: %s", netnames);
+	return 0;
 }
 
 /** replace characters with other characters */
@@ -101,11 +119,15 @@ static void replace_str(char* s, char a, char b)
 }
 
 /** process network adapter */
-static void process_adapter(const char* guid, char* dest, size_t len)
+static void process_adapter(const char* guid, char* dest, size_t len,
+	char* netnames, size_t netlen)
 {
 	char key[256];
 	char* res;
+	if(!guid) return;
 	verbose(VERB_ALGO, "adapter %s", guid);
+	snprintf(netnames+strlen(netnames), netlen-strlen(netnames),
+		" %s", guid);
 	/* registry lookups of the DNS servers */
 	/* replace , and ; with spaces */
 	/* append to the total string list */
@@ -131,12 +153,14 @@ static HANDLE notify_nets(void)
 	int r;
 	HANDLE lookup;
 	char result[10240];
+	char netnames[10240];
 	char buf[20480];
 	WSAQUERYSET *qset = (WSAQUERYSET*)buf;
 	DWORD flags = LUP_DEEP | LUP_RETURN_ALL;
 	DWORD len;
 	GUID nlaguid = NLA_SERVICE_CLASS_GUID;
 	result[0]=0;
+	netnames[0]=0;
 	memset(qset, 0, sizeof(*qset));
 	qset->dwSize = sizeof(*qset);
 	qset->dwNameSpace = NS_NLA;
@@ -162,6 +186,10 @@ static HANDLE notify_nets(void)
 			stop_lookup(lookup);
 			return NULL;
 		}
+		snprintf(netnames+strlen(netnames),
+			sizeof(netnames)-strlen(netnames), " * %s",
+			qset->lpszServiceInstanceName?
+			qset->lpszServiceInstanceName:"-");
 		verbose(VERB_ALGO, "service name %s",
 				qset->lpszServiceInstanceName);
 		verbose(VERB_ALGO, "comment %s", qset->lpszComment);
@@ -179,7 +207,8 @@ static HANDLE notify_nets(void)
 					/* process it (registry lookup) */
 					process_adapter(p->data.
 						interfaceData.adapterName,
-						result, sizeof(result));
+						result, sizeof(result),
+						netnames, sizeof(netnames));
 				}
 				off = p->header.nextOffset;
 			} while(off != 0);
@@ -198,7 +227,9 @@ static HANDLE notify_nets(void)
 #endif
 		) {
 		/* start the probe for the notified IPs from up networks */
-		probe_start(result);
+		if(has_changed(netnames, result)) {
+			probe_start(result);
+		}
 		return lookup;
 	}
 	/* we failed */
