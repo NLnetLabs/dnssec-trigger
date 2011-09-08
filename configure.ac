@@ -395,17 +395,26 @@ AC_SUBST(pidfile)
 AC_ARG_WITH([unbound-control], AC_HELP_STRING([--with-unbound-control=path],
 [set the unbound-control to use, default what configure finds in its path]),, withval="")
 AC_MSG_CHECKING([for unbound-control])
-unbound_control_path=`which unbound-control 2>&1`
+if test "$on_mingw" = "yes"; then
+	unbound_control_path='"C:\Program Files\Unbound\unbound-control.exe"'
+else
+	unbound_control_path="`which unbound-control 2>&1`"
+fi
 if test -n "$withval"; then
 	unbound_control_path="$withval"
 fi
-if test -x "$unbound_control_path"; then
+if test "$on_mingw" = "yes"; then
 	AC_MSG_RESULT($unbound_control_path)
 else
-	AC_MSG_RESULT([not found: try "unbound-control" in runtime PATH])
-	unbound_control_path="unbound-control"
+	if test -x "$unbound_control_path"; then
+		AC_MSG_RESULT($unbound_control_path)
+	else
+		AC_MSG_RESULT([not found: try "unbound-control" in runtime PATH])
+		unbound_control_path="unbound-control"
+	fi
 fi
 ACX_ESCAPE_BACKSLASH($unbound_control_path, unbound_control_esc)
+unbound_control_esc="`echo $unbound_control_esc | sed -e 's/\\"/\\\\"/g'`"
 AC_DEFINE_UNQUOTED([UNBOUND_CONTROL], ["$unbound_control_esc"], [unbound-control to call])
 AC_SUBST(unbound_control_path)
 

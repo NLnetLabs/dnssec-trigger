@@ -538,3 +538,32 @@ void wsvc_desetup_worker(void)
 	comm_timer_delete(service_cron);
 	service_cron = NULL;
 }
+
+int win_run_cmd(char* cmd)
+{
+	STARTUPINFO sinfo;
+	PROCESS_INFORMATION pinfo;
+	DWORD ret;
+	memset(&pinfo, 0, sizeof(pinfo));
+	memset(&sinfo, 0, sizeof(sinfo));
+	sinfo.cb = sizeof(sinfo);
+
+	/* start it */
+	if(!CreateProcess(NULL, cmd, NULL, NULL, 0, CREATE_NO_WINDOW,
+		NULL, NULL, &sinfo, &pinfo)) {
+		log_win_err(cmd, GetLastError());
+		return -1;
+	}
+
+	/* wait for it */
+	if(WaitForSingleObject(pinfo.hProcess, INFINITE) == WAIT_FAILED) {
+		log_win_err("cannot WaitForSingleObject(exe):", GetLastError());
+	}
+	if(!GetExitCodeProcess(pinfo.hProcess, &ret)) {
+		log_win_err("cannot GetExitCodeProcess", GetLastError());
+		ret = -1;
+	}
+	CloseHandle(pinfo.hProcess);
+	CloseHandle(pinfo.hThread);
+	return ret;
+}

@@ -97,5 +97,11 @@ char* lookup_reg_str(const char* key, const char* name);
 /** log a windows GetLastError message */
 void log_win_err(const char* str, DWORD err);
 
+/**
+ * Run command, and wait for result.
+ * @param cmd: the command and arguments.
+ * @return: return code of the program.  If -1, errno.
+ */
+int win_run_cmd(char* cmd);
 
 #endif /* WINRC_WIN_SVC_H */

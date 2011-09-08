@@ -44,6 +44,9 @@
 #include "cfg.h"
 #include "log.h"
 #include "probe.h"
+#ifdef USE_WINSOCK
+#include "winrc/win_svc.h"
+#endif
 
 /**
  * Perform the unbound control command.
@@ -63,10 +66,15 @@ ub_ctrl(struct cfg* cfg, const char* cmd, const char* args)
 		ctrl = cfg->unbound_control;
 	verbose(VERB_ALGO, "system %s %s %s", ctrl, cmd, args);
 	snprintf(command, sizeof(command), "%s %s %s", ctrl, cmd, args);
+#ifdef USE_WINSOCK
+	r = win_run_cmd(command);
+#else
 	r = system(command);
 	if(r == -1) {
 		log_err("system(%s) failed: %s", ctrl, strerror(errno));
-	} else if(r != 0) {
+	} else
+#endif
+	if(r != 0) {
 		log_warn("unbound-control exited with status %d", r);
 	}
 }
