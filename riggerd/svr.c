@@ -732,9 +732,12 @@ static void sslconn_command(struct sslconn* sc)
 		handle_cmdtray_cmd(sc);
 	} else if(strncmp(str, "unsafe", 6) == 0) {
 		handle_unsafe_cmd(sc);
+	} else if(strncmp(str, "stop", 4) == 0) {
+		comm_base_exit(global_svr->base);
+		sslconn_shutdown(sc);
 	} else {
 		log_err("unknown command: %s", str);
-		sslconn_delete(sc);
+		sslconn_shutdown(sc);
 	}
 }
 

@@ -1,3 +1,7 @@
+9 Sep 2011: Wouter
+	- can override nameserver settings on windows (needs administrator
+	  permissions) and clears them away (back to the default) on exit.
+
 8 Sep 2011: Wouter
 	- Fix that windows DHCP hook fires less often: only if list of network
 	  and GUID of adapter and IPs changes.

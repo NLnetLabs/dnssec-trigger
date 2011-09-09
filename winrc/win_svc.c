@@ -569,11 +569,69 @@ int win_run_cmd(char* cmd)
 	return ret;
 }
 
+/** enumerate all subkeys of base, and call process(hk, arg) on them */
+void enum_guids(const char* base, void (*process_it)(HKEY,void*), void* arg)
+{
+	char subname[1024];
+	HKEY base_hk, sub_hk;
+	DWORD sz = sizeof(subname);
+	DWORD i = 0, ret;
+	if(RegCreateKeyEx(HKEY_LOCAL_MACHINE, (LPCTSTR)base,
+		0, /* reserved, mustbezero */
+		NULL, /* class of key, ignored */
+		REG_OPTION_NON_VOLATILE, /* values saved on disk */
+		KEY_WRITE|KEY_ENUMERATE_SUB_KEYS,
+		NULL, /* use default security descriptor */
+		&base_hk, /* result */
+		NULL)) /* not interested if key new or existing */
+	{
+		log_win_err("could not open enum registry key", GetLastError());
+		return;
+	}
+	while( (ret=RegEnumKeyEx(base_hk, i, (LPTSTR)subname, &sz, NULL, NULL,
+		0, NULL)) == ERROR_SUCCESS) {
+		verbose(VERB_ALGO, "enum %d %s", (int)i, subname);
+		/* process it */
+		if(RegOpenKeyEx(base_hk, (LPCTSTR)subname, 0, KEY_WRITE,
+			&sub_hk)) {
+			log_win_err("enum cannot RegOpenKey", GetLastError());
+		} else {
+			(*process_it)(sub_hk, arg);
+			RegCloseKey(sub_hk);
+		}
+		/* prepare for next iteration */
+		i++;
+		sz = sizeof(subname);
+	}
+	if(ret == ERROR_MORE_DATA) {
+		log_err("part of %s has registry keys that are too long", base);
+	} else if(ret != ERROR_NO_MORE_ITEMS) {
+		log_win_err("cannot RegEnumKey", GetLastError());
+	}
+	RegCloseKey(base_hk);	
+}
+
+static void
+enum_set_nameserver(HKEY hk, void* arg)
+{
+	DWORD len = 0;
+	if(arg) len = strlen((char*)arg);
+	if(RegSetValueEx(hk, (LPCTSTR)"NameServer", 0, REG_SZ,
+		(BYTE*)arg, (DWORD)len)) {
+		log_win_err("could not enumset regkey NameServer", GetLastError());
+	}
+}
+
 void win_set_resolv(char* ip)
 {
 	const char* key = "SYSTEM\\CurrentControlSet\\Services\\Tcpip"
 		"\\Parameters";
+	const char* ifs = "SYSTEM\\CurrentControlSet\\services\\Tcpip"
+		"\\Parameters\\Interfaces";
 	HKEY hk;
+	verbose(VERB_DETAIL, "set reg %s", ip);
+
+	/* needs administrator permissions */
 	if(RegCreateKeyEx(HKEY_LOCAL_MACHINE, (LPCTSTR)key,
 		0, /* reserved, mustbezero */
 		NULL, /* class of key, ignored */
@@ -583,22 +641,28 @@ void win_set_resolv(char* ip)
 		&hk, /* result */
 		NULL)) /* not interested if key new or existing */
 	{
-		log_win_err("could not create registry key", GetLastError());
-		return;
+		log_win_err("could not open registry key", GetLastError());
+	} else {
+		/* set NameServer */
+		if(RegSetValueEx(hk, (LPCTSTR)"NameServer", 0, REG_SZ,
+			(BYTE*)ip, (DWORD)strlen(ip)+1)) {
+			log_win_err("could not set regkey NameServer", GetLastError());
+		}
+		RegCloseKey(hk);
 	}
-	/* set NameServer */
-	if(RegSetValueEx(hk, (LPCTSTR)"NameServer", 0, REG_EXPAND_SZ,
-		(BYTE*)ip, (DWORD)strlen(ip)+1)) {
-		log_win_err("could not set regkey NameServer", GetLastError());
-	}
-	RegCloseKey(hk);
+
+	/* set all interfaces/guid/nameserver */
+	enum_guids(ifs, &enum_set_nameserver, ip);
 }
 
 void win_clear_resolv(void)
 {
 	const char* key = "SYSTEM\\CurrentControlSet\\Services\\Tcpip"
 		"\\Parameters";
+	const char* ifs = "SYSTEM\\CurrentControlSet\\services\\Tcpip"
+		"\\Parameters\\Interfaces";
 	HKEY hk;
+	verbose(VERB_DETAIL, "clear reg");
 	if(RegCreateKeyEx(HKEY_LOCAL_MACHINE, (LPCTSTR)key,
 		0, /* reserved, mustbezero */
 		NULL, /* class of key, ignored */
@@ -609,10 +673,12 @@ void win_clear_resolv(void)
 		NULL)) /* not interested if key new or existing */
 	{
 		log_win_err("could not create registry key", GetLastError());
-		return;
+	} else {
+		if(RegSetValueEx(hk, (LPCTSTR)"NameServer", 0, REG_SZ,
+			(BYTE*)NULL, (DWORD)0)) {
+			log_win_err("could not zero regkey NameServer", GetLastError());
+		}
+		RegCloseKey(hk);
 	}
-	if(RegDeleteKey(hk, (LPCTSTR)"NameServer")) {
-		log_win_err("could not del regkey NameServer", GetLastError());
-	}
-	RegCloseKey(hk);
+	enum_guids(ifs, &enum_set_nameserver, NULL);
 }

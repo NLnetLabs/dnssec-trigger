@@ -74,6 +74,7 @@ usage()
 	printf("  status	shows the latest probe results\n");
 	printf("  results	continuous feed of probe results\n");
 	printf("  cmdtray	command channel for gui panel\n");
+	printf("  stop		stop the daemon\n");
 	printf("Version %s\n", PACKAGE_VERSION);
 	printf("BSD licensed, see LICENSE in source package for details.\n");
 	printf("Report bugs to %s\n", PACKAGE_BUGREPORT);
