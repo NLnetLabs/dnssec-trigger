@@ -70,7 +70,7 @@ usage(void)
 	printf(" -c file	config file, default %s\n", CONFIGFILE);
 #ifdef USE_WINSOCK
 	printf("-w opt  windows option: \n");
-	printf("        install, remove - manage the services entry\n");
+	printf("        install, remove, start, stop - manage the service\n");
 	printf("        service - used to start from services control panel\n");
 #endif
 }
