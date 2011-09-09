@@ -124,7 +124,7 @@ osx_probe_hook(void)
 	}
 	/* same value as in script - cause reprobe */
 	unlink("/tmp/dnssec-trigger-osx.tmp");
-	if(system(LIBEXECDIR"/dnssec-trigger-osx.sh") == -1)
+	if(system(LIBEXEC_DIR"/dnssec-trigger-osx.sh") == -1)
 		log_err("cannot exec dnssec-trigger hook osx %s",
 			strerror(errno));
 	exit (0);
