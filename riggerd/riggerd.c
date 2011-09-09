@@ -106,6 +106,31 @@ static RETSIGTYPE record_sigh(int sig)
 	}
 }
 
+#ifdef HOOKS_OSX
+static void
+osx_probe_hook(void)
+{
+	pid_t pid = fork();
+	switch(pid) {
+	default: 	/* main */
+		return;
+	case -1:
+		/* error */
+		log_err("cannot fork: %s", strerror(errno));
+		return;
+	case 0:
+		/* child */
+		break;
+	}
+	/* same value as in script - cause reprobe */
+	unlink("/tmp/dnssec-trigger-osx.tmp");
+	if(system(LIBEXECDIR"/dnssec-trigger-osx.sh") == -1)
+		log_err("cannot exec dnssec-trigger hook osx %s",
+			strerror(errno));
+	exit (0);
+}
+#endif /* HOOKS_OSX */
+
 /** store pid in pidfile */
 static void
 store_pid(char* pidfile)
@@ -205,6 +230,9 @@ do_main_work(const char* cfgfile, int nodaemonize, int verb)
 	hook_resolv_localhost(cfg);
 #ifdef USE_WINSOCK
 	netlist_start(svr);
+#endif
+#ifdef HOOKS_OSX
+	osx_probe_hook();
 #endif
 	svr_service(svr);
 	unlink_pid(cfg->pidfile);

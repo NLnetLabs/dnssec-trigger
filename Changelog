@@ -1,6 +1,8 @@
 9 Sep 2011: Wouter
 	- can override nameserver settings on windows (needs administrator
 	  permissions) and clears them away (back to the default) on exit.
+	- fix not enough detection of network changes on OSX.
+	- get a probe after start on OSX.
 
 8 Sep 2011: Wouter
 	- Fix that windows DHCP hook fires less often: only if list of network
