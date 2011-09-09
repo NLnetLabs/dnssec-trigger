@@ -180,6 +180,9 @@ continuous feed of probe results.
 .TP
 .B cmdtray
 Continuous input feed, used by the tray icon to send commands to the daemon.
+.TP
+.B stop
+stops the daemon.
 .SH "THE DNSSEC\-TRIGGER\-CONTROL\-SETUP TOOL"
 This tool aids setup of files.  Without arguments it creates the key files.
 If key files already exist, it resigns certificates with existing private keys.
