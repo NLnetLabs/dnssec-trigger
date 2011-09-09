@@ -110,3 +110,12 @@ fptr_whitelist_rbtree_cmp(int (*fptr) (const void *, const void *))
 	if(fptr == &mini_ev_cmp) return 1;
 	return 0;
 }
+
+#ifdef USE_WINSOCK
+int fptr_whitelist_enum_reg(int (*fptr) (HKEY, void *))
+{
+	if(fptr == &enum_reg_set_nameserver) return 1;
+	return 0;
+}
+#endif /* USE_WINSOCK */
+

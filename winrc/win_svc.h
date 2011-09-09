@@ -115,4 +115,7 @@ void win_set_resolv(char* ip);
  */
 void win_clear_resolv(void);
 
+/** sets NameServer in HKEY(registry space) to the arg(string or NULL) */
+void enum_reg_set_nameserver(HKEY hk, void* arg);
+
 #endif /* WINRC_WIN_SVC_H */

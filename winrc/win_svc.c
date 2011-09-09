@@ -611,8 +611,8 @@ void enum_guids(const char* base, void (*process_it)(HKEY,void*), void* arg)
 	RegCloseKey(base_hk);	
 }
 
-static void
-enum_set_nameserver(HKEY hk, void* arg)
+void
+enum_reg_set_nameserver(HKEY hk, void* arg)
 {
 	DWORD len = 0;
 	if(arg) len = strlen((char*)arg);
@@ -652,7 +652,7 @@ void win_set_resolv(char* ip)
 	}
 
 	/* set all interfaces/guid/nameserver */
-	enum_guids(ifs, &enum_set_nameserver, ip);
+	enum_guids(ifs, &enum_reg_set_nameserver, ip);
 }
 
 void win_clear_resolv(void)
@@ -680,5 +680,5 @@ void win_clear_resolv(void)
 		}
 		RegCloseKey(hk);
 	}
-	enum_guids(ifs, &enum_set_nameserver, NULL);
+	enum_guids(ifs, &enum_reg_set_nameserver, NULL);
 }
