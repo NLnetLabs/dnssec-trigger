@@ -3,6 +3,7 @@
 	  permissions) and clears them away (back to the default) on exit.
 	- fix not enough detection of network changes on OSX.
 	- get a probe after start on OSX.
+	- fix submit of disconnect state, submit "".
 
 8 Sep 2011: Wouter
 	- Fix that windows DHCP hook fires less often: only if list of network

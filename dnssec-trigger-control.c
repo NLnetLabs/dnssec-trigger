@@ -123,8 +123,9 @@ go_cmd(SSL* ssl, int argc, char* argv[])
 	for(i=0; i<argc; i++) {
 		if(SSL_write(ssl, space, (int)strlen(space)) <= 0)
 			ssl_err("could not SSL_write");
-		if(SSL_write(ssl, argv[i], (int)strlen(argv[i])) <= 0)
-			ssl_err("could not SSL_write");
+		if(argv[i] && strlen(argv[i])>0)
+			if(SSL_write(ssl, argv[i], (int)strlen(argv[i])) <= 0)
+				ssl_err("could not SSL_write");
 	}
 	if(SSL_write(ssl, newline, (int)strlen(newline)) <= 0)
 		ssl_err("could not SSL_write");
