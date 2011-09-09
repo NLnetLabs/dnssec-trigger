@@ -138,6 +138,9 @@ void hook_resolv_localhost(struct cfg* cfg)
 #endif
 	if(cfg->noaction)
 		return;
+#  ifdef HOOKS_OSX
+	set_dns_osx(cfg, "127.0.0.1");
+#  endif
 #ifdef USE_WINSOCK
 	win_set_resolv("127.0.0.1");
 #else
@@ -146,9 +149,6 @@ void hook_resolv_localhost(struct cfg* cfg)
 	/* write the nameserver records */
 	prline(out, "nameserver 127.0.0.1\n");
 	close_rescf(cfg, out);
-#  ifdef HOOKS_OSX
-	set_dns_osx(cfg, "127.0.0.1");
-#  endif
 #endif
 }
 

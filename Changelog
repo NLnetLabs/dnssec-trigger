@@ -4,6 +4,9 @@
 	- fix not enough detection of network changes on OSX.
 	- get a probe after start on OSX.
 	- fix submit of disconnect state, submit "".
+	- fix resolvconf writes on OSX: more chance of winning resolv.conf
+	  which is a small race what with setting scutil at the same time,
+	  and sets it after userlogin because OSX reprobes at user login.
 
 8 Sep 2011: Wouter
 	- Fix that windows DHCP hook fires less often: only if list of network
