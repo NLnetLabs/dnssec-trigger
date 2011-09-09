@@ -138,9 +138,9 @@ void hook_resolv_localhost(struct cfg* cfg)
 #endif
 	if(cfg->noaction)
 		return;
-#  ifdef HOOKS_OSX
+#ifdef HOOKS_OSX
 	set_dns_osx(cfg, "127.0.0.1");
-#  endif
+#endif
 #ifdef USE_WINSOCK
 	win_set_resolv("127.0.0.1");
 #else
