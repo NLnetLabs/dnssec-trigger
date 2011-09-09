@@ -50,6 +50,8 @@
 #endif
 
 #ifdef HOOKS_OSX
+static int set_to_localhost = 0;
+
 /** set the DNS the OSX way */
 static void
 set_dns_osx(struct cfg* cfg, char* iplist)
@@ -57,6 +59,7 @@ set_dns_osx(struct cfg* cfg, char* iplist)
 	char cmd[10240];
 	char dm[1024];
 	char* domain = "nothing.invalid";
+	set_to_localhost = (strcmp(iplist, "127.0.0.1") == 0);
 	if(cfg->rescf_domain && cfg->rescf_domain[0])
 		domain = cfg->rescf_domain;
 	else if(cfg->rescf_search && cfg->rescf_search[0]) {
@@ -70,6 +73,14 @@ set_dns_osx(struct cfg* cfg, char* iplist)
 	verbose(VERB_QUERY, "%s", cmd);
 	system(cmd);
 }
+
+/** restore resolv.conf on OSX if localhost is enabled */
+void restore_resolv_osx(struct cfg* cfg)
+{
+	if(set_to_localhost)
+		hook_resolv_localhost(cfg);
+}
+
 #endif /* HOOKS_OSX */
 
 #ifndef USE_WINSOCK

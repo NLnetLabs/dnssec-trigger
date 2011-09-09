@@ -695,6 +695,10 @@ static void handle_status_cmd(struct sslconn* sc)
 
 static void handle_cmdtray_cmd(struct sslconn* sc)
 {
+#ifdef HOOKS_OSX
+	/* OSX has messed up resolv.conf after relogin */
+	restore_resolv_osx(global_svr->cfg);
+#endif
 	/* turn into persist read */
 	ldns_buffer_clear(sc->buffer);
 	comm_point_listen_for_rw(sc->c, 1, 0);

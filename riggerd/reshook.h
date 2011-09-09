@@ -64,4 +64,9 @@ void hook_resolv_iplist(struct cfg* cfg, struct probe_ip* list);
  */
 void hook_resolv_flush(struct cfg* cfg);
 
+#ifdef HOOKS_OSX
+/** on OSX we need to restore resolv.conf after user login */
+void restore_resolv_osx(struct cfg* cfg);
+#endif /*  HOOKS_OSX */
+
 #endif /* RESHOOKS_H */
