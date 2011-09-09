@@ -112,7 +112,7 @@ fptr_whitelist_rbtree_cmp(int (*fptr) (const void *, const void *))
 }
 
 #ifdef USE_WINSOCK
-int fptr_whitelist_enum_reg(int (*fptr) (HKEY, void *))
+int fptr_whitelist_enum_reg(void (*fptr) (HKEY, void *))
 {
 	if(fptr == &enum_reg_set_nameserver) return 1;
 	return 0;

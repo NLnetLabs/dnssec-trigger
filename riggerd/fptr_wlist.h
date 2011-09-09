@@ -115,7 +115,7 @@ int fptr_whitelist_rbtree_cmp(int (*fptr) (const void *, const void *));
 
 #ifdef USE_WINSOCK
 /** whitelist for registry enumeration function */
-int fptr_whitelist_enum_reg(int (*fptr) (HKEY, void *));
+int fptr_whitelist_enum_reg(void (*fptr) (HKEY, void *));
 #endif /* USE_WINSOCK */
 
 #endif /* UTIL_FPTR_WLIST_H */

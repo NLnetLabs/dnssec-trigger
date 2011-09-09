@@ -52,6 +52,7 @@
 #include "riggerd/svr.h"
 #include "riggerd/reshook.h"
 #include "riggerd/netevent.h"
+#include "riggerd/fptr_wlist.h"
 #include "riggerd/winsock_event.h"
 
 /** global service status */
@@ -596,6 +597,7 @@ void enum_guids(const char* base, void (*process_it)(HKEY,void*), void* arg)
 			&sub_hk)) {
 			log_win_err("enum cannot RegOpenKey", GetLastError());
 		} else {
+			fptr_ok(fptr_whitelist_enum_reg(process_it));
 			(*process_it)(sub_hk, arg);
 			RegCloseKey(sub_hk);
 		}
