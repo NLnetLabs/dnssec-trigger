@@ -318,7 +318,7 @@ int handle_ssl_accept(struct comm_point* c, void* ATTR_UNUSED(arg), int err,
                 log_crypto_err("could not SSL_new");
 		comm_point_delete(sc->c);
                 free(sc);
-                goto close_exit;
+		return 0;
         }
         SSL_set_accept_state(sc->ssl);
         (void)SSL_set_mode(sc->ssl, SSL_MODE_AUTO_RETRY);
@@ -327,7 +327,7 @@ int handle_ssl_accept(struct comm_point* c, void* ATTR_UNUSED(arg), int err,
                 SSL_free(sc->ssl);
                 comm_point_delete(sc->c);
                 free(sc);
-                goto close_exit;
+		return 0;
         }
 	sc->buffer = ldns_buffer_new(65536);
 	if(!sc->buffer) {
@@ -335,7 +335,7 @@ int handle_ssl_accept(struct comm_point* c, void* ATTR_UNUSED(arg), int err,
                 SSL_free(sc->ssl);
                 comm_point_delete(sc->c);
                 free(sc);
-                goto close_exit;
+		return 0;
 	}
         sc->next = svr->busy_list;
         svr->busy_list = sc;
@@ -658,12 +658,15 @@ static void
 send_results_to_con(struct svr* svr, struct sslconn* s)
 {
 	struct probe_ip* p;
+	char at[32];
 	ldns_buffer_clear(s->buffer);
 	for(p=svr->probes; p; p=p->next) {
 		ldns_buffer_printf(s->buffer, "%s %s: %s %s\n",
 			p->to_auth?"authority":"cache", p->name,
 			p->works?"OK":"error", p->reason?p->reason:"");
 	}
+	if(strftime(at, sizeof(at), "%H:%M:%S", localtime(&svr->probetime)))
+		ldns_buffer_printf(s->buffer, "at %s\n", at);
 	ldns_buffer_printf(s->buffer, "state: %s %s\n",
 		svr->res_state==res_cache?"cache":(
 		svr->res_state==res_auth?"auth":(

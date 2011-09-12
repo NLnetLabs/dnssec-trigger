@@ -176,13 +176,14 @@ outq_done(struct outq* outq, const char* reason)
 	struct probe_ip* p = outq->probe;
 	const char* in = NULL;
 	if(p->ds_c == outq) {
+		outq_delete(p->ds_c);
 		p->ds_c = NULL;
 		in = "DS";
 	} else {
+		outq_delete(p->dnskey_c);
 		p->dnskey_c = NULL;
 		in = "DNSKEY";
 	}
-	outq_delete(outq);
 	probe_partial_done(p, in, reason);
 }
 
@@ -358,7 +359,7 @@ int outq_handle_udp(struct comm_point* c, void* my_arg, int error,
 	}
 	/* quick sanity check */
 	if(len < LDNS_HEADER_SIZE || LDNS_ID_WIRE(wire) != outq->qid) {
-		log_info("%4.4x wire, qid %4.4x", LDNS_ID_WIRE(wire), outq->qid);
+		verbose(VERB_ALGO, "%4.4x wire, qid %4.4x", LDNS_ID_WIRE(wire), outq->qid);
 		/* wait for the real reply */
 		verbose(VERB_ALGO, "ignored bad reply (tooshort or wrong qid)");
 		return 0;
@@ -851,5 +852,6 @@ probe_all_done(void)
 		/* set resolv.conf to 127.0.0.1 */
 		hook_resolv_localhost(svr->cfg);
 	}
+	svr->probetime = time(0);
 	svr_send_results(svr);
 }

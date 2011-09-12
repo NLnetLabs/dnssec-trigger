@@ -85,6 +85,8 @@ struct svr {
 	int saw_direct_work;
 	/** attempt to access DNS authority servers directly */
 	int probe_direct;
+	/* time of probe */
+	time_t probetime;
 
 
 	/* result of probes */

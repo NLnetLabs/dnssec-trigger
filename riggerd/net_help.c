@@ -470,13 +470,17 @@ contact_server(const char* svr, int port, int statuscmd,
 #ifndef USE_WINSOCK
 		snprintf(err, errlen, "connect: %s", strerror(errno));
 		if(errno == ECONNREFUSED && statuscmd) {
+			close(fd);
 			return -2;
 		}
+		close(fd);
 #else
 		snprintf(err, errlen, "connect: %s", wsa_strerror(WSAGetLastError()));
 		if(WSAGetLastError() == WSAECONNREFUSED && statuscmd) {
+			closesocket(fd);
 			return -2;
 		}
+		closesocket(fd);
 #endif
 		return -1;
 	}

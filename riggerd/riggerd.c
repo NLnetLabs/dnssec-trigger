@@ -337,5 +337,6 @@ int main(int argc, char *argv[])
 			wsa_strerror(WSAGetLastError()));
 	}
 #endif
+	log_init(NULL, 0, NULL); /* close logfile */
 	return 0;
 }

@@ -88,7 +88,7 @@ static SSL* try_contact_server()
 			fd = contact_server(svr, feed->cfg->control_port, 0,
 				feed->connect_reason,
 				sizeof(feed->connect_reason));
-			if(fd == -1) {
+			if(fd == -1 || fd == -2) {
 				g_mutex_unlock(feed->lock);
 				sleep(1);
 				g_mutex_lock(feed->lock);

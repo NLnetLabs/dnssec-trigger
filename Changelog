@@ -1,3 +1,11 @@
+12 Sep 2011: Wouter
+	- fix fd leaked every second by panel if the daemon was down.
+	- more robust outq_delete function in code notation.
+	- do not print ID values if mismatch (enabled on verbosity 4).
+	- print time of probe with results.
+	- fix double-close of FD in acceptfailure case.
+	- close log file when daemon exits.
+
 9 Sep 2011: Wouter
 	- can override nameserver settings on windows (needs administrator
 	  permissions) and clears them away (back to the default) on exit.
