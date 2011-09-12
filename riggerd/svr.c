@@ -660,13 +660,14 @@ send_results_to_con(struct svr* svr, struct sslconn* s)
 	struct probe_ip* p;
 	char at[32];
 	ldns_buffer_clear(s->buffer);
+	if(strftime(at, sizeof(at), "%Y-%m-%d %H:%M:%S",
+		localtime(&svr->probetime)))
+		ldns_buffer_printf(s->buffer, "at %s\n", at);
 	for(p=svr->probes; p; p=p->next) {
 		ldns_buffer_printf(s->buffer, "%s %s: %s %s\n",
 			p->to_auth?"authority":"cache", p->name,
 			p->works?"OK":"error", p->reason?p->reason:"");
 	}
-	if(strftime(at, sizeof(at), "%H:%M:%S", localtime(&svr->probetime)))
-		ldns_buffer_printf(s->buffer, "at %s\n", at);
 	ldns_buffer_printf(s->buffer, "state: %s %s\n",
 		svr->res_state==res_cache?"cache":(
 		svr->res_state==res_auth?"auth":(

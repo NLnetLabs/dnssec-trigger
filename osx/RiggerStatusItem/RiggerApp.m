@@ -130,8 +130,14 @@ void append_txt(NSTextView* pane, char* str)
 	NSRange range;
 	range.location = 0;
 	range.length = [[resultpane textStorage] length];
+	struct strlist* p = feed->results;
 	[resultpane replaceCharactersInRange: range
-		withString:@"results from probe:\n"];
+		withString:@"results from probe "];
+	if(p && strncmp(p->str, "at ", 3) == 0) {
+		append_txt(resultpane, p->str);
+		p=p->next;
+	}
+	append_txt(resultpane, "\n\n");		
 
 	[feed->lock lock];
 	if(!feed->connected) {
@@ -139,8 +145,7 @@ void append_txt(NSTextView* pane, char* str)
 		append_txt(resultpane, feed->connect_reason);
 		append_txt(resultpane, "\n");		
 	}
-	struct strlist* p;
-	for(p=feed->results; p; p=p->next) {
+	for(; p; p=p->next) {
 		if(!p->next) {
 			/* last line */
 			append_txt(resultpane, "\n");

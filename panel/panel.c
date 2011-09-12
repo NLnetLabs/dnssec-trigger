@@ -158,12 +158,19 @@ void on_proberesults_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 	gpointer ATTR_UNUSED(user_data))
 {
 	GtkTextBuffer *buffer;
-	struct strlist* p;
+	struct strlist* p = feed->results;
 	GtkTextIter end;
 
 	/* fetch results */
 	buffer = gtk_text_view_get_buffer(result_textview);
-	gtk_text_buffer_set_text(buffer, "results from probe:\n", -1);
+	gtk_text_buffer_set_text(buffer, "results from probe ", -1);
+	if(p && strncmp(p->str, "at ", 3) == 0) {
+		gtk_text_buffer_get_end_iter(buffer, &end);
+		gtk_text_buffer_insert(buffer, &end, p->str, -1);
+		p=p->next;
+	}
+	gtk_text_buffer_get_end_iter(buffer, &end);
+	gtk_text_buffer_insert(buffer, &end, "\n\n", -1);
 	g_mutex_lock(feed->lock);
 	if(!feed->connected) {
 		gtk_text_buffer_get_end_iter(buffer, &end);
@@ -174,7 +181,7 @@ void on_proberesults_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 		gtk_text_buffer_insert(buffer, &end, "\n", -1);
 	}
 	/* indent for strings is adjusted to be able to judge line length */
-	for(p=feed->results; p; p=p->next) {
+	for(; p; p=p->next) {
 		if(!p->next) {
 			/* last line */
 			gtk_text_buffer_get_end_iter(buffer, &end);
