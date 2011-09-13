@@ -162,7 +162,7 @@ if [ "$DOWIN" = "yes" ]; then
                 cd openssl-* || error_cleanup "no openssl-X dir in tarball"
                 # configure for crosscompile, without CAPI because it fails
                 # cross-compilation and it is not used anyway
-                sslflags="no-asm --cross-compile-prefix=i686-pc-mingw32- -DOPENSSL_NO_CAPIENG mingw"
+                sslflags="shared --cross-compile-prefix=i686-pc-mingw32- -DOPENSSL_NO_CAPIENG mingw"
                 info "winssl: Configure $sslflags"
                 ./Configure --prefix="$sslinstall" $sslflags || error_cleanup "OpenSSL Configure failed"
                 info "winssl: make"
@@ -174,6 +174,7 @@ if [ "$DOWIN" = "yes" ]; then
                 cd ..
         fi
 
+	ldnsdir=""
         if test -n "$WINLDNS"; then
                 info "Cross compile $WINLDNS"
                 info "ldns tar unpack"
@@ -185,10 +186,10 @@ if [ "$DOWIN" = "yes" ]; then
                 info "ldns: make"
                 make || error_cleanup "ldns crosscompile failed"
                 # use from the build directory.
+		ldnsdir=`pwd`
                 cross_flag="$cross_flag --with-ldns=`pwd`"
                 cd ..
         fi
-
 
         info "Exporting source from SVN."
         svn export "$SVNROOT" dnssec-trigger || error_cleanup "SVN command failed"
@@ -227,9 +228,9 @@ if [ "$DOWIN" = "yes" ]; then
     # procedure for making installer on mingw. 
     info "Creating windows dist dnssec-trigger $version"
     info "Calling configure"
-    echo "$configure"' --enable-debug --enable-static-exe '"$* $cross_flag"
-    $configure --enable-debug --enable-static-exe $* $cross_flag \
-        || error_cleanup "Could not configure"
+    echo "$configure"' --enable-debug '"$* $cross_flag"
+    $configure --enable-debug $* $cross_flag \
+    	|| error_cleanup "Could not configure"
     info "Calling make"
     make || error_cleanup "Could not make"
     info "Make complete"
@@ -239,36 +240,48 @@ if [ "$DOWIN" = "yes" ]; then
     rm -f $file
     info "Creating $file"
     mkdir tmp.$$
-    make strip || error_exit "could not strip"
+    make strip || error_cleanup "could not strip"
     cd tmp.$$
     # TODO files and crosscompile
     # DLLs linked with the panel on windows (ship DLLs:)
-    # libgdk-win32-2.0-0.dll  -> /opt/gtk/bin/libgdk-win32-2.0-0.dll
-    # libgdk_pixbuf-2.0-0.dll -> /opt/gtk/bin/libgdk_pixbuf-2.0-0.dll
-    # libglib-2.0-0.dll       -> /opt/gtk/bin/libglib-2.0-0.dll
-    # libgobject-2.0-0.dll    -> /opt/gtk/bin/libgobject-2.0-0.dll
-    # libgthread-2.0-0.dll    -> /opt/gtk/bin/libgthread-2.0-0.dll
-    # libgtk-win32-2.0-0.dll  -> /opt/gtk/bin/libgtk-win32-2.0-0.dll
-    # libatk-1.0-0.dll        -> /opt/gtk/bin/libatk-1.0-0.dll
-    # libcairo-2.dll  -> /opt/gtk/bin/libcairo-2.dll
-    # intl.dll        -> /opt/gtk/bin/intl.dll
-    # libgio-2.0-0.dll        -> /opt/gtk/bin/libgio-2.0-0.dll
-    # libgmodule-2.0-0.dll    -> /opt/gtk/bin/libgmodule-2.0-0.dll
-    # libpango-1.0-0.dll      -> /opt/gtk/bin/libpango-1.0-0.dll
-    # libpangocairo-1.0-0.dll -> /opt/gtk/bin/libpangocairo-1.0-0.dll
-    # libpangowin32-1.0-0.dll -> /opt/gtk/bin/libpangowin32-1.0-0.dll
-    # libpng14-14.dll -> /opt/gtk/bin/libpng14-14.dll
-    # zlib1.dll       -> /opt/gtk/bin/zlib1.dll
-    # libpangoft2-1.0-0.dll   -> /opt/gtk/bin/libpangoft2-1.0-0.dll
-    # libfontconfig-1.dll     -> /opt/gtk/bin/libfontconfig-1.dll
-    # freetype6.dll   -> /opt/gtk/bin/freetype6.dll
-    # libexpat-1.dll  -> /usr/local/bin/libexpat-1.dll
-
+    # libldns, libcrypto, libssl
+    # openssl dlls
+    findpath="../../sslinstall/bin ../../sslinstall/lib/engines $ldnsdir/lib /usr/bin /usr/i686-pc-mingw32/sys-root/mingw/bin /usr/i686-pc-mingw32/sys-root/mingw/lib/engines"
+    # find a dll and copy it to local dir. $1 searchpath $2 name
+    function find_dll () {
+	    for i in $1; do
+		    if test -f "$i/$2"; then
+			    echo "dll $i/$2"
+			    cp $i/$2 .
+			    return 0
+		    fi
+	    done
+	    echo "no $2"
+	    return 1
+    }
+    find_dll "$findpath" "libeay32.dll" || error_cleanup "no crypto dll"
+    find_dll "$findpath" "ssleay32.dll" || error_cleanup "no ssl dll"
+    find_dll "$findpath" "gosteay32.dll" || echo "*** WARNING NO GOST DLL ***"
+    find_dll "$findpath" "libldns-1.dll" || error_cleanup "no ldns dll"
+    find_dll "$findpath" "intl.dll" || \
+    	find_dll "$findpath" "libintl-8.dll" || \
+	error_cleanup "no intl dll"
+    find_dll "$findpath" "freetype6.dll" || \
+    	find_dll "$findpath" "libfreetype-6.dll" \
+    	|| error_cleanup "no freetype dll"
+    for j in libgdk-win32-2.0-0.dll libgdk_pixbuf-2.0-0.dll libglib-2.0-0.dll \
+	libgobject-2.0-0.dll libgthread-2.0-0.dll libgtk-win32-2.0-0.dll \
+	libatk-1.0-0.dll libcairo-2.dll libgio-2.0-0.dll libgmodule-2.0-0.dll \
+	libpango-1.0-0.dll libpangocairo-1.0-0.dll libpangowin32-1.0-0.dll \
+	libpng14-14.dll zlib1.dll libpangoft2-1.0-0.dll libfontconfig-1.dll \
+	libexpat-1.dll; do
+	find_dll "$findpath" "$j" || error_cleanup "no $j found"
+    done
 
     cp ../example.conf example.conf
     cp ../dnssec-triggerd.exe ../dnssec-trigger-control.exe ../dnssec-trigger-panel.exe .
     # zipfile
-    zip ../$file example.conf dnssec-triggerd.exe dnssec-trigger-control.exe dnssec-trigger-panel.exe
+    zip ../$file README LICENSE example.conf dnssec-triggerd.exe dnssec-trigger-control.exe dnssec-trigger-panel.exe
     info "Testing $file"
     (cd .. ; zip -T $file )
     # installer

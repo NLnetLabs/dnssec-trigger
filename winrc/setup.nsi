@@ -81,6 +81,7 @@ section "-hidden.postinstall"
 	File "..\dnssec-trigger-keygen.exe"
 	File "..\example.conf"
 	File "..\winrc\gtkrc"
+	File "*.dll"
 
 	# store installation folder
 	WriteRegStr HKLM "Software\DnssecTrigger" "InstallLocation" "$INSTDIR"
@@ -115,7 +116,7 @@ sectionEnd
 LangString DESC_dnssectrigger ${LANG_ENGLISH} "The dnssec trigger package. $\r$\n$\r$\nStarts a service and a tray icon, logs to the Application Log, and the config file is its Program Files folder."
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-  !insertmacro MUI_DESCRIPTION_TEXT ${SectionUnbound} $(DESC_dnssectrigger)
+  !insertmacro MUI_DESCRIPTION_TEXT ${SectionDnssecTrigger} $(DESC_dnssectrigger)
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 # setup macros for uninstall functions.
@@ -141,6 +142,7 @@ section "un.DnssecTrigger"
 	Delete "$INSTDIR\dnssec-trigger-keygen.exe"
 	Delete "$INSTDIR\example.conf"
 	Delete "$INSTDIR\gtkrc"
+	Delete "$INSTDIR\*.dll"
 	RMDir "$INSTDIR"
 
 	# start menu items

@@ -125,6 +125,17 @@ ALL_SRC=$(sort $(COMMON_SRC) $(PANEL_SRC) $(RIGGERD_SRC) $(KEYGEN_SRC) $(CONTROL
 ALL_OBJ=$(addprefix $(BUILD),$(ALL_SRC:.c=.o) \
 	$(addprefix compat/,$(LIBOBJS:.o=.o))) $(COMPAT_OBJ)
 
+ifeq "$(hooks)" "windows"
+PANEL_OBJ+=$(BUILD)winrc/rsrc_panel.o
+RIGGERD_OBJ+=$(BUILD)winrc/rsrc_triggerd.o
+KEYGEN_OBJ+=$(BUILD)winrc/rsrc_keygen.o
+CONTROL_OBJ+=$(BUILD)winrc/rsrc_control.o
+$(BUILD)%.o:	$(srcdir)/%.rc $(srcdir)/config.h
+	$(INFO) Resource $<
+	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
+	$Q$(WINDRES) $(CPPFLAGS) $< $@
+endif
+
 COMPILE=$(CC) $(CPPFLAGS) $(CFLAGS)
 LINK=$(strip $(CC) $(RUNTIME_PATH) $(CFLAGS) $(LDFLAGS))
 
