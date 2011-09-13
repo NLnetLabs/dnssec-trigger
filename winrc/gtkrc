@@ -1,5 +1,6 @@
 # this is based on the Mist scheme from gtk-engines-2.10
 # it therefore has the same open-source license as that file.
+# it has been modified heavily.
 
 gtk-color-scheme =
 "bg_color:#eaeaea\nfg_color:#000\nbase_color:#fff\ntext_color:#000\nselected_fg_color:#fff\nselected_bg_color:#729fcf"
@@ -46,26 +47,29 @@ style "default"
 	xthickness = 1
 	ythickness = 1
 
-	NautilusIconContainer::dark_info_color="#888888"
-	NautilusIconContainer::light_info_color="#bbbbbb"
-	NautilusIconContainer::highlight_alpha=200
-
 	GtkMenu::horizontal_padding=0
 	GtkMenu::vertical_padding=0
 
-	#engine "mist"
+	#engine "mist"  # no need to load a binary engine.
  	#{
 	#}
+}
+
+style "button"
+{
+        bg[PRELIGHT]            = "#ddddff"
+	GtkWidget::focus_line_width = 1
 }
 
 style "menuitem"
 {
 	ythickness = 2
 	xthickness = 2
-        text[PRELIGHT]          = "#ffffff"
-        fg[PRELIGHT]          = "#ffffff"
-        bg[PRELIGHT]            = shade (0.8, @bg_color)
-        #bg[PRELIGHT]            = "#000000"
+        #text[PRELIGHT]          = "#ffffff"
+        #fg[PRELIGHT]          = "#ffffff"
+        #bg[PRELIGHT]            = shade (0.8, @bg_color)
+        bg[PRELIGHT]            = "#ddddff"
+	GtkMenuItem::selected_shadow_type=GTK_SHADOW_ETCHED_IN
 }
 
 style "menu" 
@@ -76,6 +80,7 @@ style "menu"
 
 class "GtkWidget" style "default"
 class "GtkMenu" style "menu"
+class "GtkButton" style "button"
 class "*MenuItem*" style "menuitem"
 
 widget_class "*MenuItem*" style "menuitem"
@@ -84,7 +89,4 @@ widget_class "*.GtkAccelMenuItem.*" style "menuitem"
 widget_class "*.GtkRadioMenuItem.*" style "menuitem"
 widget_class "*.GtkCheckMenuItem.*" style "menuitem"
 widget_class "*.GtkMenu.*" style "menuitem"
-
-
-
 
