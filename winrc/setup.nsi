@@ -149,7 +149,7 @@ LangString DESC_dnssectrigger ${LANG_ENGLISH} "The dnssec trigger package. $\r$\
 
 # uninstaller section
 section "un.DnssecTrigger"
-	# stop unbound service
+	# stop service
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w stop'
 	# uninstall service entry
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w remove'
