@@ -132,7 +132,7 @@ static void fetch_wlan_ssid(char* res, size_t reslen)
 {
 	DWORD serviceVersion = 0;
 	HANDLE client = NULL;
-	DWORD result ;
+	DWORD r ;
 	WLAN_INTERFACE_INFO_LIST* infolist = NULL;
 	unsigned int i;
 	char* p;
@@ -176,14 +176,16 @@ static void fetch_wlan_ssid(char* res, size_t reslen)
 
 	res[0] = 0;
 
-	result = myWlanOpenHandle(WLAN_API_VERSION, NULL, &serviceVersion,
+	r = myWlanOpenHandle(WLAN_API_VERSION, NULL, &serviceVersion,
 		&client);
-	if(result != ERROR_SUCCESS || client == NULL) {
-		log_win_err("cannot WlanOpenHandle", GetLastError());
+	if(r != ERROR_SUCCESS || client == NULL) {
+		if(r == ERROR_SERVICE_NOT_ACTIVE)
+			return; /* no wifi, or not started, no reason to err */
+		log_win_err("cannot WlanOpenHandle", r);
 		return;
 	}
-	if(myWlanEnumInterfaces(client, 0, &infolist) != ERROR_SUCCESS) {
-		log_win_err("cannot WlanEnumInterfaces", GetLastError());
+	if( (r=myWlanEnumInterfaces(client, 0, &infolist)) != ERROR_SUCCESS) {
+		log_win_err("cannot WlanEnumInterfaces", r);
 		if(infolist) myWlanFreeMemory(infolist);
 		myWlanCloseHandle(client, 0);
 		return;
@@ -192,10 +194,10 @@ static void fetch_wlan_ssid(char* res, size_t reslen)
 		WLAN_CONNECTION_ATTRIBUTES* attr = NULL;
 		PVOID data = NULL;
 		DWORD sz = 0;
-		if(myWlanQueryInterface(client, &infolist->InterfaceInfo[i].
+		if( (r=myWlanQueryInterface(client, &infolist->InterfaceInfo[i].
 			InterfaceGuid, wlan_intf_opcode_current_connection,
-			0, &sz, &data, 0) != ERROR_SUCCESS) {
-			log_win_err("cannot WlanQueryInterface", GetLastError());
+			0, &sz, &data, 0)) != ERROR_SUCCESS) {
+			log_win_err("cannot WlanQueryInterface", r);
 			if(data) myWlanFreeMemory(data);
 			continue;
 		}
