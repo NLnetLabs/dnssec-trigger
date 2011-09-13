@@ -82,6 +82,145 @@ static struct event netlist_ev;
 static HANDLE netlist_lookup;
 static char* netlist_netnames = NULL;
 static char* netlist_ips = NULL;
+static char* netlist_ssid = NULL;
+
+/** WLAN API (if not available). it should be in wlanapi.h and windot11.h, but
+ * crosscompile environments may not have those header files */
+#ifndef WLAN_API_VERSION
+#define WLAN_API_VERSION 0x1
+#define WLAN_MAX_NAME_LENGTH 256
+typedef enum {
+	wlan_interface_state_not_ready = 0,
+	wlan_interface_state_connected }
+	WLAN_INTERFACE_STATE;
+typedef struct {
+	GUID InterfaceGuid;
+	WCHAR strInterfaceDescription[WLAN_MAX_NAME_LENGTH];
+	WLAN_INTERFACE_STATE isState;
+} WLAN_INTERFACE_INFO;
+typedef struct {
+	DWORD dwNumberOfItems;
+	DWORD dwIndex;
+	WLAN_INTERFACE_INFO InterfaceInfo[1];
+} WLAN_INTERFACE_INFO_LIST;
+#define DOT11_SSID_MAX_LENGTH 32
+typedef struct {
+	ULONG uSSIDLength;
+	UCHAR ucSSID[DOT11_SSID_MAX_LENGTH];
+} DOT11_SSID;
+typedef struct {
+	DOT11_SSID dot11Ssid;
+	/* .. BSSID, MacADDRESS, phytype, phytindex, quality, rrate, trate */
+} WLAN_ASSOCIATION_ATTRIBUTES;
+typedef struct {
+	WLAN_INTERFACE_STATE isState;
+	enum { wlan_connection_mode_profile = 0 } wlanConnectionMode;
+	WCHAR strProfileName[WLAN_MAX_NAME_LENGTH];
+	WLAN_ASSOCIATION_ATTRIBUTES wlanAssociationAttributes;
+	/* .. wlanSecurityAttributes; */
+} WLAN_CONNECTION_ATTRIBUTES;
+typedef enum {
+	wlan_intf_opcode_current_connection = 7
+} WLAN_INTF_OPCODE;
+typedef enum {
+	wlan_opcode_value_type_query_only = 0
+} WLAN_OPCODE_VALUE_TYPE;
+#endif
+
+/** fetch list of wlan SSIDs */
+static void fetch_wlan_ssid(char* res, size_t reslen)
+{
+	DWORD serviceVersion = 0;
+	HANDLE client = NULL;
+	DWORD result ;
+	WLAN_INTERFACE_INFO_LIST* infolist = NULL;
+	unsigned int i;
+	char* p;
+	static HMODULE wlandll = NULL;
+	static DWORD WINAPI (*myWlanOpenHandle)(DWORD dwClientVersion,
+		PVOID pReserved, PDWORD pdwNegotiatedVersion,
+		PHANDLE phClientHandle);
+	static DWORD WINAPI (*myWlanCloseHandle)(HANDLE hClientHandle,
+		PVOID pReserved);
+	static DWORD WINAPI (*myWlanEnumInterfaces)(HANDLE hClientHandle,
+		PVOID pReserved, WLAN_INTERFACE_INFO_LIST **ppInterfaceList);
+	static VOID WINAPI (*myWlanFreeMemory)(PVOID pMemory);
+	static DWORD WINAPI (*myWlanQueryInterface)(HANDLE hClientHandle,
+		const GUID *pInterfaceGuid, WLAN_INTF_OPCODE OpCode,
+		PVOID pReserved, PDWORD pdwDataSize, PVOID *ppData,
+		WLAN_OPCODE_VALUE_TYPE* pWlanOpcodeValueType);
+	if(!wlandll) {
+		/* see if we canload the wlan API dll (to get wlan SSID) */
+		wlandll = LoadLibrary("Wlanapi.dll");
+		if(!wlandll) {
+			log_win_err("cannot LoadLibrary wlanapi.dll",
+				GetLastError());
+			return;
+		}
+		/* get funcs */
+		myWlanOpenHandle = (DWORD(WINAPI*)(DWORD, PVOID, PDWORD,
+			PHANDLE))
+			GetProcAddress(wlandll, "WlanOpenHandle");
+		myWlanCloseHandle = (DWORD(WINAPI*)(HANDLE, PVOID))
+			GetProcAddress(wlandll, "WlanCloseHandle");
+		myWlanEnumInterfaces = (DWORD(WINAPI*)(HANDLE, PVOID,
+			WLAN_INTERFACE_INFO_LIST **))
+			GetProcAddress(wlandll, "WlanEnumInterfaces");
+		myWlanFreeMemory = (VOID(WINAPI*)(PVOID))
+			GetProcAddress(wlandll, "WlanFreeMemory");
+		myWlanQueryInterface = (DWORD(WINAPI*)(HANDLE, const GUID *,
+			WLAN_INTF_OPCODE, PVOID, PDWORD, PVOID *,
+			WLAN_OPCODE_VALUE_TYPE*))
+			GetProcAddress(wlandll, "WlanQueryInterface");
+	}
+
+	res[0] = 0;
+
+	result = myWlanOpenHandle(WLAN_API_VERSION, NULL, &serviceVersion,
+		&client);
+	if(result != ERROR_SUCCESS || client == NULL) {
+		log_win_err("cannot WlanOpenHandle", GetLastError());
+		return;
+	}
+	if(myWlanEnumInterfaces(client, 0, &infolist) != ERROR_SUCCESS) {
+		log_win_err("cannot WlanEnumInterfaces", GetLastError());
+		if(infolist) myWlanFreeMemory(infolist);
+		myWlanCloseHandle(client, 0);
+		return;
+	}
+	for(i=0; i<infolist->dwNumberOfItems; i++) {
+		WLAN_CONNECTION_ATTRIBUTES* attr = NULL;
+		PVOID data = NULL;
+		DWORD sz = 0;
+		if(myWlanQueryInterface(client, &infolist->InterfaceInfo[i].
+			InterfaceGuid, wlan_intf_opcode_current_connection,
+			0, &sz, &data, 0) != ERROR_SUCCESS) {
+			log_win_err("cannot WlanQueryInterface", GetLastError());
+			if(data) myWlanFreeMemory(data);
+			continue;
+		}
+		attr = (WLAN_CONNECTION_ATTRIBUTES*)data;
+		if(attr->isState != wlan_interface_state_connected) {
+			/* not connected, not listed right now */
+			myWlanFreeMemory(data);
+			continue;
+		}
+		if(strlen(res) + attr->wlanAssociationAttributes.dot11Ssid.
+			uSSIDLength + 2 >= reslen) {
+			/* too long */
+			myWlanFreeMemory(data);
+			break;
+		}
+		p = res+strlen(res);
+		p[0] = ' ';
+		memmove(p+1, attr->wlanAssociationAttributes.dot11Ssid.ucSSID,
+			attr->wlanAssociationAttributes.dot11Ssid.uSSIDLength);
+		p[attr->wlanAssociationAttributes.dot11Ssid.uSSIDLength+1]=0;
+		myWlanFreeMemory(data);
+	}
+	myWlanFreeMemory(infolist);
+	myWlanCloseHandle(client, 0);
+}
 
 /** stop and close lookup */
 static void stop_lookup(HANDLE lookup)
@@ -92,16 +231,20 @@ static void stop_lookup(HANDLE lookup)
 	}
 }
 
-static int has_changed(char* netnames, char* ips)
+static int has_changed(char* netnames, char* ips, char* ssid)
 {
-	if(!netlist_ips || !netlist_netnames ||
+	if(!netlist_ips || !netlist_netnames || !ssid ||
 		strcmp(netlist_ips, ips) != 0 ||
-		strcmp(netlist_netnames, netnames) != 0) {
-		verbose(VERB_DETAIL, "netlist is now: %s %s", netnames, ips);
+		strcmp(netlist_netnames, netnames) != 0 ||
+		strcmp(netlist_ssid, ssid) != 0) {
+		verbose(VERB_DETAIL, "netlist is now: %s %s %s",
+			netnames, ips, ssid);
 		free(netlist_ips);
 		free(netlist_netnames);
+		free(netlist_ssid);
 		netlist_ips = strdup(ips);
 		netlist_netnames = strdup(netnames);
+		netlist_ssid = strdup(ssid);
 		return 1;
 	}
 	verbose(VERB_DETAIL, "netlist unchanged: %s", netnames);
@@ -226,8 +369,10 @@ static HANDLE notify_nets(void)
 		|| r == WSA_E_NO_MORE
 #endif
 		) {
+		char ssid[10240];
 		/* start the probe for the notified IPs from up networks */
-		if(has_changed(netnames, result)) {
+		fetch_wlan_ssid(ssid, sizeof(ssid));
+		if(has_changed(netnames, result, ssid)) {
 			probe_start(result);
 		}
 		return lookup;
