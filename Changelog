@@ -1,6 +1,8 @@
 13 Sep 2011: Wouter
 	- pick up SSID (for windows, OSX) to filter trigger with, so an SSID
 	  change from the wlan triggers a reprobe.
+	- set windres resource files, icons, log-format, useradmpermission
+	  and setup.exe script with NSIS, it includes dlls.
 
 12 Sep 2011: Wouter
 	- fix fd leaked every second by panel if the daemon was down.
