@@ -229,18 +229,20 @@ if [ "$DOWIN" = "yes" ]; then
     info "Creating windows dist dnssec-trigger $version"
     info "Calling configure"
     echo "$configure"' --enable-debug '"$* $cross_flag"
-    $configure --enable-debug $* $cross_flag \
+    destdir='C:\Program Files\DnssecTrigger'
+    $configure --enable-debug --with-keydir="$destdir" --with-uidir="$destdir" \
+    	--with-configfile="$destdir\\dnssec-trigger.conf" --with-pidfile="$destdir\\dnssec-trigger.pid" $* $cross_flag \
     	|| error_cleanup "Could not configure"
     info "Calling make"
     make || error_cleanup "Could not make"
     info "Make complete"
 
     info "dnssec-trigger version: $version"
-    file="dnssec-trigger-$version.zip"
-    rm -f $file
-    info "Creating $file"
-    mkdir tmp.collect
+    #file="dnssec-trigger-$version.zip"
+    #rm -f $file
+    #info "Creating $file"
     make strip || error_cleanup "could not strip"
+    mkdir tmp.collect
     cd tmp.collect
     # TODO files and crosscompile
     # DLLs linked with the panel on windows (ship DLLs:)
@@ -278,12 +280,13 @@ if [ "$DOWIN" = "yes" ]; then
 	find_dll "$findpath" "$j" || error_cleanup "no $j found"
     done
 
-    cp ../example.conf example.conf
-    cp ../dnssec-triggerd.exe ../dnssec-trigger-control.exe ../dnssec-trigger-panel.exe ../dnssec-trigger-keygen.exe .
+    #cp ../example.conf example.conf
+    #cp ../panel/pui.xml ../panel/status-icon.png ../panel/status-icon-alert.png .
+    #cp ../dnssec-triggerd.exe ../dnssec-trigger-control.exe ../dnssec-trigger-panel.exe ../dnssec-trigger-keygen.exe .
     # zipfile
-    zip ../$file README LICENSE example.conf dnssec-triggerd.exe dnssec-trigger-control.exe dnssec-trigger-panel.exe dnssec-trigger-keygen.exe *.dll
-    info "Testing $file"
-    (cd .. ; zip -T $file )
+    #zip ../$file README LICENSE example.conf dnssec-triggerd.exe dnssec-trigger-control.exe dnssec-trigger-panel.exe dnssec-trigger-keygen.exe pui.xml status-icon.png status-icon-alert.png *.dll
+    #info "Testing $file"
+    #(cd .. ; zip -T $file )
     # installer
     info "Creating installer"
     quadversion=`cat ../config.h | grep RSRC_PACKAGE_VERSION | sed -e 's/#define RSRC_PACKAGE_VERSION //' -e 's/,/\\./g'`
@@ -299,7 +302,7 @@ if [ "$DOWIN" = "yes" ]; then
             cleanup
     fi
     ls -lG dnssec-trigger-setup-$version.exe
-    ls -lG $file
+    #ls -lG $file
     info "Done"
     exit 0
 fi

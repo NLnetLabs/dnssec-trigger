@@ -79,13 +79,19 @@ section "-hidden.postinstall"
 	File "..\dnssec-trigger-panel.exe"
 	File "..\dnssec-trigger-control.exe"
 	File "..\dnssec-trigger-keygen.exe"
-	File "..\example.conf"
+	File -o dnssec-trigger.conf "..\example.conf"
+	File "..\panel\pui.xml"
+	File "..\panel\status-icon.png"
+	File "..\panel\status-icon-alert.png"
 	File "..\winrc\gtkrc"
 	File "..\tmp.collect\*.dll"
 
 	# store installation folder
 	WriteRegStr HKLM "Software\DnssecTrigger" "InstallLocation" "$INSTDIR"
-	WriteRegStr HKLM "Software\DnssecTrigger" "ConfigFile" "$INSTDIR\service.conf"
+	WriteRegStr HKLM "Software\DnssecTrigger" "ConfigFile" "$INSTDIR\dnssec-trigger.conf"
+	WriteRegStr HKLM "Software\DnssecTrigger" "Gtkrc" "$INSTDIR\gtkrc"
+	# no cron action at this time.
+	WriteRegStr HKLM "Software\DnssecTrigger" "CronAction" ""
 	WriteRegDWORD HKLM "Software\DnssecTrigger" "CronTime" 86400
 
 	# uninstaller
@@ -99,6 +105,22 @@ section "-hidden.postinstall"
 	WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DnssecTrigger" "NoRepair" "1"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DnssecTrigger" "URLInfoAbout" "http://unbound.net"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DnssecTrigger" "Publisher" "NLnet Labs"
+
+	# write key locations to file
+	ClearErrors
+	FileOpen $R1 "$INSTDIR\dnssec-trigger.conf" a
+	IfErrors done_keys
+	FileSeek $R1 0 END
+	FileWrite $R1 "$\n"
+	FileWrite $R1 "server-key-file: $\"$INSTDIR\dnssec_trigger_server.key$\"$\n"
+	FileWrite $R1 "server-cert-file: $\"$INSTDIR\dnssec_trigger_server.pem$\"$\n"
+	FileWrite $R1 "control-key-file: $\"$INSTDIR\dnssec_trigger_control.key$\"$\n"
+	FileWrite $R1 "control-cert-file: $\"$INSTDIR\dnssec_trigger_control.pem$\"$\n"
+	FileClose $R1
+done_keys:
+	
+	# generate keys
+	nsExec::ExecToLog '"$INSTDIR\dnssec-trigger-keygen.exe" -d "$INSTDIR"'
 
 	# start menu items
 	!insertmacro MUI_STARTMENU_WRITE_BEGIN DnssecTriggerStartMenu

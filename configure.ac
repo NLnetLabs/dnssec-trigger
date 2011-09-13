@@ -367,8 +367,9 @@ uidir=`eval echo "$datadir/dnssec-trigger"`
 if test -n "$withval"; then
 	uidir="$withval"
 fi
-uidir2=`eval echo $uidir`
-ACX_ESCAPE_BACKSLASH($uidir2, uidir_esc)
+ACX_ESCAPE_BACKSLASH($uidir, uidir2)
+uidir=`eval echo $uidir2`
+ACX_ESCAPE_BACKSLASH($uidir, uidir_esc)
 AC_DEFINE_UNQUOTED([UIDIR], ["$uidir_esc"], [directory with UI xml and png for dnssec-trigger])
 AC_SUBST(uidir)
 

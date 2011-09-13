@@ -7057,8 +7057,10 @@ uidir=`eval echo "$datadir/dnssec-trigger"`
 if test -n "$withval"; then
 	uidir="$withval"
 fi
-uidir2=`eval echo $uidir`
-uidir_esc="`echo $uidir2 | sed -e 's/\\\\/\\\\\\\\/g'`"
+uidir2="`echo $uidir | sed -e 's/\\\\/\\\\\\\\/g'`"
+
+uidir=`eval echo $uidir2`
+uidir_esc="`echo $uidir | sed -e 's/\\\\/\\\\\\\\/g'`"
 
 
 cat >>confdefs.h <<_ACEOF

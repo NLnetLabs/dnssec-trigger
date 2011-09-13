@@ -69,6 +69,49 @@ usage(void)
 	printf(" -h             this help\n");
 }
 
+#ifdef USE_WINSOCK
+/**
+ * Obtain registry string (if it exists).
+ * @param key: key string
+ * @param name: name of value to fetch.
+ * @return malloced string with the result or NULL if it did not
+ * exist on an error (logged) was encountered.
+ */
+static char*
+lookup_reg_str(const char* key, const char* name)
+{
+	HKEY hk = NULL;
+	DWORD type = 0;
+	BYTE buf[1024];
+	DWORD len = (DWORD)sizeof(buf);
+	LONG ret;
+	char* result = NULL;
+	ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, key, 0, KEY_READ, &hk);
+	if(ret == ERROR_FILE_NOT_FOUND)
+		return NULL; /* key does not exist */
+	else if(ret != ERROR_SUCCESS) {
+		log_err("RegOpenKeyEx failed");
+		return NULL;
+	}
+	ret = RegQueryValueEx(hk, (LPCTSTR)name, 0, &type, buf, &len);
+	if(RegCloseKey(hk))
+		log_err("RegCloseKey");
+	if(ret == ERROR_FILE_NOT_FOUND)
+		return NULL; /* name does not exist */
+	else if(ret != ERROR_SUCCESS) {
+		log_err("RegQueryValueEx failed");
+		return NULL;
+	}
+	if(type == REG_SZ || type == REG_MULTI_SZ || type == REG_EXPAND_SZ) {
+		buf[sizeof(buf)-1] = 0;
+		buf[sizeof(buf)-2] = 0; /* for multi_sz */
+		result = strdup((char*)buf);
+		if(!result) log_err("out of memory");
+	}
+	return result;
+}
+#endif /* USE_WINSOCK */
+
 /** sighandler.  Since we must have one
  *  * @param sig: signal number.
  *   * @return signal handler return type (void or int).
@@ -524,14 +567,15 @@ int main(int argc, char *argv[])
 #endif
 	log_ident_set("dnssec-trigger-panel");
 	log_init(NULL, 0, NULL);
+#ifdef USE_WINSOCK
+	cfgfile = lookup_reg_str("Software\\DnssecTrigger", "ConfigFile");
+	if(!cfgfile) cfgfile = CONFIGFILE;
+#endif
         while( (c=getopt(argc, argv, "c:dh")) != -1) {
                 switch(c) {
                 default:
 		case 'd':
 			debug = 1;
-#ifdef USE_WINSOCK
-			putenv("GTK2_RC_FILES=./winrc/gtkrc");
-#endif
 			break;
 		case 'c':
 			cfgfile = optarg;
@@ -543,6 +587,19 @@ int main(int argc, char *argv[])
         }
         argc -= optind;
         argv += optind;
+#ifdef USE_WINSOCK
+	if(debug)
+		putenv("GTK2_RC_FILES=./winrc/gtkrc");
+	else {
+		char* gtkrc = lookup_reg_str("Software\\DnssecTrigger", "Gtkrc");
+		if(gtkrc) {
+			char buf[1024];
+			snprintf(buf, sizeof(buf), "GTK2_RC_FILES=%s", gtkrc);
+			putenv(buf);
+			free(gtkrc);
+		} else putenv("GTK2_RC_FILES="UIDIR"\\gtkrc");
+	}
+#endif
 
        	g_thread_init(NULL);
 	gdk_threads_init();
