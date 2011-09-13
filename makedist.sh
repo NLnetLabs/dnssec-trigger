@@ -265,12 +265,17 @@ if [ "$DOWIN" = "yes" ]; then
     find_dll "$findpath" "ssleay32.dll" || error_cleanup "no ssl dll"
     find_dll "$findpath" "gosteay32.dll" || echo "*** WARNING NO GOST DLL ***"
     find_dll "$findpath" "libldns-1.dll" || error_cleanup "no ldns dll"
+    # these dlls have different names.
     find_dll "$findpath" "intl.dll" || \
     	find_dll "$findpath" "libintl-8.dll" || \
 	error_cleanup "no intl dll"
     find_dll "$findpath" "freetype6.dll" || \
     	find_dll "$findpath" "libfreetype-6.dll" \
     	|| error_cleanup "no freetype dll"
+    # these dlls are not always present (include if they are)
+    find_dll "$findpath" "libiconv-2.dll"
+    find_dll "$findpath" "libpixman-1-0.dll"
+
     for j in libgdk-win32-2.0-0.dll libgdk_pixbuf-2.0-0.dll libglib-2.0-0.dll \
 	libgobject-2.0-0.dll libgthread-2.0-0.dll libgtk-win32-2.0-0.dll \
 	libatk-1.0-0.dll libcairo-2.dll libgio-2.0-0.dll libgmodule-2.0-0.dll \

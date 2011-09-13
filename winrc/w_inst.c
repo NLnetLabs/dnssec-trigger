@@ -209,7 +209,7 @@ wsvc_install(FILE* out, const char* rename)
         sv = CreateService(
                 scm,
                 SERVICE_NAME, /* name of service */
-                "Unbound DNS validator", /* display name */
+                "Dnssec Trigger", /* display name */
                 SERVICE_ALL_ACCESS, /* desired access */
                 SERVICE_WIN32_OWN_PROCESS, /* service type */
                 SERVICE_AUTO_START, /* start type */

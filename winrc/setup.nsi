@@ -116,6 +116,7 @@ section "-hidden.postinstall"
 	FileWrite $R1 "server-cert-file: $\"$INSTDIR\dnssec_trigger_server.pem$\"$\n"
 	FileWrite $R1 "control-key-file: $\"$INSTDIR\dnssec_trigger_control.key$\"$\n"
 	FileWrite $R1 "control-cert-file: $\"$INSTDIR\dnssec_trigger_control.pem$\"$\n"
+	FileWrite $R1 "$\n"
 	FileClose $R1
 done_keys:
 	
@@ -132,6 +133,11 @@ done_keys:
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w install'
 	# start service
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w start'
+
+	# register tray icon 
+	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Run" "DnssecTrigger" "$INSTDIR\dnssec-trigger-panel.exe"
+	# start tray icon
+
 sectionEnd
 
 # set section descriptions
@@ -149,10 +155,14 @@ LangString DESC_dnssectrigger ${LANG_ENGLISH} "The dnssec trigger package. $\r$\
 
 # uninstaller section
 section "un.DnssecTrigger"
+	# stop tray icon 
+	# remove tray icon
+	DeleteRegValue HKLM "Software\Microsoft\Windows\CurrentVersion\Run" "DnssecTrigger"
 	# stop service
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w stop'
 	# uninstall service entry
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w remove'
+
 	# deregister uninstall
 	DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DnssecTrigger"
 	Delete "$INSTDIR\uninst.exe"   # delete self
