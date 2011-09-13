@@ -239,9 +239,9 @@ if [ "$DOWIN" = "yes" ]; then
     file="dnssec-trigger-$version.zip"
     rm -f $file
     info "Creating $file"
-    mkdir tmp.$$
+    mkdir tmp.collect
     make strip || error_cleanup "could not strip"
-    cd tmp.$$
+    cd tmp.collect
     # TODO files and crosscompile
     # DLLs linked with the panel on windows (ship DLLs:)
     # libldns, libcrypto, libssl
@@ -279,9 +279,9 @@ if [ "$DOWIN" = "yes" ]; then
     done
 
     cp ../example.conf example.conf
-    cp ../dnssec-triggerd.exe ../dnssec-trigger-control.exe ../dnssec-trigger-panel.exe .
+    cp ../dnssec-triggerd.exe ../dnssec-trigger-control.exe ../dnssec-trigger-panel.exe ../dnssec-trigger-keygen.exe .
     # zipfile
-    zip ../$file README LICENSE example.conf dnssec-triggerd.exe dnssec-trigger-control.exe dnssec-trigger-panel.exe
+    zip ../$file README LICENSE example.conf dnssec-triggerd.exe dnssec-trigger-control.exe dnssec-trigger-panel.exe dnssec-trigger-keygen.exe *.dll
     info "Testing $file"
     (cd .. ; zip -T $file )
     # installer
@@ -291,7 +291,7 @@ if [ "$DOWIN" = "yes" ]; then
     "$makensis" ../winrc/setup_ed.nsi
     info "Created installer"
     cd ..
-    rm -rf tmp.$$
+    rm -rf tmp.collect
     mv winrc/dnssec-trigger-setup-$version.exe .
     if test "$cross" = "yes"; then
             mv dnssec-trigger-setup-$version.exe $cwd/.

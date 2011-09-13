@@ -81,7 +81,7 @@ section "-hidden.postinstall"
 	File "..\dnssec-trigger-keygen.exe"
 	File "..\example.conf"
 	File "..\winrc\gtkrc"
-	File "*.dll"
+	File "..\tmp.collect\*.dll"
 
 	# store installation folder
 	WriteRegStr HKLM "Software\DnssecTrigger" "InstallLocation" "$INSTDIR"
