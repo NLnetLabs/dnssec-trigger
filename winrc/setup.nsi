@@ -32,8 +32,8 @@ Var StartMenuFolder
 #ReserveFile "System.dll"
 #ReserveFile "NsExec.dll"
 
-!define MUI_ICON "${NSISDIR}\Contrib\Graphics\Icons\pixel-install.ico"
-!define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\pixel-uninstall.ico"
+!define MUI_ICON "install.ico"
+!define MUI_UNICON "uninstall.ico"
 
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_RIGHT
