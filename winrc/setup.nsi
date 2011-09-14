@@ -242,7 +242,7 @@ done_keys:
 	# register tray icon 
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Run" "DnssecTrigger" '"$INSTDIR\dnssec-trigger-panel.exe"'
 	# start tray icon
-	Exec '"$INSTDIR\dnssec-trigger-panel.exe"`
+	Exec '"$INSTDIR\dnssec-trigger-panel.exe"'
 
 sectionEnd
 
