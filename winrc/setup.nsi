@@ -4,6 +4,8 @@ SetCompressor /solid /final lzma
 
 !include LogicLib.nsh
 !include MUI2.nsh
+!include WinMessages.nsh
+!include "${NSISDIR}\Examples\System\System.nsh"
 
 !define VERSION "0.0.0"
 !define QUADVERSION "0.0.0.0"
@@ -24,6 +26,104 @@ VIAddVersionKey "FileVersion" "${QUADVERSION}"
 VIAddVersionKey "ProductVersion" "${QUADVERSION}"
 VIProductVersion "${QUADVERSION}"
 
+# use ReserveFile for files required before actual installation
+# makes the installer start faster because the file is at the start
+# of the compressed data (and used for the installation).
+ReserveFile /nonfatal "System.dll"
+
+# http://nsis.sourceforge.net/Refresh_SysTray
+Function RefreshSysTray
+	; $0: SysTray Window Handle
+	FindWindow $0 "Shell_TrayWnd" ""
+	FindWindow $0 "TrayNotifyWnd" "" $0
+	FindWindow $0 "SysPager" "" $0
+	FindWindow $0 "ToolbarWindow32" "" $0
+ 
+	; Create RECT struct
+	System::Call "*${stRECT} .r1"
+	; Get windows information
+	System::Call "User32::GetWindowRect(i, i) i (i r0, r1) .r2"
+	; Get left/top/right/bottom coords
+	; $2: Left, $3: Top, $4: Right, $5: Bottom
+	System::Call "*$1${stRECT} (.r2, .r3, .r4, .r5)"
+	System::Free $1
+ 
+	; $2: Width
+	IntOp $2 $4 - $2
+	; $3: Height
+	IntOp $3 $5 - $3
+ 
+	; $4: Small Icon Width
+	System::Call 'User32::GetSystemMetrics(i 49) i .r4'
+	; $5: Small Icon Height
+	System::Call 'User32::GetSystemMetrics(i 50) i .r5'
+ 
+	; $7: y - Start at the bottom
+	IntOp $7 $4 / 2
+	IntOp $7 $3 - $7
+	LoopY:
+		; $6: X - Start at the right
+		IntOp $6 $5 / 2
+		IntOp $6 $2 - $6
+		LoopX:
+			SendMessage $0 ${WM_MOUSEMOVE} 0 "$6 | $7"
+			IntOp $6 $6 - $4
+			IntCmp $6 0 EndLoopX EndLoopX LoopX
+		EndLoopX:
+		IntOp $7 $7 - $5
+		IntCmp $7 0 EndLoopY EndLoopY LoopY
+	EndLoopY:
+FunctionEnd
+
+# Find and kill a process
+Function FindAndStopPanel
+    System::Alloc 1024
+    Pop $R9
+    System::Call "Psapi::EnumProcesses(i R9, i 1024, *i .R1)i .R8"
+    StrCmp $R8 0 HandleError
+ 
+    IntOp $R2 $R1 / 4 ; Divide by sizeof(DWORD) to get number of processes
+ 
+    StrCpy $R4 0 ; R4 is our counter variable
+iterate:
+    System::Call "*$R9(i .R5)" ; Get next PID
+    IntCmp $R5 0 next_iteration iterate_end 0 ; break if PID < 0, continue if PID = 0
+ 
+    System::Call "Kernel32::OpenProcess(i 1040, i 0, i R5)i .R8"
+    StrCmp $R8 0 next_iteration
+    System::Alloc 1024
+    Pop $R6
+    System::Call "Psapi::EnumProcessModules(i R8, i R6, i 1024, *i .R1)i .R7"
+    StrCmp $R7 0 0 no_enumproc_error
+    System::Free $R6
+    GoTo next_iteration
+no_enumproc_error:
+    System::Alloc 256
+    Pop $R7
+    System::Call "*$R6(i .r6)" ; Get next module
+    System::Free $R6
+    System::Call "Psapi::GetModuleBaseName(i R8, i r6, t .R7, i 256)i .r6"
+    StrCmp $6 0 0 no_getmod_error
+    System::Free $R7
+    GoTo HandleError
+no_getmod_error:
+    MessageBox MB_OK "Found process called $R7 with length $6!"
+    System::Free $R7
+ 
+next_iteration:
+    IntOp $R4 $R4 + 1 ; Add 1 to our counter
+    IntOp $R9 $R9 + 4 ; Add sizeof(int) to our buffer address
+ 
+    IntCmp $R4 $R2 iterate_end iterate iterate_end
+iterate_end:
+    MessageBox MB_OK "Success!"
+    System::Free $R9
+    Return
+HandleError:
+    MessageBox MB_OK "Something went wrong here."
+    Return
+FunctionEnd
+ 
 # Global Variables
 Var StartMenuFolder
 
@@ -73,6 +173,7 @@ sectionEnd
 section "-hidden.postinstall"
 	# copy files
 	setOutPath $INSTDIR
+	Call FindAndStopPanel
 	File "..\LICENSE"
 	File "..\README"
 	File "..\dnssec-triggerd.exe"
@@ -162,6 +263,9 @@ section "un.DnssecTrigger"
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w stop'
 	# uninstall service entry
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w remove'
+
+	# remove tray icon if panel killed too fast to remove it itself.
+	Call RefreshSysTray
 
 	# deregister uninstall
 	DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DnssecTrigger"
