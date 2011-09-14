@@ -1,5 +1,6 @@
 14 Sep 2011: Wouter
 	- icons in higher bitdepth, install and uninstall icons.
+	- stoppanels control command for installers to update that panel exe.
 
 13 Sep 2011: Wouter
 	- pick up SSID (for windows, OSX) to filter trigger with, so an SSID

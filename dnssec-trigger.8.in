@@ -181,6 +181,10 @@ continuous feed of probe results.
 .B cmdtray
 Continuous input feed, used by the tray icon to send commands to the daemon.
 .TP
+.B stoppanels
+Makes connected tray icons quit.  Useful for installers that need to
+update their executable.
+.TP
 .B stop
 stops the daemon.
 .SH "THE DNSSEC\-TRIGGER\-CONTROL\-SETUP TOOL"

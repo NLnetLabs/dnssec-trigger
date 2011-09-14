@@ -715,6 +715,36 @@ static void handle_unsafe_cmd(struct sslconn* sc)
 	sslconn_shutdown(sc);
 }
 
+static void handle_stoppanels_cmd(struct sslconn* sc)
+{
+	/* write stop to all connected panels */
+	const char* stopcmd = "stop\n";
+	struct sslconn* s;
+	for(s=global_svr->busy_list; s; s=s->next) {
+		/* skip non persistent-write connections */
+		if(s->line_state != persist_write_checkclose &&
+			s->line_state != persist_write)
+			continue;
+		(void)SSL_set_mode(s->ssl, SSL_MODE_AUTO_RETRY);
+		fd_set_block(SSL_get_fd(s->ssl));
+		if(s->line_state == persist_write) {
+			/* busy with last results,  blocking write them */
+			if(SSL_write(s->ssl, ldns_buffer_current(s->buffer), 
+				(int)ldns_buffer_remaining(s->buffer)) < 0)
+				log_crypto_err("cannot SSL_write remainder");
+		}
+		/* blocking write the stop command */
+		if(SSL_write(s->ssl, stopcmd, strlen(stopcmd)) < 0)
+			log_crypto_err("cannot SSL_write panel stop");
+
+		/* it will be closed now */
+		comm_point_listen_for_rw(s->c, 1, 0);
+		s->line_state = persist_write_checkclose;
+	}
+	/* wait until they all stopped, then stop commanding connection */
+	sslconn_shutdown(sc);
+}
+
 static void sslconn_command(struct sslconn* sc)
 {
 	char header[10];
@@ -740,6 +770,8 @@ static void sslconn_command(struct sslconn* sc)
 		handle_cmdtray_cmd(sc);
 	} else if(strncmp(str, "unsafe", 6) == 0) {
 		handle_unsafe_cmd(sc);
+	} else if(strncmp(str, "stoppanels", 4) == 0) {
+		handle_stoppanels_cmd(sc);
 	} else if(strncmp(str, "stop", 4) == 0) {
 		comm_base_exit(global_svr->base);
 		sslconn_shutdown(sc);

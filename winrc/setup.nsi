@@ -77,56 +77,6 @@ Function un.RefreshSysTray
 	EndLoopY:
 FunctionEnd
 
-# Find and kill a process
-Function FindAndStopPanel
-    System::Alloc 1024
-    Pop $R9
-    System::Call "Psapi::EnumProcesses(i R9, i 1024, *i .R1)i .R8"
-    StrCmp $R8 0 HandleError
- 
-    IntOp $R2 $R1 / 4 ; Divide by sizeof(DWORD) to get number of processes
- 
-    StrCpy $R4 0 ; R4 is our counter variable
-iterate:
-    System::Call "*$R9(i .R5)" ; Get next PID
-    IntCmp $R5 0 next_iteration iterate_end 0 ; break if PID < 0, continue if PID = 0
- 
-    System::Call "Kernel32::OpenProcess(i 1040, i 0, i R5)i .R8"
-    StrCmp $R8 0 next_iteration
-    #System::Alloc 1024
-    #Pop $R6
-    #System::Call "Psapi::EnumProcessModules(i R8, i R6, i 1024, *i .R1)i .R7"
-    #StrCmp $R7 0 0 no_enumproc_error
-    #System::Free $R6
-    #GoTo next_iteration
-#no_enumproc_error:
-    System::Alloc 256
-    Pop $R7
-    #System::Call "*$R6(i .r6)" ; Get next module
-    #System::Free $R6
-    #System::Call "Psapi::GetModuleBaseName(i R8, i r6, t .R7, i 256)i .r6"
-    System::Call "Psapi::GetModuleBaseName(i R8, i 0, t .R7, i 256)i .r6"
-    StrCmp $6 0 0 no_getmod_error
-    System::Free $R7
-    GoTo HandleError
-no_getmod_error:
-    MessageBox MB_OK "Found process called $R7 with length $6!"
-    System::Free $R7
- 
-next_iteration:
-    IntOp $R4 $R4 + 1 ; Add 1 to our counter
-    IntOp $R9 $R9 + 4 ; Add sizeof(int) to our buffer address
- 
-    IntCmp $R4 $R2 iterate_end iterate iterate_end
-iterate_end:
-    MessageBox MB_OK "Success!"
-    System::Free $R9
-    Return
-HandleError:
-    MessageBox MB_OK "Something went wrong here."
-    Return
-FunctionEnd
- 
 # Global Variables
 Var StartMenuFolder
 
@@ -176,8 +126,6 @@ sectionEnd
 section "-hidden.postinstall"
 	# copy files
 	setOutPath $INSTDIR
-	Call FindAndStopPanel
-	Abort "Stop for test"
 	File "..\LICENSE"
 	File "..\README"
 	File "..\dnssec-triggerd.exe"
@@ -243,7 +191,6 @@ done_keys:
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Run" "DnssecTrigger" '"$INSTDIR\dnssec-trigger-panel.exe"'
 	# start tray icon
 	Exec '"$INSTDIR\dnssec-trigger-panel.exe"'
-
 sectionEnd
 
 # set section descriptions
@@ -261,8 +208,9 @@ LangString DESC_dnssectrigger ${LANG_ENGLISH} "The dnssec trigger package. $\r$\
 
 # uninstaller section
 section "un.DnssecTrigger"
-	# stop tray icon 
-	# remove tray icon
+	# stop tray icon
+	nsExec::ExecToLog '"$INSTDIR\dnssec-trigger-control.exe" stoppanels'
+	# remove tray icon from startup list
 	DeleteRegValue HKLM "Software\Microsoft\Windows\CurrentVersion\Run" "DnssecTrigger"
 	# stop service
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w stop'
