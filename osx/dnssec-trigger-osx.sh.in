@@ -39,7 +39,7 @@ for i in $ifs; do
 }
 /<key>InterfaceName<\/key>/ { 
 	getline x
-	if(x ~ /<string>$i<\/string>/ && x != "127.0.0.1") {
+	if(x ~ /<string>$i<\/string>/ && svr != "127.0.0.1") {
 		#print \"  got server \" svr
 		res=svr
 	}
