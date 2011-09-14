@@ -61,18 +61,16 @@ done
 # fix whitespace
 ips=`echo $ips`
 
-echo ips is "$ips"
 # see if it has changed
 if test -f $tempfile; then
 	if echo "$ifs $ips $ssid" | diff $tempfile - >/dev/null; then
 		# it is equal
-		echo "equal"
 		logger "dnssec-trigger(osx) no-change $ifs DNS $ips"
 		exit 0
 	fi
 fi
-echo "has changed"
 # store on file
+rm -f $tempfile
 echo "$ifs $ips $ssid" > $tempfile
 
 logger "dnssec-trigger(osx) detected $ifs DNS $ips"
