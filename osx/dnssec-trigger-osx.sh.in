@@ -70,7 +70,6 @@ if test -f $tempfile; then
 	fi
 fi
 # store on file
-rm -f $tempfile
 echo "$ifs $ips $ssid" > $tempfile
 
 logger "dnssec-trigger(osx) detected $ifs DNS $ips"
