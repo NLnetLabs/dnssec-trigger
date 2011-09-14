@@ -56,6 +56,7 @@ for i in $ifs; do
 	}
 }
 " < $prefs`
+	echo ips_i is x"$ips_i"x
 	ips="$ips $ips_i"
 done
 # fix whitespace
