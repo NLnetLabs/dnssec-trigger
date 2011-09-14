@@ -214,6 +214,12 @@ static void read_from_feed(void)
 	while(read_an_ssl_line(feed->ssl_read, line, sizeof(line))) {
 		/* stop at empty line */
 		if(verbosity > 2) printf("feed: %s\n", line);
+		if(strcmp(line, "stop") == 0) {
+			strlist_delete(first);
+			[feed->lock unlock];
+			/* there is cleanup atexit() */
+			exit(0);
+		}
 		if(line[0] == 0) {
 			strlist_delete(feed->results);
 			feed->results = first;
