@@ -93,18 +93,19 @@ iterate:
  
     System::Call "Kernel32::OpenProcess(i 1040, i 0, i R5)i .R8"
     StrCmp $R8 0 next_iteration
-    System::Alloc 1024
-    Pop $R6
-    System::Call "Psapi::EnumProcessModules(i R8, i R6, i 1024, *i .R1)i .R7"
-    StrCmp $R7 0 0 no_enumproc_error
-    System::Free $R6
-    GoTo next_iteration
-no_enumproc_error:
+    #System::Alloc 1024
+    #Pop $R6
+    #System::Call "Psapi::EnumProcessModules(i R8, i R6, i 1024, *i .R1)i .R7"
+    #StrCmp $R7 0 0 no_enumproc_error
+    #System::Free $R6
+    #GoTo next_iteration
+#no_enumproc_error:
     System::Alloc 256
     Pop $R7
-    System::Call "*$R6(i .r6)" ; Get next module
-    System::Free $R6
-    System::Call "Psapi::GetModuleBaseName(i R8, i r6, t .R7, i 256)i .r6"
+    #System::Call "*$R6(i .r6)" ; Get next module
+    #System::Free $R6
+    #System::Call "Psapi::GetModuleBaseName(i R8, i r6, t .R7, i 256)i .r6"
+    System::Call "Psapi::GetModuleBaseName(i R8, i 0, t .R7, i 256)i .r6"
     StrCmp $6 0 0 no_getmod_error
     System::Free $R7
     GoTo HandleError
@@ -176,6 +177,7 @@ section "-hidden.postinstall"
 	# copy files
 	setOutPath $INSTDIR
 	Call FindAndStopPanel
+	Abort "Stop for test"
 	File "..\LICENSE"
 	File "..\README"
 	File "..\dnssec-triggerd.exe"
@@ -238,8 +240,9 @@ done_keys:
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w start'
 
 	# register tray icon 
-	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Run" "DnssecTrigger" "$INSTDIR\dnssec-trigger-panel.exe"
+	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Run" "DnssecTrigger" '"$INSTDIR\dnssec-trigger-panel.exe"'
 	# start tray icon
+	Exec '"$INSTDIR\dnssec-trigger-panel.exe"`
 
 sectionEnd
 
