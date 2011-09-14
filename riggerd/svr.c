@@ -738,6 +738,7 @@ static void handle_stoppanels_cmd(struct sslconn* sc)
 			log_crypto_err("cannot SSL_write panel stop");
 
 		/* it will be closed now */
+		fd_set_nonblock(SSL_get_fd(s->ssl));
 		comm_point_listen_for_rw(s->c, 1, 0);
 		s->line_state = persist_write_checkclose;
 	}
