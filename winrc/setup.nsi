@@ -5,7 +5,6 @@ SetCompressor /solid /final lzma
 !include LogicLib.nsh
 !include MUI2.nsh
 !include WinMessages.nsh
-!include "${NSISDIR}\Examples\System\System.nsh"
 
 !define VERSION "0.0.0"
 !define QUADVERSION "0.0.0.0"
@@ -26,13 +25,16 @@ VIAddVersionKey "FileVersion" "${QUADVERSION}"
 VIAddVersionKey "ProductVersion" "${QUADVERSION}"
 VIProductVersion "${QUADVERSION}"
 
-# use ReserveFile for files required before actual installation
-# makes the installer start faster because the file is at the start
-# of the compressed data (and used for the installation).
-ReserveFile /nonfatal "System.dll"
+; typedef struct _RECT {
+;   LONG left;
+;   LONG top;
+;   LONG right;
+;   LONG bottom;
+; } RECT, *PRECT;
+!define stRECT "(i, i, i, i) i"
 
 # http://nsis.sourceforge.net/Refresh_SysTray
-Function RefreshSysTray
+Function un.RefreshSysTray
 	; $0: SysTray Window Handle
 	FindWindow $0 "Shell_TrayWnd" ""
 	FindWindow $0 "TrayNotifyWnd" "" $0
@@ -265,7 +267,7 @@ section "un.DnssecTrigger"
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w remove'
 
 	# remove tray icon if panel killed too fast to remove it itself.
-	Call RefreshSysTray
+	Call un.RefreshSysTray
 
 	# deregister uninstall
 	DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DnssecTrigger"
