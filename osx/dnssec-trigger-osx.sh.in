@@ -56,20 +56,22 @@ for i in $ifs; do
 	}
 }
 " < $prefs`
-	echo ips_i is x"$ips_i"x
 	ips="$ips $ips_i"
 done
 # fix whitespace
 ips=`echo $ips`
 
+echo ips is "$ips"
 # see if it has changed
 if test -f $tempfile; then
 	if echo "$ifs $ips $ssid" | diff $tempfile - >/dev/null; then
 		# it is equal
+		echo "equal"
 		logger "dnssec-trigger(osx) no-change $ifs DNS $ips"
 		exit 0
 	fi
 fi
+echo "has changed"
 # store on file
 echo "$ifs $ips $ssid" > $tempfile
 
