@@ -300,13 +300,13 @@ if [ "$DOWIN" = "yes" ]; then
     info "Created installer"
     cd ..
     rm -rf tmp.collect
-    mv winrc/dnssec-trigger-setup-$version.exe .
+    mv winrc/dnssec_trigger_setup_$version.exe .
     if test "$cross" = "yes"; then
-            mv dnssec-trigger-setup-$version.exe $cwd/.
-            mv $file $cwd/.
+            mv dnssec_trigger_setup_$version.exe $cwd/.
+            #mv $file $cwd/.
             cleanup
     fi
-    ls -lG dnssec-trigger-setup-$version.exe
+    ls -lG dnssec_trigger_setup_$version.exe
     #ls -lG $file
     info "Done"
     exit 0
