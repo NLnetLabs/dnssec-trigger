@@ -2,6 +2,7 @@
 	- icons in higher bitdepth, install and uninstall icons.
 	- stoppanels control command for installers to update that panel exe.
 	- tag 0.2
+	- trunk has 0.3
 
 13 Sep 2011: Wouter
 	- pick up SSID (for windows, OSX) to filter trigger with, so an SSID
