@@ -1,5 +1,7 @@
 15 Sep 2011: Wouter
 	- fix makefile dependencies for sed-ed output.
+	- tag 0.3. (0.2 was distributed with different contents).
+	- trunk has 0.4
 
 14 Sep 2011: Wouter
 	- icons in higher bitdepth, install and uninstall icons.
