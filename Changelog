@@ -1,3 +1,6 @@
+15 Sep 2011: Wouter
+	- fix makefile dependencies for sed-ed output.
+
 14 Sep 2011: Wouter
 	- icons in higher bitdepth, install and uninstall icons.
 	- stoppanels control command for installers to update that panel exe.

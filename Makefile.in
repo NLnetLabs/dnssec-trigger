@@ -151,20 +151,20 @@ all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-control$(EXEEXT) dnss
 test:	
 	@echo done
 
-example.conf:	example.conf.in
+example.conf:	example.conf.in Makefile
 	rm -f $@
 	sed -e 's?0VERSION0?$(VERSION)?' -e 's?0keydir0?$(keydir)?' -e 's?0pidfile0?$(pidfile)?' -e 's?0unbound_control_path0?$(unbound_control_path)?' < example.conf.in > $@
 
-dnssec-trigger.8:	dnssec-trigger.8.in
+dnssec-trigger.8:	dnssec-trigger.8.in Makefile
 	rm -f $@
 	sed -e 's?0VERSION0?$(VERSION)?' -e 's?0DATE0?'"`date +%F`"'?' -e 's?0keydir0?$(keydir)?' -e 's?0pidfile0?$(pidfile)?' -e 's?0configfile0?$(configfile)?' < dnssec-trigger.8.in > $@
 
-dnssec-trigger-control-setup:	dnssec-trigger-control-setup.sh.in
+dnssec-trigger-control-setup:	dnssec-trigger-control-setup.sh.in Makefile
 	rm -f $@
 	sed -e 's?0SHELL0?$(SHELL)?' -e 's?0keydir0?$(keydir)?' -e 's?0configfile0?$(configfile)?' < dnssec-trigger-control-setup.sh.in > $@
 	chmod +x $@
 
-dnssec-trigger-panel.desktop:	panel/dnssec-trigger-panel.desktop.in
+dnssec-trigger-panel.desktop:	panel/dnssec-trigger-panel.desktop.in Makefile
 	rm -f $@
 	sed -e 's?0bindir0?$(bindir)?' -e 's?0uidir0?$(uidir)?' < panel/dnssec-trigger-panel.desktop.in > $@
 
@@ -179,7 +179,7 @@ windows-hook:	dnssec-trigger-keygen$(EXEEXT)
 
 networkmanager-hook:	01-dnssec-trigger-hook
 
-01-dnssec-trigger-hook:	01-dnssec-trigger-hook.sh.in
+01-dnssec-trigger-hook:	01-dnssec-trigger-hook.sh.in Makefile
 	rm -f $@
 	sed -e 's?0SHELL0?$(SHELL)?' < 01-dnssec-trigger-hook.sh.in > $@
 	chmod +x $@
@@ -211,31 +211,31 @@ osx/osx-riggerapp: osx/RiggerStatusItem/cfg.c osx/RiggerStatusItem/cfg.h osx/Rig
 
 osx-hook:	nl.nlnetlabs.dnssec-trigger-hook.plist dnssec-trigger-osx.sh nl.nlnetlabs.dnssec-triggerd.plist dnssec-trigger-setdns.sh
 
-nl.nlnetlabs.dnssec-trigger-hook.plist:	osx/nl.nlnetlabs.dnssec-trigger-hook.plist.in
+nl.nlnetlabs.dnssec-trigger-hook.plist:	osx/nl.nlnetlabs.dnssec-trigger-hook.plist.in Makefile
 	rm -f $@
 	sed -e 's?0libexecdir0?$(libexecdir)?' < osx/nl.nlnetlabs.dnssec-trigger-hook.plist.in > $@
 
-nl.nlnetlabs.dnssec-trigger-panel.plist:	osx/nl.nlnetlabs.dnssec-trigger-panel.plist.in
+nl.nlnetlabs.dnssec-trigger-panel.plist:	osx/nl.nlnetlabs.dnssec-trigger-panel.plist.in Makefile
 	rm -f $@
 	sed -e 's?0libexecdir0?$(libexecdir)?' < osx/nl.nlnetlabs.dnssec-trigger-panel.plist.in > $@
 
-nl.nlnetlabs.dnssec-triggerd.plist:	osx/nl.nlnetlabs.dnssec-triggerd.plist.in
+nl.nlnetlabs.dnssec-triggerd.plist:	osx/nl.nlnetlabs.dnssec-triggerd.plist.in Makefile
 	rm -f $@
 	sed -e 's?0sbindir0?$(sbindir)?' < osx/nl.nlnetlabs.dnssec-triggerd.plist.in > $@
 
-dnssec-trigger-osx.sh:	osx/dnssec-trigger-osx.sh.in
+dnssec-trigger-osx.sh:	osx/dnssec-trigger-osx.sh.in Makefile
 	rm -f $@
 	sed -e 's?0SHELL0?$(SHELL)?' -e 's?0sbindir0?$(sbindir)?' < osx/dnssec-trigger-osx.sh.in > $@
 	chmod +x $@
 
-dnssec-trigger-setdns.sh:	osx/dnssec-trigger-setdns.sh.in
+dnssec-trigger-setdns.sh:	osx/dnssec-trigger-setdns.sh.in Makefile
 	rm -f $@
 	sed -e 's?0SHELL0?$(SHELL)?' < osx/dnssec-trigger-setdns.sh.in > $@
 	chmod +x $@
 
 netconfig-hook:	dnssec-trigger-netconfig-hook
 
-dnssec-trigger-netconfig-hook:	dnssec-trigger-netconfig-hook.sh.in
+dnssec-trigger-netconfig-hook:	dnssec-trigger-netconfig-hook.sh.in Makefile
 	rm -f $@
 	sed -e 's?0SHELL0?$(SHELL)?' < dnssec-trigger-netconfig-hook.sh.in > $@
 	chmod +x $@
