@@ -6,7 +6,6 @@
 # somehow in /Library/Preferences/SystemConfiguration/
 #   com.apple.network.identification.plist  - list of configs seen
 #   preferences.plist - list of what is entered in the config panel
-prefs="/Library/Preferences/SystemConfiguration/com.apple.network.identification.plist"
 tempfile=/tmp/dnssec-trigger-osx.tmp
 
 # active interfaces
@@ -19,43 +18,7 @@ ssid=`/System/Library/PrivateFrameworks/Apple80211.framework/Versions/A/Resource
 # and the DNS servers for that
 ips=""
 for i in $ifs; do
-	ips_i=`awk "
-# the file has a number of configs with timestamp (for a particular router
-# or route).  first timestamped router-indexed-config seems recent.
-# Inside that, you have a list of settings (DNS-svrs, interface).
-# the last one is the most recent.
-/<key>DNS<\/key>/ { svr=\"\" }
-/<key>ServerAddresses<\/key>/ { 
-	getline x
-	while(x !~ /<\/array>/) {
-		if(x ~ /<string>/) {
-			sub(/^[		]*<string>/,\"\",x)
-			sub(/<\/string>/,\"\",x)
-			svr= svr \" \" x
-		}
-		getline x
-	}
-	#print \"set svr to \" svr
-}
-/<key>InterfaceName<\/key>/ { 
-	getline x
-	if(x ~ /<string>$i<\/string>/ && svr != \" 127.0.0.1\") {
-		#print \"  got server \" svr
-		res=svr
-	}
-	#sub(/^[		]*<string>/,\"\",x)
-	#sub(/<\/string>/,\"\",x)
-	#print \"iface \" x
-}
-/<key>Timestamp<\/key>/ {
-	getline x
-	#print \"timestamp \" x
-	if(res != \"\") {
-		print res
-		exit
-	}
-}
-" < $prefs`
+	ips_i=`ipconfig getpacket $i | grep "domain_name_server" | sed -e 's/^.*{//' -e 's/,/ /' -e 's/}//' `
 	ips="$ips $ips_i"
 done
 # fix whitespace

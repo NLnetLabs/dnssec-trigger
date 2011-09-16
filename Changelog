@@ -1,3 +1,7 @@
+16 Sep 2011: Wouter
+	- fix OSX get of DHCP options to use ipconfig API instead of faulty
+	  awk parse.
+
 15 Sep 2011: Wouter
 	- fix makefile dependencies for sed-ed output.
 	- tag 0.3. (0.2 was distributed with different contents).
