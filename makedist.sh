@@ -321,7 +321,7 @@ EOF
 "bmp" ""
 "BM" "" 100
 EOF
-    find_dll "$pixloadpath" "libpixbufloader-gdip-wbmp.dll" &&
+    find_dll "$pixloadpath" "libpixbufloader-wbmp.dll" &&
     	cat >>loaders.cache <<EOF
 "libpixbufloader-wbmp.dll"
 "wbmp" 4 "gdk-pixbuf" "The WBMP image format" "LGPL"
