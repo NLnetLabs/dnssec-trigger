@@ -4,6 +4,9 @@
 	- kill -HUP performs a reload on UNIX. It only reload the strings
 	  and that config, it keeps the running probe results and open
 	  sockets to panels and certificates.
+	- include pangorc, pango.modules, loaders.cache (for gdk) and
+	  the pango-basic-win32.dll and gdk png loader dll (if present)
+	  in the windows installer.
 
 16 Sep 2011: Wouter
 	- fix OSX get of DHCP options to use ipconfig API instead of faulty
