@@ -591,6 +591,7 @@ int main(int argc, char *argv[])
 	if(debug)
 		putenv("GTK2_RC_FILES=./winrc/gtkrc");
 	else {
+		char* inst;
 		char* gtkrc = lookup_reg_str("Software\\DnssecTrigger", "Gtkrc");
 		if(gtkrc) {
 			char buf[1024];
@@ -598,6 +599,20 @@ int main(int argc, char *argv[])
 			putenv(buf);
 			free(gtkrc);
 		} else putenv("GTK2_RC_FILES="UIDIR"\\gtkrc");
+		/* chdir to the uidir, in programfiles\dnssectrigger, so that
+		 * the current dir has dlls and lots of rc and modules */
+		inst = lookup_reg_str("Software\\DnssecTrigger",
+			"InstallLocation");
+		if(inst) {
+			if(chdir(inst) == -1)
+				log_err("cannot chdir(%s) %s",
+					inst, strerror(errno));
+			free(inst);
+		} else {
+			if(chdir(UIDIR) == -1)
+				log_err("cannot chdir(%s) %s",
+					UIDIR, strerror(errno));
+		}
 		putenv("GDK_PIXBUF_MODULEDIR=.");
 		putenv("GDK_PIXBUF_MODULE_FILE=loaders.cache");
 		putenv("PANGO_RC_FILE=pangorc");
