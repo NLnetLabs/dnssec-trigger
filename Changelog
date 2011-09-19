@@ -8,6 +8,7 @@
 	  the pango-basic-win32.dll and gdk png loader dll (if present)
 	  in the windows installer.
 	- panel.exe uses the windows gui subsystem.  Include more pixloaders.
+	- added fedora spec and init script.
 
 16 Sep 2011: Wouter
 	- fix OSX get of DHCP options to use ipconfig API instead of faulty
