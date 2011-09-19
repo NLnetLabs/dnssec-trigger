@@ -82,6 +82,21 @@ usage(void)
 static RETSIGTYPE record_sigh(int sig)
 {
 	switch(sig) {
+#if defined(SIGCHLD) && defined(HOOKS_OSX)
+	case SIGCHLD:
+		if(1) {
+			int status = 0;
+			pid_t p;
+			/* waitpid for the ended process we forked at start,
+			 * so that it does not turn into a zombie */
+			while( (p=waitpid(-1, &status, WNOHANG)) > 0) {
+				verbose("child process %d exited %d",
+					(int)p, (int)WEXITSTATUS(status));
+			}
+			if(p == -1 && errno != ECHILD)
+				log_err("waitpid: %s", strerror(errno));
+		}
+#endif
 #ifdef SIGHUP
 	case SIGHUP:
 #endif
@@ -210,6 +225,9 @@ do_main_work(const char* cfgfile, int nodaemonize, int verb)
 #endif
 #ifdef SIGPIPE
 		signal(SIGPIPE, SIG_IGN) == SIG_ERR ||
+#endif
+#if defined(SIGCHLD) && defined(HOOKS_OSX)
+		signal(SIGCHLD, record_sigh) == SIG_ERR ||
 #endif
 		signal(SIGINT, record_sigh) == SIG_ERR
 	)
