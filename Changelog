@@ -1,6 +1,9 @@
 19 Sep 2011: Wouter
 	- fix so that if it cannot bind socket the server fails to start.
 	- fix so that on OSX no zombie process remains.
+	- kill -HUP performs a reload on UNIX. It only reload the strings
+	  and that config, it keeps the running probe results and open
+	  sockets to panels and certificates.
 
 16 Sep 2011: Wouter
 	- fix OSX get of DHCP options to use ipconfig API instead of faulty

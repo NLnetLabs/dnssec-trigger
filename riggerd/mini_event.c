@@ -238,14 +238,15 @@ int event_base_dispatch(struct event_base* base)
 		/* see if timeouts need handling */
 		handle_timeouts(base, base->time_tv, &wait);
 		if(base->need_to_exit)
-			return 0;
+			break;
 		/* do select */
 		if(handle_select(base, &wait) < 0) {
 			if(base->need_to_exit)
-				return 0;
+				break;
 			return -1;
 		}
 	}
+	base->need_to_exit = 0;
 	return 0;
 }
 

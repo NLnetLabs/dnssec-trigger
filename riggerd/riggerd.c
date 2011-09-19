@@ -75,6 +75,9 @@ usage(void)
 #endif
 }
 
+/** variable to signal if we need to reload */
+static sig_atomic_t sig_reload = 0;
+
 /** sighandler.  Since we must have one
  *  * @param sig: signal number.
  *   * @return signal handler return type (void or int).
@@ -100,6 +103,7 @@ static RETSIGTYPE record_sigh(int sig)
 #endif
 #ifdef SIGHUP
 	case SIGHUP:
+		sig_reload = 1;
 #endif
 	case SIGTERM:
 #ifdef SIGQUIT
@@ -255,7 +259,23 @@ do_main_work(const char* cfgfile, int nodaemonize, int verb)
 #ifdef HOOKS_OSX
 	osx_probe_hook();
 #endif
-	svr_service(svr);
+	while(1) {
+		svr_service(svr);
+		if(sig_reload) {
+			struct cfg* c2;
+			verbose(VERB_OPS, "%s reload", PACKAGE_STRING);
+			if(!(c2 = cfg_create(cfgfile)))
+				log_err("could not reload config");
+			else {
+				cfg_delete(cfg);
+				cfg = c2;
+				svr->cfg = cfg;
+			}
+			sig_reload = 0;
+			continue;
+		}
+		break;
+	}
 	unlink_pid(cfg->pidfile);
 	log_info("%s stop", PACKAGE_STRING);
 	svr_delete(svr);
