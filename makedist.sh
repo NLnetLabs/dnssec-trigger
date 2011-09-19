@@ -295,6 +295,43 @@ if [ "$DOWIN" = "yes" ]; then
 "png" ""
 "\211PNG\r\n\032\n" "" 100
 EOF
+    find_dll "$pixloadpath" "libpixbufloader-gdip-wmf.dll" &&
+    	cat >>loaders.cache <<EOF
+"libpixbufloader-gdip-wmf.dll"
+"wmf" 4 "gdk-pixbuf" "Het WMF-bestandsformaat" "LGPL"
+"image/x-wmf" ""
+"wmf" "apm" ""
+"\327\315\306\232" "" 100
+"\001" "" 100
+EOF
+    find_dll "$pixloadpath" "libpixbufloader-gdip-ico.dll" &&
+    	cat >>loaders.cache <<EOF
+"libpixbufloader-gdip-ico.dll"
+"ico" 4 "gdk-pixbuf" "Het ICO-bestandsformaat" "LGPL"
+"image/x-icon" "image/x-ico" ""
+"ico" "cur" ""
+"  \001   " "zz znz" 100
+"  \002   " "zz znz" 100
+EOF
+    find_dll "$pixloadpath" "libpixbufloader-gdip-bmp.dll" &&
+    	cat >>loaders.cache <<EOF
+"libpixbufloader-gdip-bmp.dll"
+"bmp" 5 "gdk-pixbuf" "Het BMP-bestandsformaat" "LGPL"
+"image/bmp" "image/x-bmp" "image/x-MS-bmp" ""
+"bmp" ""
+"BM" "" 100
+EOF
+    find_dll "$pixloadpath" "libpixbufloader-gdip-wbmp.dll" &&
+    	cat >>loaders.cache <<EOF
+"libpixbufloader-wbmp.dll"
+"wbmp" 4 "gdk-pixbuf" "The WBMP image format" "LGPL"
+"image/vnd.wap.wbmp" ""
+"wbmp" ""
+"  " "zz" 1
+" `" "z " 1
+" @" "z " 1
+"  " "z " 1
+EOF
 
     echo "[Pango]" > pangorc
     echo "ModuleFiles = pango.modules" >> pangorc

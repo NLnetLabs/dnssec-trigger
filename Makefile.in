@@ -125,7 +125,9 @@ ALL_SRC=$(sort $(COMMON_SRC) $(PANEL_SRC) $(RIGGERD_SRC) $(KEYGEN_SRC) $(CONTROL
 ALL_OBJ=$(addprefix $(BUILD),$(ALL_SRC:.c=.o) \
 	$(addprefix compat/,$(LIBOBJS:.o=.o))) $(COMPAT_OBJ)
 
+PANEL_LINKFLAGS=
 ifeq "$(hooks)" "windows"
+PANEL_LINKFLAGS+=-Wl,--subsystem,windows
 PANEL_OBJ+=$(BUILD)winrc/rsrc_panel.o
 RIGGERD_OBJ+=$(BUILD)winrc/rsrc_triggerd.o
 KEYGEN_OBJ+=$(BUILD)winrc/rsrc_keygen.o
@@ -254,7 +256,7 @@ dnssec-trigger-keygen$(EXEEXT):	$(KEYGEN_OBJ)
 
 dnssec-trigger-panel$(EXEEXT):	$(PANEL_OBJ)
 	$(INFO) Link $@
-	$Q$(LINK) $(EXPORT_DYNAMIC) -o $@ $(sort $(PANEL_OBJ)) $(LIBS) $(GTK_LIBS)
+	$Q$(LINK) $(EXPORT_DYNAMIC) -o $@ $(sort $(PANEL_OBJ)) $(LIBS) $(GTK_LIBS) $(PANEL_LINKFLAGS)
 
 util/config_file.c:	util/configparser.h
 util/configlexer.c:  $(srcdir)/util/configlexer.lex util/configparser.h

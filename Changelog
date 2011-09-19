@@ -7,6 +7,7 @@
 	- include pangorc, pango.modules, loaders.cache (for gdk) and
 	  the pango-basic-win32.dll and gdk png loader dll (if present)
 	  in the windows installer.
+	- panel.exe uses the windows gui subsystem.  Include more pixloaders.
 
 16 Sep 2011: Wouter
 	- fix OSX get of DHCP options to use ipconfig API instead of faulty
