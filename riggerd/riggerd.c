@@ -96,6 +96,7 @@ static RETSIGTYPE record_sigh(int sig)
 			if(p == -1 && errno != ECHILD)
 				log_err("waitpid: %s", strerror(errno));
 		}
+		break;
 #endif
 #ifdef SIGHUP
 	case SIGHUP:
@@ -125,6 +126,7 @@ static RETSIGTYPE record_sigh(int sig)
 static void
 osx_probe_hook(void)
 {
+	int s;
 	pid_t pid = fork();
 	switch(pid) {
 	default: 	/* main */
@@ -139,9 +141,10 @@ osx_probe_hook(void)
 	}
 	/* same value as in script - cause reprobe */
 	unlink("/tmp/dnssec-trigger-osx.tmp");
-	if(system(LIBEXEC_DIR"/dnssec-trigger-osx.sh") == -1)
+	if((s=system(LIBEXEC_DIR"/dnssec-trigger-osx.sh")) == -1)
 		log_err("cannot exec dnssec-trigger hook osx %s",
 			strerror(errno));
+	else exit (WEXITSTATUS(s));
 	exit (0);
 }
 #endif /* HOOKS_OSX */
