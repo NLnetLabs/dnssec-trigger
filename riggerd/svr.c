@@ -221,7 +221,7 @@ static int setup_listen(struct svr* svr)
 	}
 #endif
 	if(bind(s, (struct sockaddr*)&addr, len) != 0) {
-		log_err("can't bind tcp socket %s: %s", str, strerror(errno));
+		fatal_exit("can't bind tcp socket %s: %s", str, strerror(errno));
 	}
 	fd_set_nonblock(s);
 	if(listen(s, 15) == -1) {

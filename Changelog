@@ -1,3 +1,6 @@
+19 Sep 2011: Wouter
+	- fix so that if it cannot bind socket the server fails to start.
+
 16 Sep 2011: Wouter
 	- fix OSX get of DHCP options to use ipconfig API instead of faulty
 	  awk parse.
