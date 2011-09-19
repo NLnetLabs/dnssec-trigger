@@ -138,6 +138,9 @@ section "-hidden.postinstall"
 	File "..\panel\status-icon-alert.png"
 	File "..\winrc\gtkrc"
 	File "..\tmp.collect\*.dll"
+	File "..\tmp.collect\loaders.cache"
+	File "..\tmp.collect\pangorc"
+	File "..\tmp.collect\pango.modules"
 
 	# store installation folder
 	WriteRegStr HKLM "Software\DnssecTrigger" "InstallLocation" "$INSTDIR"
@@ -235,6 +238,9 @@ section "un.DnssecTrigger"
 	Delete "$INSTDIR\status-icon-alert.png"
 	Delete "$INSTDIR\gtkrc"
 	Delete "$INSTDIR\*.dll"
+	Delete "$INSTDIR\loaders.cache"
+	Delete "$INSTDIR\pangorc"
+	Delete "$INSTDIR\pango.modules"
 	RMDir "$INSTDIR"
 
 	# start menu items

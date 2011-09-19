@@ -285,6 +285,26 @@ if [ "$DOWIN" = "yes" ]; then
 	find_dll "$findpath" "$j" || error_cleanup "no $j found"
     done
 
+    pixloadpath="/usr/lib/gdk-pixbuf-2.0/2.10.0/loaders /opt/gtk/lib/gdk-pixbuf-2.0/2.10.0/loaders /usr/i686-pc-mingw32/sys-root/mingw/lib/gdk-pixbuf-2.0/2.10.0/loaders"
+    echo "# GdkPixbuf Image Loader Modules file" > loaders.cache
+    find_dll "$pixloadpath" "libpixbufloader-png.dll" &&
+    	cat >>loaders.cache <<EOF
+"libpixbufloader-png.dll"
+"png" 5 "gdk-pixbuf" "The PNG image format" "LGPL"
+"image/png" ""
+"png" ""
+"\211PNG\r\n\032\n" "" 100
+EOF
+
+    echo "[Pango]" > pangorc
+    echo "ModuleFiles = pango.modules" >> pangorc
+    echo "# Pango modules file" > pango.modules
+    pangoloadpath="/usr/lib/pango/1.6.0/modules /opt/gtk/lib/pango/1.6.0/modules /usr/i686-pc-mingw32/sys-root/mingw/lib/pango/1.6.0/modules"
+    find_dll "$pangoloadpath" "pango-basic-win32.dll" &&
+    	cat >>pango.modules <<EOF
+"pango-basic-win32.dll" BasicScriptEngineWin32 PangoEngineShape PangoRenderWin32 common:
+EOF
+
     #cp ../example.conf example.conf
     #cp ../panel/pui.xml ../panel/status-icon.png ../panel/status-icon-alert.png .
     #cp ../dnssec-triggerd.exe ../dnssec-trigger-control.exe ../dnssec-trigger-panel.exe ../dnssec-trigger-keygen.exe .

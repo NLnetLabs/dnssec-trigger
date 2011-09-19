@@ -598,6 +598,9 @@ int main(int argc, char *argv[])
 			putenv(buf);
 			free(gtkrc);
 		} else putenv("GTK2_RC_FILES="UIDIR"\\gtkrc");
+		putenv("GDK_PIXBUF_MODULEDIR=.");
+		putenv("GDK_PIXBUF_MODULE_FILE=loaders.cache");
+		putenv("PANGO_RC_FILE=pangorc");
 	}
 #endif
 
