@@ -90,7 +90,7 @@ static RETSIGTYPE record_sigh(int sig)
 			/* waitpid for the ended process we forked at start,
 			 * so that it does not turn into a zombie */
 			while( (p=waitpid(-1, &status, WNOHANG)) > 0) {
-				verbose("child process %d exited %d",
+				verbose(VERB_ALGO, "child proc %d exited %d",
 					(int)p, (int)WEXITSTATUS(status));
 			}
 			if(p == -1 && errno != ECHILD)
