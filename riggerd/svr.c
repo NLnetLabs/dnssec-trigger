@@ -671,7 +671,7 @@ send_results_to_con(struct svr* svr, struct sslconn* s)
 	ldns_buffer_printf(s->buffer, "state: %s %s\n",
 		svr->res_state==res_cache?"cache":(
 		svr->res_state==res_auth?"auth":(
-		svr->res_state==res_disconn?"disconnected":"dark")),
+		svr->res_state==res_disconn?"disconnected":"nodnssec")),
 		svr->insecure_state?"insecure":"secure");
 	ldns_buffer_printf(s->buffer, "\n");
 	ldns_buffer_flip(s->buffer);

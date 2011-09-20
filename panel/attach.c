@@ -268,7 +268,7 @@ static void process_results(void)
 	if(!feed->connected) return;
 	if(!feed->results_last) return;
 	a.now_insecure = (strstr(feed->results_last->str, "insecure")!=NULL);
-	a.now_dark = (strstr(feed->results_last->str, "dark")!=NULL);
+	a.now_dark = (strstr(feed->results_last->str, "nodnssec")!=NULL);
 	a.now_cache = (strstr(feed->results_last->str, "cache")!=NULL);
 	a.now_auth = (strstr(feed->results_last->str, "auth")!=NULL);
 	a.now_disconn = (strstr(feed->results_last->str, "disconnected")!=NULL);
@@ -391,7 +391,7 @@ void fetch_proberesults(char* buf, size_t len, const char* lf)
 				n=snprintf(pos, left, 
 		"The network seems to be disconnected. A local cache of DNS%s"
 		"results is used, but no queries are made.%s", lf, lf);
-			else if(strstr(p->str, "dark") && !strstr(p->str,
+			else if(strstr(p->str, "nodnssec") && !strstr(p->str,
 				"insecure"))
 				n=snprintf(pos, left, 
 		"A local cache of DNS results is used but no queries%s"

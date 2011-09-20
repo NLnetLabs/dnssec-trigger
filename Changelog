@@ -3,6 +3,7 @@
 	- refactor GUI panel SSL feed to be more portable.
 	- fix stop command.
 	- native windows GUI.
+	- status 'dark' is now called 'nodnssec'.
 
 19 Sep 2011: Wouter
 	- fix so that if it cannot bind socket the server fails to start.
