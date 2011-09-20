@@ -232,12 +232,12 @@ static void do_ask(void)
 -(void)PanelAlert
 {
 	NSString* tt;
-	char* ctt;
+	const char* ctt;
 	struct alert_arg a;
 	NSLog(@"PanelAlert function");
-	[alert_lock lock]
+	[alert_lock lock];
 	a = alertinfo;
-	[alert_lock unlock]
+	[alert_lock unlock];
 
 	ctt = state_tooltip(&a);
 	/* no need to [tt release] (?) */

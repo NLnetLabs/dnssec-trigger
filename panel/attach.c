@@ -39,11 +39,17 @@
  * This file contains the code that attaches the panel to the daemon.
  */
 #include "config.h"
-#include <gtk/gtk.h>
+#ifdef HOOKS_OSX
+#include "osxattach.h"
+#include "cfg.h"
+#include "log.h"
+#include "net_help.h"
+#else
 #include "panel/attach.h"
 #include "riggerd/cfg.h"
 #include "riggerd/log.h"
 #include "riggerd/net_help.h"
+#endif
 
 /* the global feed structure */
 struct feed* feed = NULL;

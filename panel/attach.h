@@ -43,7 +43,6 @@
 #define ATTACH_H
 struct feed;
 struct cfg;
-#include <glib.h>
 struct strlist;
 
 /** attachment structure for the results read thread */
