@@ -295,7 +295,7 @@ fi
 
 gui="auto"
 AC_ARG_WITH([gui], AC_HELP_STRING([--with-gui],
-[Set the user interface style to use, default 'auto', can be 'cocoa' (on OSX) or 'gtk']),, withval="")
+[Set the user interface style to use, default 'auto', can be 'cocoa' (on OSX), 'windows' or 'gtk']),, withval="")
 if test -n "$withval" -a "$withval" != "yes"; then
 	gui="$withval"
 fi
@@ -306,7 +306,11 @@ else
 	if test `uname` = "Darwin"; then
 		gui="cocoa"
 	else
-		gui="gtk"
+		if test "$on_mingw" = yes; then
+			gui="windows"
+		else
+			gui="gtk"
+		fi
 	fi
 fi
 AC_MSG_RESULT([$gui])

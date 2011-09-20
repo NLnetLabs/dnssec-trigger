@@ -103,11 +103,13 @@ COMPAT_OBJ=$(addprefix $(BUILD)compat/,$(LIBOBJS:.o=.o))
 
 ifeq "$(gui)" "gtk"
 PANEL_SRC=panel/panel.c panel/attach.c riggerd/cfg.c riggerd/log.c riggerd/net_help.c
-  ifeq "$(hooks)" "windows"
-PANEL_SRC=winrc/trayicon.c panel/attach.c riggerd/cfg.c riggerd/log.c riggerd/net_help.c
-  endif
 else
+  ifeq "$(gui)" "windows"
+# GTK works on windows but has large dependencies
+PANEL_SRC=winrc/trayicon.c panel/attach.c riggerd/cfg.c riggerd/log.c riggerd/net_help.c
+  else
 PANEL_SRC=
+  endif
 endif
 PANEL_OBJ=$(addprefix $(BUILD),$(PANEL_SRC:.c=.o)) $(COMPAT_OBJ)
 CONTROL_SRC=dnssec-trigger-control.c riggerd/cfg.c riggerd/log.c riggerd/net_help.c
@@ -172,6 +174,8 @@ dnssec-trigger-control-setup:	dnssec-trigger-control-setup.sh.in Makefile
 dnssec-trigger-panel.desktop:	panel/dnssec-trigger-panel.desktop.in Makefile
 	rm -f $@
 	sed -e 's?0bindir0?$(bindir)?' -e 's?0uidir0?$(uidir)?' < panel/dnssec-trigger-panel.desktop.in > $@
+
+windows-gui:	dnssec-trigger-panel$(EXEEXT)
 
 gtk-gui:	dnssec-trigger-panel$(EXEEXT) dnssec-trigger-panel.desktop
 
@@ -374,6 +378,18 @@ netconfig-hook-install:
 
 netconfig-hook-uninstall:
 	rm -f $(DESTDIR)$(netconfig_dispatcher_dir)/dnssec-trigger-netconfig-hook
+
+windows-gui-install:
+	$(INSTALL) -m 755 -d $(DESTDIR)$(bindir)
+	$(INSTALL) -m 755 -d $(DESTDIR)$(uidir)
+	$(INSTALL) -c -m 755 dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
+	$(INSTALL) -c -m 644 winrc/alert.ico $(DESTDIR)$(uidir)/alert.ico
+	$(INSTALL) -c -m 644 winrc/status.ico $(DESTDIR)$(uidir)/status.ico
+
+windows-gui-uninstall:
+	rm -f $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
+	rm -f $(DESTDIR)$(uidir)/alert.ico
+	rm -f $(DESTDIR)$(uidir)/status.ico
 
 gtk-gui-install:
 	$(INSTALL) -m 755 -d $(DESTDIR)$(bindir)

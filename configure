@@ -1329,7 +1329,7 @@ Optional Packages:
                           Set the netconfig dhcp dispatcher dir, default tests
                           prefix/etc/netconfig.d and /etc/netconfig.d
   --with-gui              Set the user interface style to use, default 'auto',
-                          can be 'cocoa' (on OSX) or 'gtk'
+                          can be 'cocoa' (on OSX), 'windows' or 'gtk'
   --with-xdg-autostart    Set the GNOME autostart dir, default tests
                           prefix/etc/xdg/autostart and /etc/xdg/autostart
   --with-keydir=path      Set the directory where ssl key files are kept, read
@@ -6927,7 +6927,11 @@ else
 	if test `uname` = "Darwin"; then
 		gui="cocoa"
 	else
-		gui="gtk"
+		if test "$on_mingw" = yes; then
+			gui="windows"
+		else
+			gui="gtk"
+		fi
 	fi
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $gui" >&5

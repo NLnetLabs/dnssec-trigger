@@ -244,7 +244,7 @@ if [ "$DOWIN" = "yes" ]; then
     make strip || error_cleanup "could not strip"
     mkdir tmp.collect
     cd tmp.collect
-    # TODO files and crosscompile
+    # files and crosscompile
     # DLLs linked with the panel on windows (ship DLLs:)
     # libldns, libcrypto, libssl
     # openssl dlls
@@ -265,84 +265,9 @@ if [ "$DOWIN" = "yes" ]; then
     find_dll "$findpath" "ssleay32.dll" || error_cleanup "no ssl dll"
     find_dll "$findpath" "gosteay32.dll" || echo "*** WARNING NO GOST DLL ***"
     find_dll "$findpath" "libldns-1.dll" || error_cleanup "no ldns dll"
-    # these dlls have different names.
-    find_dll "$findpath" "intl.dll" || \
-    	find_dll "$findpath" "libintl-8.dll" || \
-	error_cleanup "no intl dll"
-    find_dll "$findpath" "freetype6.dll" || \
-    	find_dll "$findpath" "libfreetype-6.dll" \
-    	|| error_cleanup "no freetype dll"
-    # these dlls are not always present (include if they are)
-    find_dll "$findpath" "libiconv-2.dll"
-    find_dll "$findpath" "libpixman-1-0.dll"
-
-    for j in libgdk-win32-2.0-0.dll libgdk_pixbuf-2.0-0.dll libglib-2.0-0.dll \
-	libgobject-2.0-0.dll libgthread-2.0-0.dll libgtk-win32-2.0-0.dll \
-	libatk-1.0-0.dll libcairo-2.dll libgio-2.0-0.dll libgmodule-2.0-0.dll \
-	libpango-1.0-0.dll libpangocairo-1.0-0.dll libpangowin32-1.0-0.dll \
-	libpng14-14.dll zlib1.dll libpangoft2-1.0-0.dll libfontconfig-1.dll \
-	libexpat-1.dll; do
+    for j in zlib1.dll libexpat-1.dll; do
 	find_dll "$findpath" "$j" || error_cleanup "no $j found"
     done
-
-    pixloadpath="/usr/lib/gdk-pixbuf-2.0/2.10.0/loaders /opt/gtk/lib/gdk-pixbuf-2.0/2.10.0/loaders /usr/i686-pc-mingw32/sys-root/mingw/lib/gdk-pixbuf-2.0/2.10.0/loaders"
-    echo "# GdkPixbuf Image Loader Modules file" > loaders.cache
-
-    find_dll "$pixloadpath" "libpixbufloader-png.dll" && \
-echo '' >>loaders.cache && \
-echo '"libpixbufloader-png.dll"' >>loaders.cache && \
-echo '"png" 5 "gdk-pixbuf" "The PNG image format" "LGPL"' >>loaders.cache && \
-echo '"image/png" ""' >>loaders.cache && \
-echo '"png" ""' >>loaders.cache && \
-echo '"\211PNG\r\n\032\n" "" 100' >>loaders.cache
-
-    find_dll "$pixloadpath" "libpixbufloader-gdip-wmf.dll" && \
-echo '' >>loaders.cache && \
-echo '"libpixbufloader-gdip-wmf.dll"' >>loaders.cache && \
-echo '"wmf" 4 "gdk-pixbuf" "Het WMF-bestandsformaat" "LGPL"' >>loaders.cache && \
-echo '"image/x-wmf" ""' >>loaders.cache && \
-echo '"wmf" "apm" ""' >>loaders.cache && \
-echo '"\327\315\306\232" "" 100' >>loaders.cache && \
-echo '"\001" "" 100' >>loaders.cache
-
-    find_dll "$pixloadpath" "libpixbufloader-gdip-ico.dll" && \
-echo '' >>loaders.cache && \
-echo '"libpixbufloader-gdip-ico.dll"' >>loaders.cache && \
-echo '"ico" 4 "gdk-pixbuf" "Het ICO-bestandsformaat" "LGPL"' >>loaders.cache && \
-echo '"image/x-icon" "image/x-ico" ""' >>loaders.cache && \
-echo '"ico" "cur" ""' >>loaders.cache && \
-echo '"  \001   " "zz znz" 100' >>loaders.cache && \
-echo '"  \002   " "zz znz" 100' >>loaders.cache
-
-    find_dll "$pixloadpath" "libpixbufloader-gdip-bmp.dll" && \
-echo '' >>loaders.cache && \
-echo '"libpixbufloader-gdip-bmp.dll"' >>loaders.cache && \
-echo '"bmp" 5 "gdk-pixbuf" "Het BMP-bestandsformaat" "LGPL"' >>loaders.cache && \
-echo '"image/bmp" "image/x-bmp" "image/x-MS-bmp" ""' >>loaders.cache && \
-echo '"bmp" ""' >>loaders.cache && \
-echo '"BM" "" 100' >>loaders.cache
-
-    find_dll "$pixloadpath" "libpixbufloader-wbmp.dll" && \
-echo '' >>loaders.cache && \
-echo '"libpixbufloader-wbmp.dll"' >>loaders.cache && \
-echo '"wbmp" 4 "gdk-pixbuf" "The WBMP image format" "LGPL"' >>loaders.cache && \
-echo '"image/vnd.wap.wbmp" ""' >>loaders.cache && \
-echo '"wbmp" ""' >>loaders.cache && \
-echo '"  " "zz" 1' >>loaders.cache && \
-echo '" `" "z " 1' >>loaders.cache && \
-echo '" @" "z " 1' >>loaders.cache && \
-echo '"  " "z " 1' >>loaders.cache
-
-    echo '' >>loaders.cache
-
-    echo "[Pango]" > pangorc
-    echo "ModuleFiles = pango.modules" >> pangorc
-    echo "# Pango modules file" > pango.modules
-    pangoloadpath="/usr/lib/pango/1.6.0/modules /opt/gtk/lib/pango/1.6.0/modules /usr/i686-pc-mingw32/sys-root/mingw/lib/pango/1.6.0/modules"
-    find_dll "$pangoloadpath" "pango-basic-win32.dll" &&
-    	cat >>pango.modules <<EOF
-"pango-basic-win32.dll" BasicScriptEngineWin32 PangoEngineShape PangoRenderWin32 common:
-EOF
 
     #cp ../example.conf example.conf
     #cp ../panel/pui.xml ../panel/status-icon.png ../panel/status-icon-alert.png .
