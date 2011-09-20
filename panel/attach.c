@@ -50,6 +50,18 @@ struct feed* feed = NULL;
 
 static void attach_main(void);
 
+void attach_create(void)
+{
+	feed = (struct feed*)calloc(1, sizeof(*feed));
+	if(!feed) fatal_exit("out of memory");
+}
+
+void attach_delete(void)
+{
+	free(feed);
+	feed = NULL;
+}
+
 /* stop read */
 static void
 stop_ssl(SSL* ssl, int fd)
@@ -65,7 +77,7 @@ stop_ssl(SSL* ssl, int fd)
 
 void attach_stop(void)
 {
-	g_mutex_lock(feed->lock);
+	feed->lock();
 	if(feed->ssl_read) {
 		stop_ssl(feed->ssl_read, SSL_get_fd(feed->ssl_read));
 		feed->ssl_read = NULL;
@@ -74,7 +86,7 @@ void attach_stop(void)
 		stop_ssl(feed->ssl_write, SSL_get_fd(feed->ssl_write));
 		feed->ssl_write = NULL;
 	}
-	g_mutex_unlock(feed->lock);
+	feed->unlock();
 }
 
 /* keep trying to open the read channel, blocking */
@@ -89,18 +101,18 @@ static SSL* try_contact_server()
 				feed->connect_reason,
 				sizeof(feed->connect_reason));
 			if(fd == -1 || fd == -2) {
-				g_mutex_unlock(feed->lock);
+				feed->unlock();
 				sleep(1);
-				g_mutex_lock(feed->lock);
+				feed->lock();
 			}
 		}
 		ssl = setup_ssl_client(feed->ctx, fd, feed->connect_reason,
 				sizeof(feed->connect_reason));
 		if(!ssl) {
 			stop_ssl(ssl, fd);
-			g_mutex_unlock(feed->lock);
+			feed->unlock();
 			sleep(1);
-			g_mutex_lock(feed->lock);
+			feed->lock();
 		}
 	}
 	return ssl;
@@ -120,7 +132,7 @@ static void write_firstcmd(SSL* ssl, char* cmd)
 
 void attach_start(struct cfg* cfg)
 {
-	g_mutex_lock(feed->lock);
+	feed->lock();
 	snprintf(feed->connect_reason, sizeof(feed->connect_reason),
 		"connecting to probe daemon");
 	feed->cfg = cfg;
@@ -137,7 +149,7 @@ void attach_start(struct cfg* cfg)
 	write_firstcmd(feed->ssl_read, "results\n");
 	if(verbosity>2) printf("contacted server, first cmds written\n");
 	feed->connected = 1;
-	g_mutex_unlock(feed->lock);
+	feed->unlock();
 	/* mainloop */
 	attach_main();
 }
@@ -146,9 +158,9 @@ static int check_for_event(void)
 {
 	int fd;
 	fd_set r;
-	g_mutex_lock(feed->lock);
+	feed->lock();
 	fd = SSL_get_fd(feed->ssl_read);
-	g_mutex_unlock(feed->lock);
+	feed->unlock();
 	/* select on it */
 	while(1) {
 		FD_ZERO(&r);
@@ -221,9 +233,7 @@ static void read_from_feed(void)
 		if(verbosity > 2) printf("feed: %s\n", line);
 		if(strcmp(line, "stop") == 0) {
 			strlist_delete(first);
-			gdk_threads_enter();
-			gtk_main_quit();
-			gdk_threads_leave();
+			feed->quit();
 			return;
 		}
 		if(line[0] == 0) {
@@ -244,44 +254,36 @@ static void read_from_feed(void)
 
 static void process_results(void)
 {
-	int now_insecure = 0, feed_insecure = 0;
-	int now_dark = 0, now_auth = 0, now_cache = 0, now_disconn = 0;
+	struct alert_arg a;
+	memset(&a, 0, sizeof(a));
 
 	/* fetch data */
-	g_mutex_lock(feed->lock);
+	feed->lock();
 	if(!feed->connected) return;
 	if(!feed->results_last) return;
-	now_insecure = (strstr(feed->results_last->str, "insecure")!=NULL);
-	now_dark = (strstr(feed->results_last->str, "dark")!=NULL);
-	now_cache = (strstr(feed->results_last->str, "cache")!=NULL);
-	now_auth = (strstr(feed->results_last->str, "auth")!=NULL);
-	now_disconn = (strstr(feed->results_last->str, "disconnected")!=NULL);
-	feed_insecure = feed->insecure_mode;
-	feed->insecure_mode = now_insecure;
-	g_mutex_unlock(feed->lock);
+	a.now_insecure = (strstr(feed->results_last->str, "insecure")!=NULL);
+	a.now_dark = (strstr(feed->results_last->str, "dark")!=NULL);
+	a.now_cache = (strstr(feed->results_last->str, "cache")!=NULL);
+	a.now_auth = (strstr(feed->results_last->str, "auth")!=NULL);
+	a.now_disconn = (strstr(feed->results_last->str, "disconnected")!=NULL);
+	a.last_insecure = feed->insecure_mode;
+	feed->insecure_mode = a.now_insecure;
+	feed->unlock();
 
-	gdk_threads_enter();
-#ifndef USE_WINSOCK
-	panel_alert_state(feed_insecure, now_insecure, now_dark, now_cache,
-		now_auth, now_disconn);
-#else
-	call_panel_alert_state(feed_insecure, now_insecure, now_dark, now_cache,
-		now_auth, now_disconn);
-#endif
-	gdk_threads_leave();
+	feed->alert(&a);
 }
 
 static void attach_main(void)
 {
 	/* check for event */
 	while(check_for_event()) {
-		g_mutex_lock(feed->lock);
+		feed->lock();
 		if(!feed->ssl_read) {
-			g_mutex_unlock(feed->lock);
+			feed->unlock();
 			break;
 		}
 		read_from_feed();
-		g_mutex_unlock(feed->lock);
+		feed->unlock();
 		process_results();
 	}
 
@@ -289,7 +291,7 @@ static void attach_main(void)
 
 static void send_ssl_cmd(const char* cmd)
 {
-	g_mutex_lock(feed->lock);
+	feed->lock();
 	if(feed->ssl_write) {
 		if(SSL_write(feed->ssl_write, cmd, (int)strlen(cmd)) <= 0) {
 			log_err("could not SSL_write");
@@ -301,7 +303,7 @@ static void send_ssl_cmd(const char* cmd)
 			(void)SSL_write(feed->ssl_write, cmd, (int)strlen(cmd));
 		}
 	}
-	g_mutex_unlock(feed->lock);
+	feed->unlock();
 }
 
 void attach_send_insecure(int val)
@@ -313,4 +315,90 @@ void attach_send_insecure(int val)
 void attach_send_reprobe(void)
 {
 	send_ssl_cmd("reprobe\n");
+}
+
+const char* state_tooltip(struct alert_arg* a)
+{
+	if(a->now_insecure)
+		return "DNS DANGER";
+	else if(a->now_dark)
+		return "DNS stopped";
+	else if(a->now_cache)
+		return "DNSSEC via cache";
+	else if(a->now_disconn)
+		return "network disconnected";
+	return "DNSSEC via authorities";
+}
+
+void process_state(struct alert_arg* a, int* unsafe_asked,
+        void (*danger)(void), void(*safe)(void), void(*dialog)(void))
+{
+	if(!a->now_dark)
+		*unsafe_asked = 0;
+	if(!a->last_insecure && a->now_insecure) {
+		danger();
+	} else if(a->last_insecure && !a->now_insecure) {
+		safe();
+	}
+	if(!a->now_insecure && a->now_dark && !*unsafe_asked) {
+		dialog();
+	}
+}
+
+void fetch_proberesults(char* buf, size_t len, const char* lf)
+{
+	char* pos = buf;
+	size_t left = len, n;
+	struct strlist* p;
+
+	buf[0] = 0; /* safe start */
+	buf[len-1] = 0; /* no buffer overflow */
+	n=snprintf(pos, left, "results from probe ");
+	pos += n; left -= n;
+
+	feed->lock();
+	p = feed->results;
+	if(p && strncmp(p->str, "at ", 3) == 0) {
+		n=snprintf(pos, left, "%s", p->str);
+		pos += n; left -= n;
+		p=p->next;
+	}
+	n=snprintf(pos, left, "%s%s", lf, lf);
+	pos += n; left -= n;
+	if(!feed->connected) {
+		n=snprintf(pos, left, "error: %s%s", feed->connect_reason, lf);
+		pos += n; left -= n;
+	}
+	/* indent for strings is adjusted to be able to judge line length */
+	for(; p; p=p->next) {
+		if(!p->next) {
+			/* last line */
+			n=snprintf(pos, left, "%s", lf);
+			pos += n; left -= n;
+			if(strstr(p->str, "cache"))
+				n=snprintf(pos, left, 
+		"DNSSEC results fetched from (DHCP) cache(s)%s", lf);
+			else if(strstr(p->str, "auth"))
+				n=snprintf(pos, left, 
+		"DNSSEC results fetched direct from authorities%s", lf);
+			else if(strstr(p->str, "disconnected"))
+				n=snprintf(pos, left, 
+		"The network seems to be disconnected. A local cache of DNS%s"
+		"results is used, but no queries are made.%s", lf, lf);
+			else if(strstr(p->str, "dark") && !strstr(p->str,
+				"insecure"))
+				n=snprintf(pos, left, 
+		"A local cache of DNS results is used but no queries%s"
+		"are made, because DNSSEC is intercepted on this network.%s"
+		"(DNS is stopped)%s", lf, lf, lf);
+			else 	n=snprintf(pos, left, 
+		"DNS queries are sent to INSECURE servers.%s"
+		"Please, be careful out there.%s", lf, lf);
+			pos += n; left -= n;
+		} else {
+			n=snprintf(pos, left, "%s%s", p->str, lf);
+			pos += n; left -= n;
+		}
+	}
+	feed->unlock();
 }

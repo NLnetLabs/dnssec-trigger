@@ -59,6 +59,8 @@ static GtkMenu* statusmenu;
 /** if we have asked about disconnect or insecure */
 static int unsafe_asked = 0;
 
+static void feed_alert(struct alert_arg* a);
+
 /** print usage text */
 static void
 usage(void)
@@ -142,6 +144,30 @@ static RETSIGTYPE record_sigh(int sig)
 	}
 }
 
+/** the lock for the feed structure */
+static GMutex* feed_lock = NULL;
+
+/** callback that locks feedlock */
+static void lock_feed_lock(void)
+{
+	g_mutex_lock(feed_lock);
+}
+
+/** callback that unlocks feedlock */
+static void unlock_feed_lock(void)
+{
+	g_mutex_unlock(feed_lock);
+}
+
+/** callback that quits the program */
+static void feed_quit(void)
+{
+	/* we are in the feed thread */
+	gdk_threads_enter();
+	gtk_main_quit();
+	gdk_threads_leave();
+}
+
 gpointer feed_thread(gpointer data)
 {
 	attach_start((struct cfg*)data);
@@ -154,9 +180,13 @@ spawn_feed(struct cfg* cfg)
 {
 	GError* err=NULL;
 	GThread* thr;
-	feed = (struct feed*)calloc(1, sizeof(*feed));
-	if(!feed) fatal_exit("out of memory");
-	feed->lock = g_mutex_new();
+	attach_create();
+	feed_lock = g_mutex_new();
+	feed->lock = &lock_feed_lock;
+	feed->unlock = &unlock_feed_lock;
+	feed->quit = &feed_quit;
+	feed->alert = &feed_alert;
+
 	thr = g_thread_create(&feed_thread, cfg, FALSE, &err);
 	if(!thr) fatal_exit("cannot create thread: %s", err->message);
 }
@@ -200,63 +230,13 @@ G_MODULE_EXPORT
 void on_proberesults_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 	gpointer ATTR_UNUSED(user_data))
 {
+	char buf[102400];
 	GtkTextBuffer *buffer;
-	struct strlist* p = feed->results;
-	GtkTextIter end;
 
 	/* fetch results */
+	fetch_proberesults(buf, sizeof(buf), "\n");
 	buffer = gtk_text_view_get_buffer(result_textview);
-	gtk_text_buffer_set_text(buffer, "results from probe ", -1);
-	if(p && strncmp(p->str, "at ", 3) == 0) {
-		gtk_text_buffer_get_end_iter(buffer, &end);
-		gtk_text_buffer_insert(buffer, &end, p->str, -1);
-		p=p->next;
-	}
-	gtk_text_buffer_get_end_iter(buffer, &end);
-	gtk_text_buffer_insert(buffer, &end, "\n\n", -1);
-	g_mutex_lock(feed->lock);
-	if(!feed->connected) {
-		gtk_text_buffer_get_end_iter(buffer, &end);
-		gtk_text_buffer_insert(buffer, &end, "error: ", -1);
-		gtk_text_buffer_get_end_iter(buffer, &end);
-		gtk_text_buffer_insert(buffer, &end, feed->connect_reason, -1);
-		gtk_text_buffer_get_end_iter(buffer, &end);
-		gtk_text_buffer_insert(buffer, &end, "\n", -1);
-	}
-	/* indent for strings is adjusted to be able to judge line length */
-	for(; p; p=p->next) {
-		if(!p->next) {
-			/* last line */
-			gtk_text_buffer_get_end_iter(buffer, &end);
-			gtk_text_buffer_insert(buffer, &end, "\n", -1);
-			gtk_text_buffer_get_end_iter(buffer, &end);
-			if(strstr(p->str, "cache"))
-				gtk_text_buffer_insert(buffer, &end, 
-		"DNSSEC results fetched from (DHCP) cache(s)\n", -1);
-			else if(strstr(p->str, "auth"))
-				gtk_text_buffer_insert(buffer, &end, 
-		"DNSSEC results fetched direct from authorities\n", -1);
-			else if(strstr(p->str, "disconnected"))
-				gtk_text_buffer_insert(buffer, &end, 
-		"The network seems to be disconnected. A local cache of DNS\n"
-		"results is used, but no queries are made.\n", -1);
-			else if(strstr(p->str, "dark") && !strstr(p->str,
-				"insecure"))
-				gtk_text_buffer_insert(buffer, &end, 
-		"A local cache of DNS results is used but no queries\n"
-		"are made, because DNSSEC is intercepted on this network.\n"
-		"(DNS is stopped)\n", -1);
-			else gtk_text_buffer_insert(buffer, &end, 
-		"DNS queries are sent to INSECURE servers.\n"
-		"Please, be careful out there.\n", -1);
-		} else {
-			gtk_text_buffer_get_end_iter(buffer, &end);
-			gtk_text_buffer_insert(buffer, &end, p->str, -1);
-			gtk_text_buffer_get_end_iter(buffer, &end);
-			gtk_text_buffer_insert(buffer, &end, "\n", -1);
-		}
-	}
-	g_mutex_unlock(feed->lock);
+	gtk_text_buffer_set_text(buffer, buf, -1);
 
 	/* show them */
 	gtk_widget_show(GTK_WIDGET(result_window));
@@ -347,75 +327,60 @@ void panel_alert_safe(void)
 	gtk_status_icon_set_from_pixbuf(status_icon, normal_icon);
 }
 
-void panel_alert_state(int last_insecure, int now_insecure, int dark,
-        int cache, int ATTR_UNUSED(auth), int disconn)
+/** tell panel to update itself with new state information */
+void panel_alert_state(struct alert_arg* a)
 {
-	const char* tt;
 	/* handle state changes */
-	if(now_insecure)
-		tt = "DNS DANGER";
-	else if(dark)
-		tt = "DNS stopped";
-	else if(cache)
-		tt = "DNSSEC via cache";
-	else if(disconn)
-		tt = "network disconnected";
-	else	tt = "DNSSEC via authorities";
-	gtk_status_icon_set_tooltip_text(status_icon, tt);
-	if(!dark)
-		unsafe_asked = 0;
-	if(!last_insecure && now_insecure) {
-		panel_alert_danger();
-	} else if(last_insecure && !now_insecure) {
-		panel_alert_safe();
-	}
-	if(!now_insecure && dark && !unsafe_asked) {
-		present_unsafe_dialog();
-	}
-
+	gtk_status_icon_set_tooltip_text(status_icon, state_tooltip(a));
+	process_state(a, &unsafe_asked, &panel_alert_danger, &panel_alert_safe,
+		&present_unsafe_dialog);
 }
 
+#ifdef USE_WINSOCK
 /* the parameters for the panel alert state */
 static GMutex* call_lock = NULL;
-static int cp_li, cp_ni, cp_d, cp_c, cp_a, cp_dis;
+static struct alert_arg cp_arg;
 
 gboolean call_alert(gpointer ATTR_UNUSED(arg))
 {
 	/* get params */
-	int last_insecure, now_insecure, dark, cache, auth, disconn;
+	struct alert_arg a;
 	g_mutex_lock(call_lock);
-	last_insecure = cp_li;
-	now_insecure = cp_ni;
-	dark = cp_d;
-	cache = cp_c;
-	auth = cp_a;
-	disconn = cp_dis;
+	a = cp_arg;
 	g_mutex_unlock(call_lock);
-	panel_alert_state(last_insecure, now_insecure, dark, cache,
-		auth, disconn);
+	panel_alert_state(&a);
 	/* only call once, remove call_alert from the glib mainloop */
 	return FALSE;
 }
 
 /* schedule a call to the panel alert state from the main thread */
-void call_panel_alert_state(int last_insecure, int now_insecure, int dark,
-        int cache, int auth, int disconn)
+void call_panel_alert_state(struct alert_arg* a)
 {
 	if(!call_lock) {
 		call_lock = g_mutex_new();
 	}
 	/* store parameters */
 	g_mutex_lock(call_lock);
-	cp_li = last_insecure;
-	cp_ni = now_insecure;
-	cp_d = dark;
-	cp_c = cache;
-	cp_a = auth;
-	cp_dis = disconn;
+	cp_arg = *a;
 	g_mutex_unlock(call_lock);
 	/* the  call_alert function will run from the main thread, because
 	 * GTK+ is not threadsafe on windows */
 	g_idle_add(&call_alert, NULL);
+}
+#endif /* USE_WINSOCK */
+
+/** callback that alerts panel of new status */
+static void feed_alert(struct alert_arg* a)
+{
+	gdk_threads_enter();
+#ifndef USE_WINSOCK
+	panel_alert_state(a);
+#else
+	/* call the above function from the main thread, in case the system
+ 	 * is not threadsafe (windows) */
+	call_panel_alert_state(a);
+#endif
+	gdk_threads_leave();
 }
 
 static GdkPixbuf* load_icon(const char* icon, int debug)
@@ -535,8 +500,10 @@ do_main_work(const char* cfgfile, int debug)
 	gdk_threads_leave();
 	stop_gui();
 	attach_stop(); /* stop the other thread */
+#ifdef USE_WINSOCK
 	if(call_lock) g_mutex_free(call_lock);
-	if(feed->lock) g_mutex_free(feed->lock);
+#endif
+	if(feed_lock) g_mutex_free(feed_lock);
 }
 
 

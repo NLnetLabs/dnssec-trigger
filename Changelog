@@ -1,5 +1,6 @@
 20 Sep 2011: Wouter
 	- fix configure --with-gui, it did not change the gui but hooks.
+	- refactor GUI panel SSL feed to be more portable.
 
 19 Sep 2011: Wouter
 	- fix so that if it cannot bind socket the server fails to start.

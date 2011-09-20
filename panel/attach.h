@@ -49,9 +49,29 @@ struct strlist;
 /** attachment structure for the results read thread */
 extern struct feed* feed;
 
+/**
+ * Alert arguments
+ */
+struct alert_arg {
+	int last_insecure;
+	int now_insecure;
+	int now_dark;
+	int now_cache;
+	int now_auth;
+	int now_disconn;
+};
+
 /** structure for reading from the daemon */
 struct feed {
-	GMutex* lock;
+	/* routine that locks a mutex for this structure */
+	void (*lock)(void);
+	/* routine that unlocks the mutex for this structure */
+	void (*unlock)(void);
+	/* quit the program, when stop is sent by triggerd */
+	void (*quit)(void);
+	/* alert function, new status information */
+	void (*alert)(struct alert_arg*);
+
 	/* if connection with the daemon has been established. */
 	int connected;
 	/* non connection reason */
@@ -77,6 +97,17 @@ struct strlist {
 	char* str;
 };
 
+/** create the feed structure and inits it
+ * setups the global feed pointer.
+ * Then you the caller must fill the function pointers in the struct
+ * with proper callbacks.  Then call attach_start from a fresh thread.
+ */
+void attach_create(void);
+
+/** delete feed structure.
+ */
+void attach_delete(void);
+
 /** start the connection thread */
 void attach_start(struct cfg* cfg);
 
@@ -87,12 +118,25 @@ void attach_stop(void);
 void attach_send_insecure(int val);
 void attach_send_reprobe(void);
 
-/** tell panel to update itself with new state information */
-void panel_alert_state(int last_insecure, int now_insecure, int dark,
-	int cache, int auth, int disconn);
-/** call the above function from the main thread, in case the system
- * is not threadsafe (windows) */
-void call_panel_alert_state(int last_insecure, int now_insecure, int dark,
-	int cache, int auth, int disconn);
+/** get tooltip text from alert state (fixed string) */
+const char* state_tooltip(struct alert_arg* a);
+/** 
+ * process state for new alert (at GUI side)
+ * @param a: the alert state info.
+ * @param unsafe_asked: 1 if user chose something in the unsafe dialog.
+ * @param danger: routine to show danger icon
+ * @param safe: routine to show safe icon.
+ * @param dialog: routine to show the insecure-question dialog.
+ */
+void process_state(struct alert_arg* a, int* unsafe_asked,
+	void (*danger)(void), void(*safe)(void), void(*dialog)(void));
+
+/**
+ * Fetch proberesults text.
+ * @param buf: buffer for string.
+ * @param len: length of buffer.
+ * @param lf: line ending (string), e.g. "\n"
+ */
+void fetch_proberesults(char* buf, size_t len, const char* lf);
 
 #endif /* ATTACH_H */
