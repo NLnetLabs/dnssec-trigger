@@ -36,4 +36,4 @@ BEGIN
   END
 END
 /* vista user access as invoker */
-1 RT_MANIFEST "winrc/vista_user.manifest"
+1 RT_MANIFEST "winrc/panel.manifest"

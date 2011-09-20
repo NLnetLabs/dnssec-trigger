@@ -40,13 +40,15 @@
  * dnssec-trigger-panel that shows the state of dnssec.
  */
 #include "config.h"
+#define _WIN32_IE 0x0502
 #include <windows.h>
 #include <windowsx.h>
 #include <shellapi.h>
+#include <commctrl.h>
+#include <signal.h>
 #include "riggerd/log.h"
 #include "riggerd/cfg.h"
 #include "panel/attach.h"
-#include <signal.h>
 
 static UINT WM_TASKBARCREATED;
 static NOTIFYICONDATA notifydata;
@@ -96,7 +98,7 @@ init_insecwnd(HINSTANCE hInstance)
 		TEXT("Network DNSSEC Failure"),
 		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX |
 		WS_MAXIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT,
-		450, 450, NULL, NULL, hInstance, NULL);
+		455, 450, NULL, NULL, hInstance, NULL);
 	CreateWindow(TEXT("STATIC"), TEXT(
 "The Network Fails to Support DNSSEC\r\n"
 "\r\n"
@@ -124,10 +126,10 @@ init_insecwnd(HINSTANCE hInstance)
 		10, 10, 430, 370, insec_wnd, NULL, hInstance, NULL);
 	insec_discon = CreateWindow(TEXT("BUTTON"), TEXT("Disconnect"),
 		WS_CHILD | WS_VISIBLE,
-		180, 385, 100, 25, insec_wnd, NULL, hInstance, NULL);
+		180, 390, 100, 25, insec_wnd, NULL, hInstance, NULL);
 	insec_unsafe = CreateWindow(TEXT("BUTTON"), TEXT("Insecure"),
 		WS_CHILD | WS_VISIBLE,
-		300, 385, 100, 25, insec_wnd, NULL, hInstance, NULL);
+		300, 390, 100, 25, insec_wnd, NULL, hInstance, NULL);
 	ShowWindow(insec_wnd, SW_SHOW);
 }
 
@@ -139,14 +141,14 @@ init_mainwnd(HINSTANCE hInstance)
 	 * OK button */
 	mainwnd = CreateWindowEx(0, trayclassname, TEXT("Probe Results"),
 		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT,
-		400, 280, NULL, NULL, hInstance, NULL);
+		450, 280, NULL, NULL, hInstance, NULL);
 	resultbox = CreateWindow(TEXT("EDIT"), TEXT("probe results"),
 		WS_CHILD | WS_VISIBLE | WS_VSCROLL |
 		ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL | ES_AUTOHSCROLL,
-		10, 10, 370, 195, mainwnd, NULL, hInstance, NULL);
+		10, 10, 420, 195, mainwnd, NULL, hInstance, NULL);
 	resultok = CreateWindow(TEXT("BUTTON"), TEXT("OK"),
 		WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
-		260, 215, 100, 25, mainwnd, NULL, hInstance, NULL);
+		290, 215, 100, 25, mainwnd, NULL, hInstance, NULL);
 }
 
 static void
@@ -367,8 +369,9 @@ static void do_args(char* str, int* debug, const char** cfgfile)
 {
 	char* p = str;
 	/* find ' -dEOS' or ' -d ' or ' -c <file>' */
-	while(strchr(p, ' ')) {
-		p = strchr(p, ' ');
+	while(p && *p) {
+		while(*p == ' ')
+			p++;
 		if(strcmp(p, "-d") == 0 || strncmp(p, "-d ", 3) == 0) {
 			*debug = 1;
 		}
@@ -379,7 +382,7 @@ static void do_args(char* str, int* debug, const char** cfgfile)
 			*cfgfile = strdup(p);
 			continue;
 		}
-		p++;
+		p = strchr(p, ' ');
 	}
 }
 
@@ -450,7 +453,8 @@ static void unlock_feed_lock(void)
 
 static void feed_quit(void)
 {
-	PostQuitMessage(0);
+	/* post a message to the main window (in another thread) */
+	PostMessage(mainwnd, WM_DESTROY, 0, 0);
 }
 
 static void panel_alert(void)
@@ -523,6 +527,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR args,
 {
 	MSG msg;
 	WNDCLASSEX wnd;
+	INITCOMMONCONTROLSEX icc;
 	int debug = 0;
 	const char* cfgfile = NULL;
 	const char* uidir = NULL;
@@ -537,6 +542,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR args,
 	log_init(NULL, 0, NULL);
 	if((r = WSAStartup(MAKEWORD(2,2), &wsa_data)) != 0)
 		fatal_exit("WSAStartup failed: %s", wsa_strerror(r));
+
+	/* inits common controls for vista/7 GUI looks */
+	memset(&icc, 0, sizeof(icc));
+	icc.dwSize = sizeof(icc);
+	icc.dwICC = ICC_WIN95_CLASSES | ICC_STANDARD_CLASSES;
+	InitCommonControlsEx(&icc);
+
 	ERR_load_crypto_strings();
 	ERR_load_SSL_strings();
 	OpenSSL_add_all_algorithms();
@@ -551,8 +563,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR args,
 
 	cfg = cfg_create(cfgfile);
 	if(!cfg) fatal_exit("cannot read config %s", cfgfile);
-/* start signal handlers */
-if( signal(SIGTERM, record_sigh) == SIG_ERR ||
+	/* start signal handlers */
+	if( signal(SIGTERM, record_sigh) == SIG_ERR ||
 #ifdef SIGQUIT
 		signal(SIGQUIT, record_sigh) == SIG_ERR ||
 #endif
