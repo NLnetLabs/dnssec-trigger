@@ -195,6 +195,12 @@ osx/RiggerStatusItem/cfg.c:	riggerd/cfg.c
 osx/RiggerStatusItem/net_help.c:	riggerd/net_help.c
 	cp $< $@
 
+osx/RiggerStatusItem/osxattach.m:	panel/attach.c
+	cp $< $@
+
+osx/RiggerStatusItem/osxattach.h:	panel/attach.h
+	cp $< $@
+
 osx/RiggerStatusItem/log.h:	riggerd/log.h
 	cp $< $@
 

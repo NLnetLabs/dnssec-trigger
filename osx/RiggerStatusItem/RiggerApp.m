@@ -13,22 +13,45 @@
 
 extern char* test_config_file;
 
+static NSLock* feed_lock = NULL;
+
 /** basically these are the commandline arguments to PanelAlert */
-struct alertinfo {
-	NSLock* lock;
-	int last_insecure;
-	int now_insecure;
-	int dark;
-	int cache;
-	int auth;
-	int disconn;
-} alertinfo;
+static NSLock* alert_lock;
+static struct alert_arg alertinfo;
 
 static RiggerApp* mainapp = NULL;
 
 static void cleanup(void)
 {
 	[mainapp dealloc];
+}
+
+static void lock_feed_lock(void)
+{
+	[feed_lock lock];
+}
+
+static void unlock_feed_lock(void)
+{
+	[feed_lock unlock];
+}
+
+static void feed_quit(void)
+{
+	[feed_lock unlock];
+	/* calls cleanup() atexit */
+	exit(0);
+}
+
+static void feed_alert(struct alert_arg* a)
+{
+	/* store parameters in threadsafe manner */
+	[alert_lock lock];
+	alertinfo = *a;
+	[alert_lock unlock];
+	printf("panel alert state in attach\n");
+	[mainapp performSelectorOnMainThread:@selector(PanelAlert)
+							  withObject:nil waitUntilDone:NO];
 }
 
 @implementation RiggerApp
@@ -63,7 +86,7 @@ awakeFromNib
 	mainapp = self;
 	unsafe_asked = 0;
 	memset(&alertinfo, 0, sizeof(alertinfo));
-	alertinfo.lock = [NSLock alloc];
+	alert_lock = [NSLock alloc];
 	log_ident_set("dnssec-trigger-panel-osx");
 	log_init(NULL, 0, NULL);
 	ERR_load_crypto_strings();
@@ -77,9 +100,12 @@ awakeFromNib
 		fatal_exit("cannot read config file %s", cfgfile);
 
 	/* spawn the feed thread */
-	feed = (struct feed*)calloc(1, sizeof(*feed));
-	if(!feed) fatal_exit("out of memory");
-	feed->lock = [NSLock alloc];
+	attach_create();
+	feed_lock = [NSLock alloc];
+	feed->lock = &lock_feed_lock;
+	feed->unlock = &unlock_feed_lock;
+	feed->quit = &feed_quit;
+	feed->alert = &feed_alert;
 	atexit(&cleanup);
 	[NSThread detachNewThreadSelector:@selector(SpawnFeed:)
 							 toTarget:self withObject:nil];
@@ -90,9 +116,9 @@ dealloc
 {
 	printf("dealloc routine\n");
 	attach_stop();
-	[feed->lock release];
+	[feed_lock release];
 	free(feed);
-	[alertinfo.lock release];
+	[alert_lock release];
 	[icon release];
 	[icon_alert release];
 	[super dealloc];
@@ -130,49 +156,12 @@ void append_txt(NSTextView* pane, char* str)
 	NSRange range;
 	range.location = 0;
 	range.length = [[resultpane textStorage] length];
-	struct strlist* p = feed->results;
-	[resultpane replaceCharactersInRange: range
-		withString:@"results from probe "];
-	if(p && strncmp(p->str, "at ", 3) == 0) {
-		append_txt(resultpane, p->str);
-		p=p->next;
-	}
-	append_txt(resultpane, "\n\n");		
 
-	[feed->lock lock];
-	if(!feed->connected) {
-		append_txt(resultpane, "error: ");
-		append_txt(resultpane, feed->connect_reason);
-		append_txt(resultpane, "\n");		
-	}
-	for(; p; p=p->next) {
-		if(!p->next) {
-			/* last line */
-			append_txt(resultpane, "\n");
-			if(strstr(p->str, "cache"))
-				append_txt(resultpane,
-						   "DNSSEC results fetched from (DHCP) cache(s)\n");
-			else if(strstr(p->str, "auth"))
-				append_txt(resultpane,
-						   "DNSSEC results fetched direct from authorities\n");
-			else if(strstr(p->str, "disconnected"))
-				append_txt(resultpane,
-						   "The network seems to be disconnected. A local cache of DNS\n"
-						   "results is used, but no queries are made.\n");
-			else if(strstr(p->str, "dark") && !strstr(p->str, "insecure"))
-				append_txt(resultpane, 
-						   "A local cache of DNS results is used but no queries\n"
-						   "are made, because DNSSEC is intercepted on this network.\n"
-						   "(DNS is stopped)\n");
-			else append_txt(resultpane,
-							"DNS queries are sent to INSECURE servers.\n"
-							"Please, be careful out there.\n");
-		} else {
-			append_txt(resultpane, p->str);
-			append_txt(resultpane, "\n");
-		}
-	}
-	[feed->lock unlock];
+	[resultpane replaceCharactersInRange: range
+		withString:@""];
+	char buf[102400];
+	fetch_proberesults(buf, sizeof(buf), "\n");
+	append_txt(resultpane, buf);
 	
 	[resultpane setEditable:NO];
 	[resultpane setSelectable:YES];
@@ -227,57 +216,35 @@ void append_txt(NSTextView* pane, char* str)
 	[riggeritem setImage:icon];
 }
 
+static void do_danger(void)
+{
+	[mainapp PanelAlertDanger];
+}
+static void do_safe(void)
+{
+	[mainapp PanelAlertSafe];
+}
+static void do_ask(void)
+{
+	[mainapp PresentUnsafeDialog];
+}
+
 -(void)PanelAlert
 {
 	NSString* tt;
-	int do_danger = 0, do_safe = 0, do_ask = 0;
+	char* ctt;
+	struct alert_arg a;
 	NSLog(@"PanelAlert function");
-	[alertinfo.lock lock];
-	if(alertinfo.now_insecure)
-		tt = @"DNS DANGER";
-	else if(alertinfo.dark)
-		tt = @"DNS stopped";
-	else if(alertinfo.cache)
-		tt = @"DNSSEC via cache";
-	else if(alertinfo.disconn)
-		tt = @"network disconnected";
-	else tt = @"DNSSEC via authorities";
-	if(!alertinfo.dark)
-		unsafe_asked = 0;
-	if(!alertinfo.last_insecure && alertinfo.now_insecure) {
-		do_danger = 1;
-	} else if(alertinfo.last_insecure && !alertinfo.now_insecure) {
-		do_safe = 1;
-	}
-	if(!alertinfo.now_insecure && alertinfo.dark && !unsafe_asked) {
-		do_ask = 1;
-	}
-	[alertinfo.lock unlock];
+	[alert_lock lock]
+	a = alertinfo;
+	[alert_lock unlock]
 
+	ctt = state_tooltip(&a);
+	/* no need to [tt release] (?) */
+	tt = [NSString stringWithUTF8String:ctt];
 	[riggeritem setToolTip:tt];
-	if(do_danger)
-		[self PanelAlertDanger];
-	if(do_safe)
-		[self PanelAlertSafe];
-	if(do_ask)
-		[self PresentUnsafeDialog];
-}
 
-void panel_alert_state(int last_insecure, int now_insecure, int dark,
-					   int cache, int auth, int disconn)
-{
-	/* store parameters in threadsafe manner */
-	[alertinfo.lock lock];
-	alertinfo.last_insecure = last_insecure;
-	alertinfo.now_insecure = now_insecure;
-	alertinfo.dark = dark;
-	alertinfo.cache = cache;
-	alertinfo.auth = auth;
-	alertinfo.disconn = disconn;
-	[alertinfo.lock unlock];
-	printf("panel alert state in attach\n");
-	[mainapp performSelectorOnMainThread:@selector(PanelAlert)
-							  withObject:nil waitUntilDone:NO];
+	process_state(&a, &unsafe_asked, &do_danger, &do_safe, &do_ask);
 }
 
 @end
