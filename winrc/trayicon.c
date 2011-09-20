@@ -573,10 +573,10 @@ if( signal(SIGTERM, record_sigh) == SIG_ERR ||
 	 * message is sent so we can re-enter ourselves */
 	WM_TASKBARCREATED = RegisterWindowMessageA("TaskbarCreated");
 	status_icon = (HICON)LoadImage(NULL,
-		get_ui_file(debug, uidir, "combined.ico"),
+		get_ui_file(debug, uidir, "status.ico"),
 		IMAGE_ICON, 0, 0, LR_LOADFROMFILE);
 	status_icon_big = (HICON)LoadImage(NULL,
-		get_ui_file(debug, uidir, "combined.ico"),
+		get_ui_file(debug, uidir, "status.ico"),
 		IMAGE_ICON, 64, 64, LR_LOADFROMFILE);
 	status_icon_alert = (HICON)LoadImage(NULL,
 		get_ui_file(debug, uidir, "alert.ico"),
