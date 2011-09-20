@@ -103,6 +103,9 @@ COMPAT_OBJ=$(addprefix $(BUILD)compat/,$(LIBOBJS:.o=.o))
 
 ifeq "$(gui)" "gtk"
 PANEL_SRC=panel/panel.c panel/attach.c riggerd/cfg.c riggerd/log.c riggerd/net_help.c
+  ifeq "$(hooks)" "windows"
+PANEL_SRC=winrc/trayicon.c panel/attach.c riggerd/cfg.c riggerd/log.c riggerd/net_help.c
+  endif
 else
 PANEL_SRC=
 endif
