@@ -130,7 +130,7 @@ init_insecwnd(HINSTANCE hInstance)
 	insec_unsafe = CreateWindow(TEXT("BUTTON"), TEXT("Insecure"),
 		WS_CHILD | WS_VISIBLE,
 		300, 390, 100, 25, insec_wnd, NULL, hInstance, NULL);
-	ShowWindow(insec_wnd, SW_SHOW);
+	ShowWindow(insec_wnd, SW_HIDE);
 }
 
 static void
