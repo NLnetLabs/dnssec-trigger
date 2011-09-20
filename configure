@@ -6916,8 +6916,8 @@ else
   withval=""
 fi
 
-if test -n "$withval"; then
-	hooks="$withval"
+if test -n "$withval" -a "$withval" != "yes"; then
+	gui="$withval"
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for gui" >&5
 $as_echo_n "checking for gui... " >&6; }

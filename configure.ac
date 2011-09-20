@@ -296,8 +296,8 @@ fi
 gui="auto"
 AC_ARG_WITH([gui], AC_HELP_STRING([--with-gui],
 [Set the user interface style to use, default 'auto', can be 'cocoa' (on OSX) or 'gtk']),, withval="")
-if test -n "$withval"; then
-	hooks="$withval"
+if test -n "$withval" -a "$withval" != "yes"; then
+	gui="$withval"
 fi
 AC_MSG_CHECKING([for gui])
 if test "$gui" != "auto"; then
