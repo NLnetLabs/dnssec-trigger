@@ -771,7 +771,7 @@ static void sslconn_command(struct sslconn* sc)
 		handle_cmdtray_cmd(sc);
 	} else if(strncmp(str, "unsafe", 6) == 0) {
 		handle_unsafe_cmd(sc);
-	} else if(strncmp(str, "stoppanels", 4) == 0) {
+	} else if(strncmp(str, "stoppanels", 10) == 0) {
 		handle_stoppanels_cmd(sc);
 	} else if(strncmp(str, "stop", 4) == 0) {
 		comm_base_exit(global_svr->base);

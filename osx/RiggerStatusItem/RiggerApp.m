@@ -240,7 +240,7 @@ static void do_ask(void)
 	[alert_lock unlock];
 
 	ctt = state_tooltip(&a);
-	/* no need to [tt release] (?) */
+	/* no need to [tt release] because of convenience function */
 	tt = [NSString stringWithUTF8String:ctt];
 	[riggeritem setToolTip:tt];
 
