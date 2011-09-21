@@ -163,7 +163,7 @@ init_icon(void)
 	notifydata.uCallbackMessage = WM_TRAYICON;
 	notifydata.hIcon = status_icon;
 	/* tooltip (less than 64 chars) */
-	strcpy(notifydata.szTip, TEXT("tooltip"));
+	strcpy(notifydata.szTip, TEXT("dnssec-trigger"));
 	if(!Shell_NotifyIcon(NIM_ADD, &notifydata)) {	
 		log_err("cannot Shell_NotifyIcon");
 	}
