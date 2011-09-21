@@ -88,9 +88,26 @@ static int unsafe_asked = 0;
 
 static void panel_alert(void);
 
+static HFONT font;
+static HFONT font_bold;
+
+static void init_font(void)
+{
+	/* normal font */
+	font = CreateFont(16, 0, 0, 0, 550, FALSE, FALSE, FALSE, ANSI_CHARSET,
+		OUT_TT_ONLY_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
+		DEFAULT_PITCH, "MS Outlook"); 
+	if(!font) log_err("CreateFont failed");
+	font_bold = CreateFont(16, 0, 0, 0, 700, FALSE, FALSE, FALSE, 
+		ANSI_CHARSET, OUT_TT_ONLY_PRECIS, CLIP_DEFAULT_PRECIS,
+		DEFAULT_QUALITY, DEFAULT_PITCH, "MS Outlook"); 
+	if(!font_bold) log_err("CreateFont failed");
+}
+
 static void
 init_insecwnd(HINSTANCE hInstance)
 {
+	HWND statictext;
 	/* insecure window:
 	 * static text with explanation.
 	 * Disconnect and Insecure buttons */
@@ -99,7 +116,7 @@ init_insecwnd(HINSTANCE hInstance)
 		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX |
 		WS_MAXIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT,
 		455, 450, NULL, NULL, hInstance, NULL);
-	CreateWindow(TEXT("STATIC"), TEXT(
+	statictext = CreateWindow(TEXT("STATIC"), TEXT(
 "The Network Fails to Support DNSSEC\r\n"
 "\r\n"
 "The network you are connected to does not allow DNSSEC, via\r\n"
@@ -130,6 +147,9 @@ init_insecwnd(HINSTANCE hInstance)
 	insec_unsafe = CreateWindow(TEXT("BUTTON"), TEXT("Insecure"),
 		WS_CHILD | WS_VISIBLE,
 		300, 390, 100, 25, insec_wnd, NULL, hInstance, NULL);
+	SendMessage(statictext, WM_SETFONT, (WPARAM)font, TRUE);
+	SendMessage(insec_discon, WM_SETFONT, (WPARAM)font_bold, TRUE);
+	SendMessage(insec_unsafe, WM_SETFONT, (WPARAM)font_bold, TRUE);
 	ShowWindow(insec_wnd, SW_HIDE);
 }
 
@@ -149,6 +169,8 @@ init_mainwnd(HINSTANCE hInstance)
 	resultok = CreateWindow(TEXT("BUTTON"), TEXT("OK"),
 		WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
 		290, 215, 100, 25, mainwnd, NULL, hInstance, NULL);
+	SendMessage(resultbox, WM_SETFONT, (WPARAM)font, TRUE);
+	SendMessage(resultok, WM_SETFONT, (WPARAM)font_bold, TRUE);
 }
 
 static void
@@ -618,6 +640,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR args,
 		FatalAppExit(0, TEXT("Cannot RegisterClassEx"));
 	}
 	
+	init_font();
 	init_mainwnd(hInstance);
 	init_insecwnd(hInstance);
 	ShowWindow(mainwnd, SW_HIDE);
