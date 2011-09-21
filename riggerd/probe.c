@@ -358,10 +358,13 @@ int outq_handle_udp(struct comm_point* c, void* my_arg, int error,
 		return 0;
 	}
 	/* quick sanity check */
-	if(len < LDNS_HEADER_SIZE || LDNS_ID_WIRE(wire) != outq->qid) {
-		verbose(VERB_ALGO, "%4.4x wire, qid %4.4x", LDNS_ID_WIRE(wire), outq->qid);
+	if(len < LDNS_HEADER_SIZE || LDNS_ID_WIRE(wire) != outq->qid
+		|| !LDNS_QR_WIRE(wire)) {
+		verbose(VERB_ALGO, "%4.4x wire, qid %4.4x, qr %s",
+			LDNS_ID_WIRE(wire), outq->qid,
+			LDNS_QR_WIRE(wire)?"yes":"no");
 		/* wait for the real reply */
-		verbose(VERB_ALGO, "ignored bad reply (tooshort or wrong qid)");
+		verbose(VERB_ALGO, "ignored bad reply (tooshort, wrong qid or noQR)");
 		return 0;
 	}
 	comm_timer_disable(outq->timer);

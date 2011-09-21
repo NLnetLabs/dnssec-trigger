@@ -1,3 +1,10 @@
+21 Sep 2011: Wouter
+	- ignore UDP without QR flag: some DNS caches send echoes of the query
+	  back initially.  If we ignore them we catch a (100 msec later)
+	  correct answer later.  (or timeout if no answer comes).
+	- if probe is in progress it prints that in status.
+	- if no DNS servers via DHCP it prints that in status.
+
 20 Sep 2011: Wouter
 	- fix configure --with-gui, it did not change the gui but hooks.
 	- refactor GUI panel SSL feed to be more portable.

@@ -659,15 +659,27 @@ send_results_to_con(struct svr* svr, struct sslconn* s)
 {
 	struct probe_ip* p;
 	char at[32];
+	int numcache = 0, unfinished = 0;
 	ldns_buffer_clear(s->buffer);
 	if(strftime(at, sizeof(at), "%Y-%m-%d %H:%M:%S",
 		localtime(&svr->probetime)))
 		ldns_buffer_printf(s->buffer, "at %s\n", at);
 	for(p=svr->probes; p; p=p->next) {
+		if(!p->to_auth)
+			numcache++;
+		if(!p->finished) {
+			unfinished++;
+			continue;
+		}
 		ldns_buffer_printf(s->buffer, "%s %s: %s %s\n",
 			p->to_auth?"authority":"cache", p->name,
 			p->works?"OK":"error", p->reason?p->reason:"");
 	}
+	if(unfinished)
+		ldns_buffer_printf(s->buffer, "probe is in progress\n");
+	else if(!numcache)
+		ldns_buffer_printf(s->buffer, "no cache: no DNS servers have been supplied via DHCP\n");
+
 	ldns_buffer_printf(s->buffer, "state: %s %s\n",
 		svr->res_state==res_cache?"cache":(
 		svr->res_state==res_auth?"auth":(
