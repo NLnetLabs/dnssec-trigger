@@ -4,6 +4,7 @@
 	  correct answer later.  (or timeout if no answer comes).
 	- if probe is in progress it prints that in status.
 	- if no DNS servers via DHCP it prints that in status.
+	- antialiased fonts in windows native gui.
 
 20 Sep 2011: Wouter
 	- fix configure --with-gui, it did not change the gui but hooks.
