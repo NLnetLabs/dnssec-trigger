@@ -46,7 +46,6 @@
 #include "netevent.h"
 #include "net_help.h"
 #include "reshook.h"
-#include "ubhook.h"
 
 struct svr* global_svr = NULL;
 
@@ -632,12 +631,7 @@ static void cmd_reprobe(void)
 static void handle_hotspot_signon_cmd(struct svr* svr)
 {
 	verbose(VERB_OPS, "state dark forced_insecure");
-	svr->res_state = res_dark;
-	svr->forced_insecure = 1;
-	svr->insecure_state = 1;
-	/* effectuate it */
-	hook_unbound_dark(svr->cfg);
-	hook_resolv_iplist(svr->cfg, svr->probes);
+	probe_setup_hotspot_signon(svr);
 	svr_send_results(svr);
 }
 

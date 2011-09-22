@@ -112,5 +112,6 @@ void probe_cache_done(void);
 void probe_all_done(void);
 void probe_unsafe_test(void);
 void probe_setup_cache(struct svr* svr, struct probe_ip* p);
+void probe_setup_hotspot_signon(struct svr* svr);
 
 #endif /* PROBE_H */

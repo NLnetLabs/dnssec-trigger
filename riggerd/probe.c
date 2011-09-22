@@ -841,6 +841,17 @@ void probe_setup_dark(struct svr* svr)
 	}
 }
 
+/** setup forced insecure (for hotspot signon) */
+void probe_setup_hotspot_signon(struct svr* svr)
+{
+	svr->res_state = res_dark;
+	svr->forced_insecure = 1;
+	svr->insecure_state = 1;
+	/* effectuate it */
+	hook_unbound_dark(svr->cfg);
+	hook_resolv_iplist(svr->cfg, svr->probes);
+}
+
 void
 probe_cache_done(void)
 {
@@ -870,6 +881,8 @@ probe_all_done(void)
 	}
 	if(svr->forced_insecure) {
 		verbose(VERB_OPS, "probe done: but still forced insecure");
+		/* call it again, in case DHCP changes while hotspot-signon */
+		probe_setup_hotspot_signon(svr);
 	} else if(svr->probe_direct && svr->saw_direct_work) {
 		/* set unbound to process directly */
 		verbose(VERB_OPS, "probe done: DNSSEC to auth direct");
