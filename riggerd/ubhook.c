@@ -48,6 +48,8 @@
 #include "winrc/win_svc.h"
 #endif
 
+static int ub_has_tcp_upstream = 0;
+
 /**
  * Perform the unbound control command.
  * @param cfg: the config options with the command pathname.
@@ -79,11 +81,21 @@ ub_ctrl(struct cfg* cfg, const char* cmd, const char* args)
 	}
 }
 
+static void
+disable_tcp_upstream(struct cfg* cfg)
+{
+	if(ub_has_tcp_upstream) {
+		ub_ctrl(cfg, "set_option", "tcp-upstream: no");
+		ub_has_tcp_upstream = 0;
+	}
+}
+
 void hook_unbound_auth(struct cfg* cfg)
 {
 	verbose(VERB_QUERY, "unbound hook to auth");
 	if(cfg->noaction)
 		return;
+	disable_tcp_upstream(cfg);
 	ub_ctrl(cfg, "forward", "off");
 }
 
@@ -92,6 +104,7 @@ void hook_unbound_cache(struct cfg* cfg, const char* ip)
 	verbose(VERB_QUERY, "unbound hook to cache");
 	if(cfg->noaction)
 		return;
+	disable_tcp_upstream(cfg);
 	ub_ctrl(cfg, "forward", ip); 
 }
 
@@ -117,6 +130,7 @@ void hook_unbound_cache_list(struct cfg* cfg, struct probe_ip* list)
 		}
 		list = list->next;
 	}
+	disable_tcp_upstream(cfg);
 	ub_ctrl(cfg, "forward", buf); 
 }
 
@@ -125,5 +139,78 @@ void hook_unbound_dark(struct cfg* cfg)
 	verbose(VERB_QUERY, "unbound hook to dark");
 	if(cfg->noaction)
 		return;
+	disable_tcp_upstream(cfg);
 	ub_ctrl(cfg, "forward", UNBOUND_DARK_IP); 
 }
+
+int hook_unbound_supports_tcp_upstream(struct cfg* cfg)
+{
+	char command[12000];
+	const char* ctrl = "unbound-control";
+	const char* cmd = "get_option";
+	const char* args = "tcp-upstream";
+	int r;
+	if(cfg->unbound_control)
+		ctrl = cfg->unbound_control;
+	verbose(VERB_ALGO, "system %s %s %s", ctrl, cmd, args);
+	snprintf(command, sizeof(command), "%s %s %s", ctrl, cmd, args);
+#ifdef USE_WINSOCK
+	r = win_run_cmd(command);
+#else
+	r = system(command);
+	if(r == -1) {
+		log_err("system(%s) failed: %s", ctrl, strerror(errno));
+	} else
+#endif
+	if(r != 0) {
+		return 0;
+	}
+	return 1;
+}
+
+static void append_str(char* buf, char** now, size_t* left, char* str)
+{
+	int len;
+	if(*left < strlen(str)+3)
+		return; /* no more space */
+	len = snprintf(*now, *left, "%s%s",
+		*now == buf?"":" ", str);
+	(*left) -= len;
+	(*now) += len;
+}
+
+void hook_unbound_tcp_upstream(struct cfg* cfg, int tcp80_ip4, int tcp80_ip6,
+	int tcp443_ip4, int tcp443_ip6)
+{
+	char buf[102400];
+	char* now = buf;
+	size_t left = sizeof(buf);
+	struct strlist *p;
+	verbose(VERB_QUERY, "unbound hook to tcp %s %s %s %s",
+		tcp80_ip4?"tcp80_ip4":"", tcp80_ip6?"tcp80_ip6":"",
+		tcp443_ip4?"tcp443_ip4":"", tcp443_ip6?"tcp443_ip6":"");
+	if(cfg->noaction)
+		return;
+	buf[0] = 0;
+	if(tcp80_ip4) {
+		for(p=cfg->tcp80_ip4; p; p=p->next)
+			append_str(buf, &now, &left, p->str);
+	}
+	if(tcp80_ip6) {
+		for(p=cfg->tcp80_ip6; p; p=p->next)
+			append_str(buf, &now, &left, p->str);
+	}
+	if(tcp443_ip4) {
+		for(p=cfg->tcp443_ip4; p; p=p->next)
+			append_str(buf, &now, &left, p->str);
+	}
+	if(tcp443_ip6) {
+		for(p=cfg->tcp443_ip6; p; p=p->next)
+			append_str(buf, &now, &left, p->str);
+	}
+	/* effectuate tcp upstream and new list of servers */
+	ub_ctrl(cfg, "forward", buf);
+	ub_ctrl(cfg, "set_option", "tcp-upstream: yes");
+	ub_has_tcp_upstream = 1;
+}
+

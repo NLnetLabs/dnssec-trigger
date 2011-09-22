@@ -70,11 +70,12 @@ usage()
 	printf("Commands:\n");
 	printf("  submit <ips>	submit a list of DHCP provided DNS servers,\n");
 	printf("		separated by spaces, these are then probed.\n");
-	printf("  unsafe	test option that pretends that dnssec fails\n");
 	printf("  status	shows the latest probe results\n");
 	printf("  reprobe	probe again\n");
 	printf("  hotspot_signon	force status into insecure\n");
 	printf("		do a reprobe command after signon\n");
+	printf("  unsafe	test option that pretends that dnssec fails\n");
+	printf("  test_tcp	test option that pretends that cache and auth fail\n");
 	printf("  results	continuous feed of probe results\n");
 	printf("  cmdtray	command channel for gui panel\n");
 	printf("  stoppanels	connected panels quit (for installers)\n");

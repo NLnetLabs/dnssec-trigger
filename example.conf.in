@@ -43,3 +43,12 @@
 # control-key-file: "0keydir0/dnssec_trigger_control.key"
 # control-cert-file: "0keydir0/dnssec_trigger_control.pem"
 
+# fallback open DNSSEC resolvers that run on TCP port 80 and TCP port 443.
+# You can add more with extra config lines.
+
+# provided by NLnetLabs
+tcp80: 213.154.224.42
+tcp80: 2001:7b8:206:1:203:baff:fe05:2d9e
+tcp443: 213.154.224.42
+tcp443: 2001:7b8:206:1:203:baff:fe05:2d9e
+

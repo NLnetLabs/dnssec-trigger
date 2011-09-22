@@ -58,6 +58,7 @@ struct alert_arg {
 	int now_cache;
 	int now_auth;
 	int now_disconn;
+	int now_tcp;
 	int now_forced_insecure;
 };
 
@@ -90,11 +91,6 @@ struct feed {
 	SSL* ssl_read;
 	/* ssl to write results to */
 	SSL* ssl_write;
-};
-
-struct strlist {
-	struct strlist* next;
-	char* str;
 };
 
 /** create the feed structure and inits it

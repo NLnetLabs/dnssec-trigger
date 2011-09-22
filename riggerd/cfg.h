@@ -41,6 +41,7 @@
 
 #ifndef CFG_H
 #define CFG_H
+struct strlist;
 
 /* version of control proto */
 #define CONTROL_VERSION 1
@@ -71,6 +72,17 @@ struct cfg {
 	/** noaction option does no actions to resolv.conf or unbound */
 	int noaction;
 
+	/** list of port 80 open resolvers on ip4 and ip6 */
+	struct strlist* tcp80_ip4, *tcp80_ip4_last;
+	int num_tcp80_ip4;
+	struct strlist* tcp80_ip6, *tcp80_ip6_last;
+	int num_tcp80_ip6;
+	/** list of port 443 open resolvers on ip4 and ip6*/
+	struct strlist* tcp443_ip4, *tcp443_ip4_last;
+	int num_tcp443_ip4;
+	struct strlist* tcp443_ip6, *tcp443_ip6_last;
+	int num_tcp443_ip6;
+
 	/** port number for the control port */
 	int control_port;
 	/** private key file for server */
@@ -83,6 +95,12 @@ struct cfg {
 	char* control_cert_file;
 };
 
+/** simple list of strings */
+struct strlist {
+	struct strlist* next;
+	char* str;
+};
+
 /** create config and read in */
 struct cfg* cfg_create(const char* cfgfile);
 /** delete config */
@@ -92,5 +110,15 @@ void cfg_delete(struct cfg* cfg);
 SSL_CTX* cfg_setup_ctx_client(struct cfg* cfg, char* err, size_t errlen);
 /** setup SSL on the connection, blocking, or NULL and string in err */
 SSL* setup_ssl_client(SSL_CTX* ctx, int fd, char* err, size_t errlen);
+
+/** append to strlist, first=last=NULL to start empty. fatal if malloc fails */
+void strlist_append(struct strlist** first, struct strlist** last, char* str);
+/** free strlist */
+void strlist_delete(struct strlist* first);
+/** get nth element of strlist */
+char* strlist_get_num(struct strlist* list, unsigned n);
+
+/** have tcp80 or tcp443 configured */
+int cfg_have_dnstcp(struct cfg* cfg);
 
 #endif /* CFG_H */

@@ -201,34 +201,6 @@ read_an_ssl_line(SSL* ssl, char* line, size_t len)
 	return 0;
 }
 
-/** append to strlist */
-static void strlist_append(struct strlist** first, struct strlist** last,
-	char* str)
-{
-	struct strlist* e = (struct strlist*)malloc(sizeof(*e));
-	if(!e) fatal_exit("out of memory");
-	e->next = NULL;
-	e->str = strdup(str);
-	if(!e->str) fatal_exit("out of memory");
-	if(*last)
-		(*last)->next = e;
-	else	*first = e;
-	*last = e;
-}
-
-/** free strlist */
-static void
-strlist_delete(struct strlist* e)
-{
-	struct strlist* p = e, *np;
-	while(p) {
-		np = p->next;
-		free(p->str);
-		free(p);
-		p = np;
-	}
-}
-
 static void read_from_feed(void)
 {
 	struct strlist* first=NULL, *last=NULL;
@@ -271,6 +243,7 @@ static void process_results(void)
 	a.now_dark = (strstr(feed->results_last->str, "nodnssec")!=NULL);
 	a.now_cache = (strstr(feed->results_last->str, "cache")!=NULL);
 	a.now_auth = (strstr(feed->results_last->str, "auth")!=NULL);
+	a.now_tcp = (strstr(feed->results_last->str, "tcp")!=NULL);
 	a.now_disconn = (strstr(feed->results_last->str, "disconnected")!=NULL);
 	a.last_insecure = feed->insecure_mode;
 	feed->insecure_mode = a.now_insecure;
@@ -338,6 +311,8 @@ const char* state_tooltip(struct alert_arg* a)
 		return "DNS stopped";
 	else if(a->now_cache)
 		return "DNSSEC via cache";
+	else if(a->now_tcp)
+		return "DNSSEC via tcp open resolver";
 	else if(a->now_disconn)
 		return "network disconnected";
 	return "DNSSEC via authorities";
@@ -382,6 +357,11 @@ void fetch_proberesults(char* buf, size_t len, const char* lf)
 	if(!feed->connected) {
 		n=snprintf(pos, left, "error: %s%s", feed->connect_reason, lf);
 		pos += n; left -= n;
+		n=snprintf(pos, left, 
+		"cannot connect to the dnssec-trigger service, DNSSEC%s"
+		"status cannot be read.%s", lf, lf);
+		pos += n; left -= n;
+		p = NULL;
 	}
 	/* indent for strings is adjusted to be able to judge line length */
 	for(; p; p=p->next) {
@@ -395,6 +375,9 @@ void fetch_proberesults(char* buf, size_t len, const char* lf)
 			else if(strstr(p->str, "auth"))
 				n=snprintf(pos, left, 
 		"DNSSEC results fetched direct from authorities%s", lf);
+			else if(strstr(p->str, "tcp"))
+				n=snprintf(pos, left, 
+		"DNSSEC results fetched from open resolvers over TCP%s", lf);
 			else if(strstr(p->str, "disconnected"))
 				n=snprintf(pos, left, 
 		"The network seems to be disconnected. A local cache of DNS%s"

@@ -83,14 +83,28 @@ struct svr {
 	int saw_first_working;
 	/** saw direct work */
 	int saw_direct_work;
+	/** saw dnstcp work */
+	int saw_dnstcp_work;
 	/** attempt to access DNS authority servers directly */
 	int probe_direct;
-	/* time of probe */
+	/** attempt to probe open resolvers on tcp on 80 and 443 ports */
+	int probe_dnstcp;
+	/** time of probe */
 	time_t probetime;
 
 
-	/* result of probes */
-	enum res_state { res_auth, res_cache, res_dark, res_disconn} res_state;
+	/** result of probes */
+	enum res_state { 
+		/** to authority servers */
+		res_auth,
+		/** to DHCP-advertised cache on local network */
+		res_cache,
+		/** to TCP open resolver */
+		res_tcp,
+		/** no DNSSEC */
+		res_dark,
+		/** disconnected from the network */
+		res_disconn} res_state;
 	/* insecure state entered */
 	int insecure_state;
 	/* forced insecure (for hotspot signon) */

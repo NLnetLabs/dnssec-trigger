@@ -55,6 +55,9 @@ struct probe_ip {
 	char* name;
 	/* to authority? */
 	int to_auth;
+	/* for dnstcp? */
+	int dnstcp;
+	int port;
 
 	/* DS query, or NULL if done */
 	struct outq* ds_c;
@@ -79,6 +82,7 @@ struct outq {
 	const char* qname; /* reference to a static string */
 	int timeout; /* in msec */
 	int on_tcp; /* if we are using TCP */
+	int port; /* port number (mostly 53) */
 	struct comm_point* c;
 	struct comm_timer* timer;
 	struct probe_ip* probe; /* reference only to owner */
@@ -111,7 +115,9 @@ void outq_timeout(void* arg);
 void probe_cache_done(void);
 void probe_all_done(void);
 void probe_unsafe_test(void);
+void probe_tcp_test(void);
 void probe_setup_cache(struct svr* svr, struct probe_ip* p);
 void probe_setup_hotspot_signon(struct svr* svr);
+void probe_setup_dnstcp(struct svr* svr);
 
 #endif /* PROBE_H */

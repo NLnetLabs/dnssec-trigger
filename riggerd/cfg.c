@@ -41,7 +41,37 @@
 #include "config.h"
 #include "cfg.h"
 #include "log.h"
+#include <ldns/ldns.h>
 #include <ctype.h>
+
+/** append to strlist */
+void
+strlist_append(struct strlist** first, struct strlist** last, char* str)
+{
+	struct strlist* e = (struct strlist*)malloc(sizeof(*e));
+	if(!e) fatal_exit("out of memory");
+	e->next = NULL;
+	e->str = strdup(str);
+	if(!e->str) fatal_exit("out of memory");
+	if(*last)
+		(*last)->next = e;
+	else	*first = e;
+	*last = e;
+}
+
+/** free strlist */
+void
+strlist_delete(struct strlist* e)
+{
+	struct strlist* p = e, *np;
+	while(p) {
+		np = p->next;
+		free(p->str);
+		free(p);
+		p = np;
+	}
+}
+
 
 /** get arg in line */
 static char* get_arg(char* line)
@@ -69,6 +99,21 @@ static void str_arg(char** dest, char* line)
 		fatal_exit("out of memory");
 	free(*dest);
 	*dest = s;
+}
+
+/** append the argument on the line */
+static void tcp_arg(struct strlist** first4, struct strlist** last4, int* num4,
+	struct strlist** first6, struct strlist** last6, int* num6, char* line)
+{
+	line = get_arg(line);
+	if(line[0] == 0) return; /* ignore empty ones */
+	if(strchr(line, ':')) {
+		strlist_append(first6, last6, line);
+		(*num6) ++;
+	} else {
+		strlist_append(first4, last4, line);
+		(*num4) ++;
+	}
 }
 
 /** handle bool arg */
@@ -116,6 +161,14 @@ keyword(struct cfg* cfg, char* p)
 		str_arg(&cfg->control_key_file, p+17);
 	} else if(strncmp(p, "control-cert-file:", 18) == 0) {
 		str_arg(&cfg->control_cert_file, p+18);
+	} else if(strncmp(p, "tcp80:", 6) == 0) {
+		tcp_arg(&cfg->tcp80_ip4, &cfg->tcp80_ip4_last,
+			&cfg->num_tcp80_ip4, &cfg->tcp80_ip6,
+			&cfg->tcp80_ip6_last, &cfg->num_tcp80_ip6, p+6);
+	} else if(strncmp(p, "tcp443:", 7) == 0) {
+		tcp_arg(&cfg->tcp443_ip4, &cfg->tcp443_ip4_last,
+			&cfg->num_tcp443_ip4, &cfg->tcp443_ip6,
+			&cfg->tcp443_ip6_last, &cfg->num_tcp443_ip6, p+7);
 	} else {
 		return 0;
 	}
@@ -184,6 +237,10 @@ struct cfg* cfg_create(const char* cfgfile)
 void cfg_delete(struct cfg* cfg)
 {
 	if(!cfg) return;
+	strlist_delete(cfg->tcp80_ip4);
+	strlist_delete(cfg->tcp443_ip4);
+	strlist_delete(cfg->tcp80_ip6);
+	strlist_delete(cfg->tcp443_ip6);
 	free(cfg->pidfile);
 	free(cfg->logfile);
 	free(cfg->chroot);
@@ -196,6 +253,24 @@ void cfg_delete(struct cfg* cfg)
 	free(cfg->control_key_file);
 	free(cfg->control_cert_file);
 	free(cfg);
+}
+
+int cfg_have_dnstcp(struct cfg* cfg)
+{
+	return cfg->num_tcp80_ip4 || cfg->num_tcp80_ip6 || cfg->num_tcp443_ip4
+		|| cfg->num_tcp443_ip6;
+}
+
+/** find nth element in strlist */
+char* strlist_get_num(struct strlist* list, unsigned n)
+{
+	unsigned i = 0;
+	while(list) {
+		if(i==n) return list->str;
+		list = list->next;
+		i++;
+	}
+	return NULL;
 }
 
 /** give errors and return NULL */

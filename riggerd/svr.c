@@ -83,6 +83,7 @@ struct svr* svr_create(struct cfg* cfg)
 	svr->max_active = 32;
 	svr->cfg = cfg;
 	svr->base = comm_base_create(0);
+	ldns_init_random(NULL, 0);
 	if(!svr->base) {
 		log_err("cannot create base");
 		svr_delete(svr);
@@ -675,13 +676,18 @@ send_results_to_con(struct svr* svr, struct sslconn* s)
 		localtime(&svr->probetime)))
 		ldns_buffer_printf(s->buffer, "at %s\n", at);
 	for(p=svr->probes; p; p=p->next) {
-		if(!p->to_auth)
+		if(!p->to_auth && !p->dnstcp)
 			numcache++;
 		if(!p->finished) {
 			unfinished++;
 			continue;
 		}
-		ldns_buffer_printf(s->buffer, "%s %s: %s %s\n",
+		if(p->dnstcp)
+		    ldns_buffer_printf(s->buffer, "tcp%d %s: %s %s\n",
+			p->port, p->name,
+			p->works?"OK":"error", p->reason?p->reason:"");
+		else
+		    ldns_buffer_printf(s->buffer, "%s %s: %s %s\n",
 			p->to_auth?"authority":"cache", p->name,
 			p->works?"OK":"error", p->reason?p->reason:"");
 	}
@@ -692,8 +698,9 @@ send_results_to_con(struct svr* svr, struct sslconn* s)
 
 	ldns_buffer_printf(s->buffer, "state: %s %s\n",
 		svr->res_state==res_cache?"cache":(
+		svr->res_state==res_tcp?"tcp":(
 		svr->res_state==res_auth?"auth":(
-		svr->res_state==res_disconn?"disconnected":"nodnssec")),
+		svr->res_state==res_disconn?"disconnected":"nodnssec"))),
 		svr->forced_insecure?"forced_insecure":(
 		svr->insecure_state?"insecure":"secure"));
 	ldns_buffer_printf(s->buffer, "\n");
@@ -735,6 +742,12 @@ static void handle_cmdtray_cmd(struct sslconn* sc)
 static void handle_unsafe_cmd(struct sslconn* sc)
 {
 	probe_unsafe_test();
+	sslconn_shutdown(sc);
+}
+
+static void handle_test_tcp_cmd(struct sslconn* sc)
+{
+	probe_tcp_test();
 	sslconn_shutdown(sc);
 }
 
@@ -801,6 +814,8 @@ static void sslconn_command(struct sslconn* sc)
 		handle_cmdtray_cmd(sc);
 	} else if(strncmp(str, "unsafe", 6) == 0) {
 		handle_unsafe_cmd(sc);
+	} else if(strncmp(str, "test_tcp", 8) == 0) {
+		handle_test_tcp_cmd(sc);
 	} else if(strncmp(str, "stoppanels", 10) == 0) {
 		handle_stoppanels_cmd(sc);
 	} else if(strncmp(str, "stop", 4) == 0) {

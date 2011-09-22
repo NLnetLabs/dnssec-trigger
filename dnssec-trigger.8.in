@@ -136,6 +136,14 @@ config file to find the port number and key locations.
 .B control\-cert\-file: \fR"0keydir0/dnssec_trigger_control.pem"
 The files used for SSL secured communication with dnssec\-triggerd.  These
 files can be created with dnssec\-trigger\-control\-setup (run as root).
+.TP
+.B tcp80: \fR<ip>
+Add an IP4 or IP6 address to the list of fallback open DNSSEC resolvers that
+are used on TCP port 80.
+.TP
+.B tcp443: \fR<ip>
+Add an IP4 or IP6 address to the list of fallback open DNSSEC resolvers that
+are used on TCP port 443.
 .SH "THE DNSSEC\-TRIGGER\-PANEL"
 The dnssec\-trigger\-panel is an applet that runs in the tray.  It shows
 the DNSSEC status.  It can be invoked with \-d to test in the build

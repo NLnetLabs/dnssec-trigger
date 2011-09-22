@@ -76,4 +76,21 @@ void hook_unbound_dark(struct cfg* cfg);
  * donotquery 127.0.0.0/8 by default */
 #define UNBOUND_DARK_IP "127.0.0.127"
 
+/**
+ * Detect if unbound supports the tcp-upstream option (since 1.4.13).
+ * @param cfg: the config options.
+ */
+int hook_unbound_supports_tcp_upstream(struct cfg* cfg);
+
+/**
+ * Set unbound to use tcp upstream.
+ * @param cfg: the config options.
+ * @param tcp80_ip4: if true, use those IP addresses.
+ * @param tcp80_ip6: if true, use those IP addresses.
+ * @param tcp443_ip4: if true, use those IP addresses.
+ * @param tcp443_ip6: if true, use those IP addresses.
+ */
+void hook_unbound_tcp_upstream(struct cfg* cfg, int tcp80_ip4, int tcp80_ip6,
+	int tcp443_ip4, int tcp443_ip6);
+
 #endif /* UBHOOKS_H */
