@@ -1,5 +1,7 @@
 22 Sep 2011: Wouter
 	- dnssec-trigger-control reprobe command from the commandline.
+	- dnssec-trigger-control hotspot_signon, forces insecure mode for
+	  a sign-on.  The reprobe command can be used to stop forced_insecure.
 
 21 Sep 2011: Wouter
 	- ignore UDP without QR flag: some DNS caches send echoes of the query

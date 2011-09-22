@@ -58,6 +58,7 @@ struct alert_arg {
 	int now_cache;
 	int now_auth;
 	int now_disconn;
+	int now_forced_insecure;
 };
 
 /** structure for reading from the daemon */
@@ -116,6 +117,7 @@ void attach_stop(void);
 /** send insecure choice to the daemon */
 void attach_send_insecure(int val);
 void attach_send_reprobe(void);
+void attach_send_hotspot_signon(void);
 
 /** get tooltip text from alert state (fixed string) */
 const char* state_tooltip(struct alert_arg* a);

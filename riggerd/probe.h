@@ -44,6 +44,7 @@
 struct comm_point;
 struct comm_reply;
 struct outq;
+struct svr;
 
 /**
  * probe structure that contains the probe details for one IP address.
@@ -107,7 +108,9 @@ int outq_handle_tcp(struct comm_point* c, void* my_arg, int error,
 /** outstanding query UDP timeout handler */
 void outq_timeout(void* arg);
 
+void probe_cache_done(void);
 void probe_all_done(void);
 void probe_unsafe_test(void);
+void probe_setup_cache(struct svr* svr, struct probe_ip* p);
 
 #endif /* PROBE_H */

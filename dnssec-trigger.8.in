@@ -176,7 +176,14 @@ conclude that no DNSSEC works.  Presents user with 'Insecure?' dialog.
 Shows the last probe results.
 .TP
 .B reprobe
-Probe the last probe again.  Like the menu item with the same name.
+Probe the last probe again.  It also cancels forced insecure state from
+hotspot signon, causing probes for dnssec to resume.  This command acts
+as the menu item with the same name.
+.TP
+.B hotspot_signon
+This command acts as the menu item with the same name.  Use it to force
+insecure mode, where you can then interact with (weird) hotspot set ups.
+When you are done, do the reprobe command to resume DNSSEC.
 .TP
 .B results
 continuous feed of probe results.

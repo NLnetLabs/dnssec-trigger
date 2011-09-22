@@ -323,9 +323,16 @@ void attach_send_reprobe(void)
 	send_ssl_cmd("reprobe\n");
 }
 
+void attach_send_hotspot_signon(void)
+{
+	send_ssl_cmd("hotspot_signon\n");
+}
+
 const char* state_tooltip(struct alert_arg* a)
 {
-	if(a->now_insecure)
+	if(a->now_forced_insecure)
+		return "DNS DANGER (hotspot signon)";
+	else if(a->now_insecure)
 		return "DNS DANGER";
 	else if(a->now_dark)
 		return "DNS stopped";
@@ -346,7 +353,8 @@ void process_state(struct alert_arg* a, int* unsafe_asked,
 	} else if(a->last_insecure && !a->now_insecure) {
 		safe();
 	}
-	if(!a->now_insecure && a->now_dark && !*unsafe_asked) {
+	if(!a->now_insecure && a->now_dark && !*unsafe_asked
+		&& !a->now_forced_insecure) {
 		dialog();
 	}
 }
@@ -391,6 +399,11 @@ void fetch_proberesults(char* buf, size_t len, const char* lf)
 				n=snprintf(pos, left, 
 		"The network seems to be disconnected. A local cache of DNS%s"
 		"results is used, but no queries are made.%s", lf, lf);
+			else if(strstr(p->str, "forced_insecure"))
+				n=snprintf(pos, left, 
+		"DNS queries are sent to INSECURE servers, because of%s"
+		"Hotspot Signon. Select Reprobe (from menu) after signon.%s"
+		"Please, be careful out there.%s", lf, lf, lf);
 			else if(strstr(p->str, "nodnssec") && !strstr(p->str,
 				"insecure"))
 				n=snprintf(pos, left, 

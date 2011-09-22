@@ -96,7 +96,7 @@ void probe_start(char* ips)
 	svr->num_probes_to_cache = svr->num_probes;
 	/* (if no resulting probes), check result now */
 	if(!svr->probes)
-		probe_all_done();
+		probe_cache_done();
 }
 
 void probe_delete(struct probe_ip* p)
@@ -690,7 +690,7 @@ static void probe_spawn_direct(void)
 	if(global_svr->num_probes == nump) {
 		/* failed to create the probes */
 		/* not a loop since svr->probe_direct is true */
-		probe_all_done();
+		probe_cache_done();
 	}
 }
 
@@ -767,15 +767,14 @@ probe_done(struct probe_ip* p)
 	if(p->works) {
 		if(!svr->probe_direct && !svr->saw_first_working) {
 			svr->saw_first_working = 1;
-			/* signal unbound a working server */
-			hook_unbound_cache(svr->cfg, p->name);
-			/* set resolv.conf to 127.0.0.1 */
-			hook_resolv_localhost(svr->cfg);
+			if(!svr->forced_insecure) {
+				probe_setup_cache(svr, p);
+			}
 		} else if(svr->probe_direct && !svr->saw_direct_work) {
 			svr->saw_direct_work = 1;
 			/* no need for wait for more done */
 			stop_unfinished_probes();
-			probe_all_done();
+			probe_cache_done();
 			return;
 		}
 	}
@@ -783,11 +782,67 @@ probe_done(struct probe_ip* p)
 		/* continue to wait for the rest */
 		return;
 	}
-	probe_all_done();
+	probe_cache_done();
+}
+
+/** setup to use cache */
+void probe_setup_cache(struct svr* svr, struct probe_ip* p)
+{
+	svr->res_state = res_cache;
+	if(svr->insecure_state) hook_resolv_flush(svr->cfg);
+	svr->insecure_state = 0;
+	/* send the working servers to unbound */
+	if(p)
+		hook_unbound_cache(svr->cfg, p->name);
+	else	hook_unbound_cache_list(svr->cfg, svr->probes);
+	/* set resolv.conf to 127.0.0.1 */
+	hook_resolv_localhost(svr->cfg);
+}
+
+/** setup for auth (direct to authorities) */
+void probe_setup_auth(struct svr* svr)
+{
+	svr->res_state = res_auth;
+	if(svr->insecure_state) hook_resolv_flush(svr->cfg);
+	svr->insecure_state = 0;
+	hook_unbound_auth(svr->cfg);
+	/* set resolv.conf to 127.0.0.1 */
+	hook_resolv_localhost(svr->cfg);
+}
+
+/** setup to be disconnected */
+void probe_setup_disconnected(struct svr* svr)
+{
+	svr->insecure_state = 0;
+	svr->res_state = res_disconn;
+	/* set unbound to go dark */
+	hook_unbound_dark(svr->cfg);
+	/* set resolver.conf to 127.0.0.1 (get rid of old
+	 * settings that may be in there) */
+	hook_resolv_localhost(svr->cfg);
+}
+
+/** setup for dark (no dnssec) */
+void probe_setup_dark(struct svr* svr)
+{
+	/* DNSSEC failure, and there is some unsafe IPs */
+	if(svr->res_state != res_dark)
+		svr->insecure_state = 0; /* ask again */
+	svr->res_state = res_dark;
+	/* set unbound to dark */
+	hook_unbound_dark(svr->cfg);
+	/* see what the user wants */
+	if(svr->insecure_state) {
+		/* set resolv.conf to DHCP IP list */
+		hook_resolv_iplist(svr->cfg, svr->probes);
+	} else { /* set resolv.conf to 127.0.0.1 now,
+		* the user may select insecure later */
+		hook_resolv_localhost(svr->cfg);
+	}
 }
 
 void
-probe_all_done(void)
+probe_cache_done(void)
 {
 	struct svr* svr = global_svr;
 	if(!svr->probe_direct && !svr->saw_first_working) {
@@ -799,6 +854,13 @@ probe_all_done(void)
 		probe_spawn_direct();
 		return;
 	}
+	probe_all_done();
+}
+
+void
+probe_all_done(void)
+{
+	struct svr* svr = global_svr;
 	if(verbosity >= VERB_DETAIL) {
 		struct probe_ip* p;
 		for(p=svr->probes; p; p=p->next)
@@ -806,54 +868,26 @@ probe_all_done(void)
 				p->to_auth?"authority":"cache", p->name,
 				p->works?"OK":"error", p->reason?p->reason:"");
 	}
-	if(svr->probe_direct && svr->saw_direct_work) {
+	if(svr->forced_insecure) {
+		verbose(VERB_OPS, "probe done: but still forced insecure");
+	} else if(svr->probe_direct && svr->saw_direct_work) {
 		/* set unbound to process directly */
 		verbose(VERB_OPS, "probe done: DNSSEC to auth direct");
-		svr->res_state = res_auth;
-		if(svr->insecure_state) hook_resolv_flush(svr->cfg);
-		svr->insecure_state = 0;
-		hook_unbound_auth(svr->cfg);
-		/* set resolv.conf to 127.0.0.1 */
-		hook_resolv_localhost(svr->cfg);
+		probe_setup_auth(svr);
 	} else if(svr->probe_direct && !svr->saw_direct_work) {
 		/* if there are no cache IPs, then there is nothing else
 		 * we can do, we are in offline mode, most likely. No DHCP,
 		 * no network connectivity */
 		if(svr->num_probes_to_cache == 0) {
 			verbose(VERB_OPS, "probe done: disconnected");
-			svr->insecure_state = 0;
-			svr->res_state = res_disconn;
-			/* set unbound to go dark */
-			hook_unbound_dark(svr->cfg);
-			/* set resolver.conf to 127.0.0.1 (get rid of old
-			 * settings that may be in there) */
-			hook_resolv_localhost(svr->cfg);
+			probe_setup_disconnected(svr);
 		} else {
 			verbose(VERB_OPS, "probe done: DNSSEC fails");
-			/* DNSSEC failure, and there is some unsafe IPs */
-			if(svr->res_state != res_dark)
-				svr->insecure_state = 0; /* ask again */
-			svr->res_state = res_dark;
-			/* set unbound to dark */
-			hook_unbound_dark(svr->cfg);
-			/* see what the user wants */
-			if(svr->insecure_state) {
-				/* set resolv.conf to DHCP IP list */
-				hook_resolv_iplist(svr->cfg, svr->probes);
-			} else { /* set resolv.conf to 127.0.0.1 now,
-			 	* the user may select insecure later */
-				hook_resolv_localhost(svr->cfg);
-			}
+			probe_setup_dark(svr);
 		}
 	} else {
 		verbose(VERB_OPS, "probe done: DNSSEC to cache");
-		svr->res_state = res_cache;
-		if(svr->insecure_state) hook_resolv_flush(svr->cfg);
-		svr->insecure_state = 0;
-		/* send the working servers to unbound */
-		hook_unbound_cache_list(svr->cfg, svr->probes);
-		/* set resolv.conf to 127.0.0.1 */
-		hook_resolv_localhost(svr->cfg);
+		probe_setup_cache(svr, NULL);
 	}
 	svr->probetime = time(0);
 	svr_send_results(svr);

@@ -46,6 +46,7 @@
 #include "netevent.h"
 #include "net_help.h"
 #include "reshook.h"
+#include "ubhook.h"
 
 struct svr* global_svr = NULL;
 
@@ -601,7 +602,8 @@ static void persist_cmd_insecure(int val)
 	} else {
 		/* no need for insecure; robustness, in case some delayed
 		 * command arrives when we have reprobed again */
-		svr->insecure_state = 0;
+		if(!svr->forced_insecure)
+			svr->insecure_state = 0;
 	}
 	svr_send_results(svr);
 }
@@ -627,6 +629,18 @@ static void cmd_reprobe(void)
 	probe_start(buf);
 }
 
+static void handle_hotspot_signon_cmd(struct svr* svr)
+{
+	verbose(VERB_OPS, "state dark forced_insecure");
+	svr->res_state = res_dark;
+	svr->forced_insecure = 1;
+	svr->insecure_state = 1;
+	/* effectuate it */
+	hook_unbound_dark(svr->cfg);
+	hook_resolv_iplist(svr->cfg, svr->probes);
+	svr_send_results(svr);
+}
+
 static void sslconn_persist_command(struct sslconn* sc)
 {
 	char* str = (char*)ldns_buffer_begin(sc->buffer);
@@ -641,6 +655,8 @@ static void sslconn_persist_command(struct sslconn* sc)
 		persist_cmd_insecure(0);
 	} else if(strcmp(str, "reprobe") == 0) {
 		cmd_reprobe();
+	} else if(strcmp(str, "hotspot_signon") == 0) {
+		handle_hotspot_signon_cmd(global_svr);
 	} else {
 		log_err("unknown command from panel: %s", str);
 	}
@@ -684,7 +700,8 @@ send_results_to_con(struct svr* svr, struct sslconn* s)
 		svr->res_state==res_cache?"cache":(
 		svr->res_state==res_auth?"auth":(
 		svr->res_state==res_disconn?"disconnected":"nodnssec")),
-		svr->insecure_state?"insecure":"secure");
+		svr->forced_insecure?"forced_insecure":(
+		svr->insecure_state?"insecure":"secure"));
 	ldns_buffer_printf(s->buffer, "\n");
 	ldns_buffer_flip(s->buffer);
 	comm_point_listen_for_rw(s->c, 1, 1);
@@ -776,7 +793,11 @@ static void sslconn_command(struct sslconn* sc)
 		handle_submit(str+6);
 		sslconn_shutdown(sc);
 	} else if(strncmp(str, "reprobe", 7) == 0) {
+		global_svr->forced_insecure = 0;
 		cmd_reprobe();
+		sslconn_shutdown(sc);
+	} else if(strncmp(str, "hotspot_signon", 14) == 0) {
+		handle_hotspot_signon_cmd(global_svr);
 		sslconn_shutdown(sc);
 	} else if(strncmp(str, "results", 7) == 0) {
 		handle_results_cmd(sc);

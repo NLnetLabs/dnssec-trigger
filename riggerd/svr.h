@@ -93,6 +93,8 @@ struct svr {
 	enum res_state { res_auth, res_cache, res_dark, res_disconn} res_state;
 	/* insecure state entered */
 	int insecure_state;
+	/* forced insecure (for hotspot signon) */
+	int forced_insecure;
 };
 
 /** list of commpoints */
