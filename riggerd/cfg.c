@@ -41,6 +41,7 @@
 #include "config.h"
 #include "cfg.h"
 #include "log.h"
+#include "net_help.h"
 #include <ldns/ldns.h>
 #include <ctype.h>
 
@@ -105,8 +106,14 @@ static void str_arg(char** dest, char* line)
 static void tcp_arg(struct strlist** first4, struct strlist** last4, int* num4,
 	struct strlist** first6, struct strlist** last6, int* num6, char* line)
 {
+	struct sockaddr_storage addr;
+	socklen_t len;
 	line = get_arg(line);
 	if(line[0] == 0) return; /* ignore empty ones */
+	if(!ipstrtoaddr(line, DNS_PORT, &addr, &len)) {
+		log_err("cannot parse IP address: '%s', ignored", line);
+		return;
+	}
 	if(strchr(line, ':')) {
 		strlist_append(first6, last6, line);
 		(*num6) ++;

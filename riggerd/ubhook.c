@@ -168,13 +168,14 @@ int hook_unbound_supports_tcp_upstream(struct cfg* cfg)
 	return 1;
 }
 
-static void append_str(char* buf, char** now, size_t* left, char* str)
+static void append_str_port(char* buf, char** now, size_t* left,
+	char* str, int port)
 {
 	int len;
 	if(*left < strlen(str)+3)
 		return; /* no more space */
-	len = snprintf(*now, *left, "%s%s",
-		*now == buf?"":" ", str);
+	len = snprintf(*now, *left, "%s%s@%d",
+		*now == buf?"":" ", str, port);
 	(*left) -= len;
 	(*now) += len;
 }
@@ -194,19 +195,19 @@ void hook_unbound_tcp_upstream(struct cfg* cfg, int tcp80_ip4, int tcp80_ip6,
 	buf[0] = 0;
 	if(tcp80_ip4) {
 		for(p=cfg->tcp80_ip4; p; p=p->next)
-			append_str(buf, &now, &left, p->str);
+			append_str_port(buf, &now, &left, p->str, 80);
 	}
 	if(tcp80_ip6) {
 		for(p=cfg->tcp80_ip6; p; p=p->next)
-			append_str(buf, &now, &left, p->str);
+			append_str_port(buf, &now, &left, p->str, 80);
 	}
 	if(tcp443_ip4) {
 		for(p=cfg->tcp443_ip4; p; p=p->next)
-			append_str(buf, &now, &left, p->str);
+			append_str_port(buf, &now, &left, p->str, 443);
 	}
 	if(tcp443_ip6) {
 		for(p=cfg->tcp443_ip6; p; p=p->next)
-			append_str(buf, &now, &left, p->str);
+			append_str_port(buf, &now, &left, p->str, 443);
 	}
 	/* effectuate tcp upstream and new list of servers */
 	ub_ctrl(cfg, "forward", buf);
