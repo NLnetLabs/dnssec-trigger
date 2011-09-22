@@ -606,7 +606,7 @@ static void persist_cmd_insecure(int val)
 	svr_send_results(svr);
 }
 
-static void persist_cmd_reprobe(void)
+static void cmd_reprobe(void)
 {
 	char buf[10240];
 	char* now = buf;
@@ -640,7 +640,7 @@ static void sslconn_persist_command(struct sslconn* sc)
 	} else if(strcmp(str, "insecure no") == 0) {
 		persist_cmd_insecure(0);
 	} else if(strcmp(str, "reprobe") == 0) {
-		persist_cmd_reprobe();
+		cmd_reprobe();
 	} else {
 		log_err("unknown command from panel: %s", str);
 	}
@@ -774,6 +774,9 @@ static void sslconn_command(struct sslconn* sc)
 	verbose(VERB_ALGO, "command: %s", str);
 	if(strncmp(str, "submit", 6) == 0) {
 		handle_submit(str+6);
+		sslconn_shutdown(sc);
+	} else if(strncmp(str, "reprobe", 7) == 0) {
+		cmd_reprobe();
 		sslconn_shutdown(sc);
 	} else if(strncmp(str, "results", 7) == 0) {
 		handle_results_cmd(sc);

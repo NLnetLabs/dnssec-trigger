@@ -1,3 +1,6 @@
+22 Sep 2011: Wouter
+	- dnssec-trigger-control reprobe command from the commandline.
+
 21 Sep 2011: Wouter
 	- ignore UDP without QR flag: some DNS caches send echoes of the query
 	  back initially.  If we ignore them we catch a (100 msec later)

@@ -72,6 +72,7 @@ usage()
 	printf("		separated by spaces, these are then probed.\n");
 	printf("  unsafe	test option that pretends that dnssec fails\n");
 	printf("  status	shows the latest probe results\n");
+	printf("  reprobe	probe again\n");
 	printf("  results	continuous feed of probe results\n");
 	printf("  cmdtray	command channel for gui panel\n");
 	printf("  stoppanels	connected panels quit (for installers)\n");

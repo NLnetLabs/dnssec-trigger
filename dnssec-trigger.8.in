@@ -175,6 +175,9 @@ conclude that no DNSSEC works.  Presents user with 'Insecure?' dialog.
 .B status
 Shows the last probe results.
 .TP
+.B reprobe
+Probe the last probe again.  Like the menu item with the same name.
+.TP
 .B results
 continuous feed of probe results.
 .TP
