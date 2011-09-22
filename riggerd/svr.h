@@ -100,6 +100,11 @@ struct svr {
 	/** what is the current time for exponential backoff of timer, sec. */
 	int retry_timer_timeout;
 
+	/** tcp retry timer */
+	struct comm_timer* tcp_timer;
+	/** tcp timer was used last time? */
+	int tcp_timer_used;
+
 	/** result of probes */
 	enum res_state { 
 		/** to authority servers */
@@ -122,6 +127,8 @@ struct svr {
 #define RETRY_TIMER_START 10
 /** retry timer max value (sec.) */
 #define RETRY_TIMER_MAX 86400
+/** timer for tcp state to try again once (sec.) */
+#define SVR_TCP_RETRY 20
 
 /** list of commpoints */
 struct listen_list {
@@ -163,11 +170,17 @@ void svr_service(struct svr* svr);
 void svr_send_results(struct svr* svr);
 /** timeouts of retry timer */
 void svr_retry_callback(void* arg);
+/** timeouts of tcp timer */
+void svr_tcp_callback(void* arg);
 
 /** start or enable next timeout on the retry timer */
 void svr_retry_timer_next(void);
 /** stop retry timeouts */
 void svr_retry_timer_stop(void);
+/** set tcp retry timer */
+void svr_tcp_timer_enable(void);
+/** stop tcp retry timer timeouts */
+void svr_tcp_timer_stop(void);
 
 int handle_ssl_accept(struct comm_point* c, void* arg, int error,
         struct comm_reply* reply_info);

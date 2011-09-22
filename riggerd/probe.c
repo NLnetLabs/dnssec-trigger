@@ -898,6 +898,7 @@ void probe_setup_cache(struct svr* svr, struct probe_ip* p)
 	/* set resolv.conf to 127.0.0.1 */
 	hook_resolv_localhost(svr->cfg);
 	svr_retry_timer_stop();
+	svr->tcp_timer_used = 0;
 }
 
 /** setup for auth (direct to authorities) */
@@ -910,6 +911,7 @@ void probe_setup_auth(struct svr* svr)
 	/* set resolv.conf to 127.0.0.1 */
 	hook_resolv_localhost(svr->cfg);
 	svr_retry_timer_stop();
+	svr->tcp_timer_used = 0;
 }
 
 /** setup for dnstcp (uses tcp to open resolver) */
@@ -929,6 +931,7 @@ void probe_setup_dnstcp(struct svr* svr)
 	/* set resolv.conf to 127.0.0.1 */
 	hook_resolv_localhost(svr->cfg);
 	svr_retry_timer_stop();
+	svr_tcp_timer_enable();
 }
 
 /** setup to be disconnected */
@@ -942,6 +945,7 @@ void probe_setup_disconnected(struct svr* svr)
 	 * settings that may be in there) */
 	hook_resolv_localhost(svr->cfg);
 	svr_retry_timer_next();
+	svr->tcp_timer_used = 0;
 }
 
 /** setup for dark (no dnssec) */
@@ -962,6 +966,7 @@ void probe_setup_dark(struct svr* svr)
 		hook_resolv_localhost(svr->cfg);
 	}
 	svr_retry_timer_next();
+	svr->tcp_timer_used = 0;
 }
 
 /** setup forced insecure (for hotspot signon) */
@@ -974,6 +979,7 @@ void probe_setup_hotspot_signon(struct svr* svr)
 	hook_unbound_dark(svr->cfg);
 	hook_resolv_iplist(svr->cfg, svr->probes);
 	svr_retry_timer_stop();
+	svr_tcp_timer_stop();
 }
 
 void

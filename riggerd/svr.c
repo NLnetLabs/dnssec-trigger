@@ -97,7 +97,8 @@ struct svr* svr_create(struct cfg* cfg)
 	}
 	svr->retry_timer = comm_timer_create(svr->base, &svr_retry_callback,
 		svr);
-	if(!svr->retry_timer) {
+	svr->tcp_timer = comm_timer_create(svr->base, &svr_tcp_callback, svr);
+	if(!svr->retry_timer || !svr->tcp_timer) {
 		log_err("out of memory");
 		svr_delete(svr);
 		return NULL;
@@ -146,6 +147,7 @@ void svr_delete(struct svr* svr)
 	}
 	ldns_buffer_free(svr->udp_buffer);
 	comm_timer_delete(svr->retry_timer);
+	comm_timer_delete(svr->tcp_timer);
 	comm_base_delete(svr->base);
 	free(svr);
 }
@@ -896,4 +898,36 @@ void svr_retry_timer_stop(void)
 		return;
 	svr->retry_timer_enabled = 0;
 	comm_timer_disable(svr->retry_timer);
+}
+
+void svr_tcp_timer_stop(void)
+{
+	struct svr* svr = global_svr;
+	comm_timer_disable(svr->retry_timer);
+}
+
+void svr_tcp_timer_enable(void)
+{
+	struct svr* svr = global_svr;
+	struct timeval tv;
+	if(svr->tcp_timer_used)
+		return;
+	verbose(VERB_ALGO, "retry dnstcp in %d seconds", SVR_TCP_RETRY);
+	tv.tv_sec = SVR_TCP_RETRY;
+	tv.tv_usec = 0;
+	comm_timer_set(svr->tcp_timer, &tv);
+}
+
+void svr_tcp_callback(void* arg)
+{
+	/* we do this probe because some 20 seconds after login, more
+	 * ports may open and this can alleviate traffic on the open
+	 * recursors */
+	struct svr* svr = (struct svr*)arg;
+	verbose(VERB_ALGO, "retry dnstcp timeout");
+	comm_timer_disable(svr->tcp_timer);
+	if(svr->res_state == res_tcp) {
+		svr->tcp_timer_used = 1;
+		cmd_reprobe();
+	}
 }

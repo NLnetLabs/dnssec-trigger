@@ -5,6 +5,7 @@
 	- added probe tcp80 and tcp443 as last resort.
 	- retry for insecure and disconnect cases with exponential backoff,
 	  start 10 seconds, max 24h.
+	- tcp retry after 20 seconds, in case more opens up or it was slow.
 
 21 Sep 2011: Wouter
 	- ignore UDP without QR flag: some DNS caches send echoes of the query
