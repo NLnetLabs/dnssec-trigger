@@ -42,7 +42,6 @@
 #include "cfg.h"
 #include "log.h"
 #include "net_help.h"
-#include <ldns/ldns.h>
 #include <ctype.h>
 
 /** append to strlist */
