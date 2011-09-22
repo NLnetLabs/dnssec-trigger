@@ -796,6 +796,22 @@ static void stop_unfinished_probes(void)
 	}
 }
 
+/* see if there are working dnstcp probes */
+int probe_has_work_tcp(struct svr* svr, int port, int ip6)
+{
+	struct probe_ip* p;
+	for(p = svr->probes; p; p = p->next) {
+		if(p->works && p->dnstcp && p->port == port) {
+			if(ip6 && strchr(p->name, ':'))
+				return 1;
+			if(!ip6 && !strchr(p->name, ':'))
+				return 1;
+		}
+	}
+	return 0;
+}
+
+
 /** see if probe totally done or we have to wait more */
 static void
 probe_partial_done(struct probe_ip* p, const char* in, const char* reason)
@@ -881,6 +897,7 @@ void probe_setup_cache(struct svr* svr, struct probe_ip* p)
 	else	hook_unbound_cache_list(svr->cfg, svr->probes);
 	/* set resolv.conf to 127.0.0.1 */
 	hook_resolv_localhost(svr->cfg);
+	svr_retry_timer_stop();
 }
 
 /** setup for auth (direct to authorities) */
@@ -892,20 +909,7 @@ void probe_setup_auth(struct svr* svr)
 	hook_unbound_auth(svr->cfg);
 	/* set resolv.conf to 127.0.0.1 */
 	hook_resolv_localhost(svr->cfg);
-}
-
-int probe_has_work_tcp(struct svr* svr, int port, int ip6)
-{
-	struct probe_ip* p;
-	for(p = svr->probes; p; p = p->next) {
-		if(p->works && p->dnstcp && p->port == port) {
-			if(ip6 && strchr(p->name, ':'))
-				return 1;
-			if(!ip6 && !strchr(p->name, ':'))
-				return 1;
-		}
-	}
-	return 0;
+	svr_retry_timer_stop();
 }
 
 /** setup for dnstcp (uses tcp to open resolver) */
@@ -922,6 +926,9 @@ void probe_setup_dnstcp(struct svr* svr)
 	tcp443_ip6 = probe_has_work_tcp(svr, 443, 1);
 	hook_unbound_tcp_upstream(svr->cfg, tcp80_ip4, tcp80_ip6,
 		tcp443_ip4, tcp443_ip6);
+	/* set resolv.conf to 127.0.0.1 */
+	hook_resolv_localhost(svr->cfg);
+	svr_retry_timer_stop();
 }
 
 /** setup to be disconnected */
@@ -934,6 +941,7 @@ void probe_setup_disconnected(struct svr* svr)
 	/* set resolver.conf to 127.0.0.1 (get rid of old
 	 * settings that may be in there) */
 	hook_resolv_localhost(svr->cfg);
+	svr_retry_timer_next();
 }
 
 /** setup for dark (no dnssec) */
@@ -953,6 +961,7 @@ void probe_setup_dark(struct svr* svr)
 		* the user may select insecure later */
 		hook_resolv_localhost(svr->cfg);
 	}
+	svr_retry_timer_next();
 }
 
 /** setup forced insecure (for hotspot signon) */
@@ -964,6 +973,7 @@ void probe_setup_hotspot_signon(struct svr* svr)
 	/* effectuate it */
 	hook_unbound_dark(svr->cfg);
 	hook_resolv_iplist(svr->cfg, svr->probes);
+	svr_retry_timer_stop();
 }
 
 void

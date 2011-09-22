@@ -95,6 +95,13 @@ struct svr* svr_create(struct cfg* cfg)
 		svr_delete(svr);
 		return NULL;
 	}
+	svr->retry_timer = comm_timer_create(svr->base, &svr_retry_callback,
+		svr);
+	if(!svr->retry_timer) {
+		log_err("out of memory");
+		svr_delete(svr);
+		return NULL;
+	}
 
 	/* setup SSL_CTX */
 	if(!setup_ssl_ctx(svr)) {
@@ -138,6 +145,7 @@ void svr_delete(struct svr* svr)
 		SSL_CTX_free(svr->ctx);
 	}
 	ldns_buffer_free(svr->udp_buffer);
+	comm_timer_delete(svr->retry_timer);
 	comm_base_delete(svr->base);
 	free(svr);
 }
@@ -616,7 +624,7 @@ static void cmd_reprobe(void)
 	struct probe_ip* p;
 	buf[0]=0; /* safe, robust */
 	for(p = global_svr->probes; p; p = p->next) {
-		if(!p->to_auth) {
+		if(!p->to_auth && !p->dnstcp) {
 			int len;
 			if(left < strlen(p->name)+3)
 				break; /* no space for more */
@@ -841,3 +849,51 @@ void svr_send_results(struct svr* svr)
 	}
 }
 
+void svr_retry_callback(void* arg)
+{
+	struct svr* svr = (struct svr*)arg;
+	if(!svr->retry_timer_enabled) {
+		comm_timer_disable(svr->retry_timer);
+		return;
+	}
+	verbose(VERB_ALGO, "retry timeout");
+	cmd_reprobe();
+}
+
+static void svr_retry_setit(struct svr* svr)
+{
+	struct timeval tv;
+	verbose(VERB_ALGO, "retry in %d seconds", svr->retry_timer_timeout);
+	tv.tv_sec = svr->retry_timer_timeout;
+	tv.tv_usec = 0;
+	comm_timer_set(svr->retry_timer, &tv);
+}
+
+static void svr_retry_start(struct svr* svr)
+{
+	svr->retry_timer_timeout = RETRY_TIMER_START;
+	svr->retry_timer_enabled = 1;
+	svr_retry_setit(svr);
+}
+
+void svr_retry_timer_next(void)
+{
+	struct svr* svr = global_svr;
+	if(!svr->retry_timer_enabled) {
+		svr_retry_start(svr);
+		return;
+	}
+	svr->retry_timer_timeout *= 2;
+	if(svr->retry_timer_timeout > RETRY_TIMER_MAX)
+		svr->retry_timer_timeout = RETRY_TIMER_MAX;
+	svr_retry_setit(svr);
+}
+
+void svr_retry_timer_stop(void)
+{
+	struct svr* svr = global_svr;
+	if(!svr->retry_timer_enabled)
+		return;
+	svr->retry_timer_enabled = 0;
+	comm_timer_disable(svr->retry_timer);
+}

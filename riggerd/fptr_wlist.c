@@ -73,6 +73,7 @@ int
 fptr_whitelist_comm_timer(void (*fptr)(void*))
 {
 	if(fptr == &outq_timeout) return 1;
+	else if(fptr == &svr_retry_callback) return 1;
 #ifdef USE_WINSOCK
 	else if(fptr == &wsvc_cron_cb) return 1;
 #endif

@@ -44,6 +44,7 @@
 struct cfg;
 struct comm_base;
 struct comm_reply;
+struct comm_timer;
 struct sslconn;
 struct listen_list;
 struct comm_point;
@@ -92,6 +93,12 @@ struct svr {
 	/** time of probe */
 	time_t probetime;
 
+	/** probe retry timer */
+	struct comm_timer* retry_timer;
+	/** if retry timer is turned on */
+	int retry_timer_enabled;
+	/** what is the current time for exponential backoff of timer, sec. */
+	int retry_timer_timeout;
 
 	/** result of probes */
 	enum res_state { 
@@ -110,6 +117,11 @@ struct svr {
 	/* forced insecure (for hotspot signon) */
 	int forced_insecure;
 };
+
+/** retry timer start (sec.) */
+#define RETRY_TIMER_START 10
+/** retry timer max value (sec.) */
+#define RETRY_TIMER_MAX 86400
 
 /** list of commpoints */
 struct listen_list {
@@ -149,6 +161,13 @@ void svr_delete(struct svr* svr);
 void svr_service(struct svr* svr);
 /** send results to clients */
 void svr_send_results(struct svr* svr);
+/** timeouts of retry timer */
+void svr_retry_callback(void* arg);
+
+/** start or enable next timeout on the retry timer */
+void svr_retry_timer_next(void);
+/** stop retry timeouts */
+void svr_retry_timer_stop(void);
 
 int handle_ssl_accept(struct comm_point* c, void* arg, int error,
         struct comm_reply* reply_info);
