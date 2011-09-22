@@ -215,8 +215,14 @@ section "un.DnssecTrigger"
 	# uninstall service entry
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w remove'
 
+	# give the panel time to process the messages.
+	Sleep 2000
+
 	# remove tray icon if panel killed too fast to remove it itself.
 	Call un.RefreshSysTray
+
+	# give the panel time to process the messages.
+	Sleep 1000
 
 	# deregister uninstall
 	DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DnssecTrigger"
