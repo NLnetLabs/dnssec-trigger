@@ -1,3 +1,8 @@
+23 Sep 2011: Wouter
+	- windows README is a proper .txt files for dos.
+	- 0.4 release.
+	- trunk is 0.5 in development.
+
 22 Sep 2011: Wouter
 	- dnssec-trigger-control reprobe command from the commandline.
 	- dnssec-trigger-control hotspot_signon, forces insecure mode for

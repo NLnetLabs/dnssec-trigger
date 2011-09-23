@@ -265,6 +265,7 @@ if [ "$DOWIN" = "yes" ]; then
     find_dll "$findpath" "ssleay32.dll" || error_cleanup "no ssl dll"
     find_dll "$findpath" "gosteay32.dll" || echo "*** WARNING NO GOST DLL ***"
     find_dll "$findpath" "libldns-1.dll" || error_cleanup "no ldns dll"
+    sed -e 's/$/\r/' < ../README > README.txt
 
     #cp ../example.conf example.conf
     #cp ../panel/pui.xml ../panel/status-icon.png ../panel/status-icon-alert.png .

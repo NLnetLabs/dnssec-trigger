@@ -127,7 +127,7 @@ section "-hidden.postinstall"
 	# copy files
 	setOutPath $INSTDIR
 	File "..\LICENSE"
-	File "..\README"
+	File "..\tmp.collect\README.txt"
 	File "..\dnssec-triggerd.exe"
 	File "..\dnssec-trigger-panel.exe"
 	File "..\dnssec-trigger-control.exe"
@@ -228,7 +228,7 @@ section "un.DnssecTrigger"
 	DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DnssecTrigger"
 	Delete "$INSTDIR\uninst.exe"   # delete self
 	Delete "$INSTDIR\LICENSE"
-	Delete "$INSTDIR\README"
+	Delete "$INSTDIR\README.txt"
 	Delete "$INSTDIR\dnssec-triggerd.exe"
 	Delete "$INSTDIR\dnssec-trigger-panel.exe"
 	Delete "$INSTDIR\dnssec-trigger-control.exe"

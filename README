@@ -107,5 +107,5 @@ It uses an SSL connection to the daemon over loopback (127.0.0.1).
 
 The daemon is a service.
 
-The tray icon is a GTK application.  It uses SSL to talk to the daemon.
+The tray icon is a native application.  It uses SSL to talk to the daemon.
 
