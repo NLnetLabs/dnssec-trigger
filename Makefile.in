@@ -132,7 +132,7 @@ ALL_OBJ=$(addprefix $(BUILD),$(ALL_SRC:.c=.o) \
 
 PANEL_LINKFLAGS=
 ifeq "$(hooks)" "windows"
-PANEL_LINKFLAGS+=-Wl,--subsystem,windows -lcomctl32
+PANEL_LINKFLAGS+=-Wl,--subsystem,windows -lcomctl32 -lgdi32
 PANEL_OBJ+=$(BUILD)winrc/rsrc_panel.o
 RIGGERD_OBJ+=$(BUILD)winrc/rsrc_triggerd.o
 KEYGEN_OBJ+=$(BUILD)winrc/rsrc_keygen.o
