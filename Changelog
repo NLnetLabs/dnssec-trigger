@@ -1,3 +1,6 @@
+26 Sep 2011: Wouter
+	- tentative fix for windows loop bug: if wlanapi.dll does not load.
+
 23 Sep 2011: Wouter
 	- windows README is a proper .txt files for dos.
 	- 0.4 release.

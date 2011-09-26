@@ -149,6 +149,9 @@ static void fetch_wlan_ssid(char* res, size_t reslen)
 		const GUID *pInterfaceGuid, WLAN_INTF_OPCODE OpCode,
 		PVOID pReserved, PDWORD pdwDataSize, PVOID *ppData,
 		WLAN_OPCODE_VALUE_TYPE* pWlanOpcodeValueType);
+
+	res[0] = 0;
+
 	if(!wlandll) {
 		/* see if we canload the wlan API dll (to get wlan SSID) */
 		wlandll = LoadLibrary("Wlanapi.dll");
@@ -173,8 +176,6 @@ static void fetch_wlan_ssid(char* res, size_t reslen)
 			WLAN_OPCODE_VALUE_TYPE*))
 			GetProcAddress(wlandll, "WlanQueryInterface");
 	}
-
-	res[0] = 0;
 
 	r = myWlanOpenHandle(WLAN_API_VERSION, NULL, &serviceVersion,
 		&client);
