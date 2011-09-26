@@ -780,7 +780,7 @@ static void handle_stoppanels_cmd(struct sslconn* sc)
 				log_crypto_err("cannot SSL_write remainder");
 		}
 		/* blocking write the stop command */
-		if(SSL_write(s->ssl, stopcmd, strlen(stopcmd)) < 0)
+		if(SSL_write(s->ssl, stopcmd, (int)strlen(stopcmd)) < 0)
 			log_crypto_err("cannot SSL_write panel stop");
 
 		/* it will be closed now */
