@@ -1,5 +1,6 @@
 27 Sep 2011: Wouter
 	- for windows, get unbound-control config and path from registry.
+	- new IP6 address for the service at nlnetlabs.
 
 26 Sep 2011: Wouter
 	- tentative fix for windows loop bug: if wlanapi.dll does not load.
