@@ -422,6 +422,7 @@ char* wsa_strerror(DWORD err)
 	case WSA_QOS_ESDMODEOBJ: return "Invalid QOS shape discard mode object.";
 	case WSA_QOS_ESHAPERATEOBJ: return "Invalid QOS shaping rate object.";
 	case WSA_QOS_RESERVED_PETYPE: return "Reserved policy QOS element type.";
+	case RPC_S_SERVER_UNAVAILABLE: return "The RPC server is unavailable.";
 	default:
 		snprintf(unknown, sizeof(unknown),
 			"unknown WSA error code %d", (int)err);

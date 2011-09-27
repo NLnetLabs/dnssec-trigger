@@ -2,6 +2,7 @@
 	- for windows, get unbound-control config and path from registry.
 	- new IP6 address for the service at nlnetlabs.
 	- fix for windows busy loop in dnssectriggerd.
+	- do not log error for RPC server not started in windows.
 
 26 Sep 2011: Wouter
 	- tentative fix for windows loop bug: if wlanapi.dll does not load.

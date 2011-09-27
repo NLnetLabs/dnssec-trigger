@@ -317,8 +317,14 @@ static HANDLE notify_nets(void)
 
 	/* open it */
 	if(WSALookupServiceBegin(qset, flags, &lookup) != 0) {
-		log_err("WSALookupServiceBegin: %s",
-			wsa_strerror(WSAGetLastError()));
+		DWORD r = WSAGetLastError();
+		if(r == RPC_S_SERVER_UNAVAILABLE) {
+			/* do not log 'RPC server not there yet', that happens
+			 * when we reboot and we came up before xx service */
+			verbose(VERB_ALGO, "WSALookupServiceBegin: %s",
+				wsa_strerror(r));
+		} else
+			log_err("WSALookupServiceBegin: %s", wsa_strerror(r));
 		sleep(1);
 		return NULL;
 	}
