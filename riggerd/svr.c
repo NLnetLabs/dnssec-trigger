@@ -46,6 +46,9 @@
 #include "netevent.h"
 #include "net_help.h"
 #include "reshook.h"
+#ifdef USE_WINSOCK
+#include "winsock_event.h"
+#endif
 
 struct svr* global_svr = NULL;
 
@@ -275,6 +278,34 @@ static void sslconn_delete(struct sslconn* sc)
 	free(sc);
 }
 
+#ifdef USE_WINSOCK
+static long win_bio_read_cb(BIO *b, int oper, const char* ATTR_UNUSED(argp),
+	int ATTR_UNUSED(argi), long argl, long retvalue)
+{
+	/* on windows, check if previous read operation caused EWOULDBLOCK */
+	if( (oper == (BIO_CB_READ|BIO_CB_RETURN) && argl == 0) ||
+		(oper == (BIO_CB_GETS|BIO_CB_RETURN) && argl == 0)) {
+		if(WSAGetLastError() == WSAEWOULDBLOCK)
+			winsock_tcp_wouldblock((struct event*)
+				BIO_get_callback_arg(b), EV_READ);
+	}
+	return retvalue;
+}
+
+static long win_bio_write_cb(BIO *b, int oper, const char* ATTR_UNUSED(argp),
+	int ATTR_UNUSED(argi), long argl, long retvalue)
+{
+	/* on windows, check if previous write operation caused EWOULDBLOCK */
+	if( (oper == (BIO_CB_WRITE|BIO_CB_RETURN) && argl == 0) ||
+		(oper == (BIO_CB_PUTS|BIO_CB_RETURN) && argl == 0)) {
+		if(WSAGetLastError() == WSAEWOULDBLOCK)
+			winsock_tcp_wouldblock((struct event*)
+				BIO_get_callback_arg(b), EV_WRITE);
+	}
+	return retvalue;
+}
+#endif
+
 int handle_ssl_accept(struct comm_point* c, void* ATTR_UNUSED(arg), int err,
 	struct comm_reply* ATTR_UNUSED(reply_info))
 {
@@ -340,6 +371,14 @@ int handle_ssl_accept(struct comm_point* c, void* ATTR_UNUSED(arg), int err,
                 free(sc);
 		return 0;
         }
+#ifdef USE_WINSOCK
+	BIO_set_callback(SSL_get_rbio(sc->ssl), &win_bio_read_cb);
+	BIO_set_callback_arg(SSL_get_rbio(sc->ssl),
+		(char*)comm_point_internal(sc->c));
+	BIO_set_callback(SSL_get_wbio(sc->ssl), &win_bio_write_cb);
+	BIO_set_callback_arg(SSL_get_wbio(sc->ssl),
+		(char*)comm_point_internal(sc->c));
+#endif
 	sc->buffer = ldns_buffer_new(65536);
 	if(!sc->buffer) {
 		log_err("out of memory");
@@ -463,6 +502,9 @@ int control_callback(struct comm_point* c, void* arg, int err,
 			sslconn_shutdown(s);
 			return 0;
 		}
+#ifdef USE_WINSOCK
+		winsock_tcp_wouldblock(comm_point_internal(c), EV_WRITE);
+#endif
 		comm_point_listen_for_rw(c, 1, 0);
 		s->line_state = persist_write_checkclose;
 	} else if(s->line_state == persist_write_checkclose) {
@@ -529,7 +571,7 @@ static int sslconn_write(struct sslconn* sc)
 			} else if(want == SSL_ERROR_WANT_WRITE) {
 				return 0;
 			}
-			log_crypto_err("could not SSL_read");
+			log_crypto_err("could not SSL_write");
 			/* the other side has closed the channel */
 			sslconn_delete(sc);
 			return 0;
@@ -725,6 +767,10 @@ static void handle_results_cmd(struct sslconn* sc)
 	ldns_buffer_clear(sc->buffer);
 	ldns_buffer_flip(sc->buffer);
 	/* must listen for close of connection: reading */
+#ifdef USE_WINSOCK
+	/* we read to check for close event */
+	winsock_tcp_wouldblock(comm_point_internal(sc->c), EV_READ);
+#endif
 	comm_point_listen_for_rw(sc->c, 1, 0);
 	sc->line_state = persist_write_checkclose;
 	/* feed it the first results (if any) */

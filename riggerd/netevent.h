@@ -301,6 +301,11 @@ void comm_base_exit(struct comm_base* b);
  */
 struct event_base* comm_base_internal(struct comm_base* b);
 
+/** access internal data structure (for windows wouldblock)
+ * @param c: commpoint
+ * @return ptr to event struct. */
+struct event* comm_point_internal(struct comm_point* c);
+
 /**
  * Create an UDP comm point. Calls malloc.
  * setups the structure with the parameters you provide.
