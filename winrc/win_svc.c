@@ -688,3 +688,22 @@ void win_clear_resolv(void)
 	}
 	enum_guids(ifs, &enum_reg_set_nameserver, NULL);
 }
+
+char* get_registry_unbound_control(void)
+{
+	char buf[1024];
+	char* ubdir = lookup_reg_str("Software\\Unbound", "InstallLocation");
+	char* cfg;
+	if(!ubdir) return NULL;
+	cfg = lookup_reg_str("Software\\Unbound", "ConfigFile");
+	if(!cfg) {
+		free(ubdir);
+		return NULL;
+	}
+	/* spaces in path need quotes in result */
+	snprintf(buf, sizeof(buf), "\"%s\\unbound-control.exe\" -c \"%s\"",
+		ubdir, cfg);
+	free(ubdir);
+	free(cfg);
+	return strdup(buf);
+}

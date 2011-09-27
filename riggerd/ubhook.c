@@ -61,15 +61,24 @@ ub_ctrl(struct cfg* cfg, const char* cmd, const char* args)
 {
 	char command[12000];
 	const char* ctrl = "unbound-control";
+#ifdef USE_WINSOCK
+	char* regctrl = NULL;
+#endif
 	int r;
 	if(cfg->noaction)
 		return;
+#ifdef USE_WINSOCK
+	if( (regctrl = get_registry_unbound_control()) != NULL) {
+		ctrl = regctrl;
+	} else
+#endif
 	if(cfg->unbound_control)
 		ctrl = cfg->unbound_control;
 	verbose(VERB_ALGO, "system %s %s %s", ctrl, cmd, args);
 	snprintf(command, sizeof(command), "%s %s %s", ctrl, cmd, args);
 #ifdef USE_WINSOCK
 	r = win_run_cmd(command);
+	free(regctrl);
 #else
 	r = system(command);
 	if(r == -1) {

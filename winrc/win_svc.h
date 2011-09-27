@@ -118,4 +118,7 @@ void win_clear_resolv(void);
 /** sets NameServer in HKEY(registry space) to the arg(string or NULL) */
 void enum_reg_set_nameserver(HKEY hk, void* arg);
 
+/** fetch unbound-control name from registry (or NULL), struped result */
+char* get_registry_unbound_control(void);
+
 #endif /* WINRC_WIN_SVC_H */
