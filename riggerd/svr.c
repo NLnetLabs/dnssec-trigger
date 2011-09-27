@@ -279,33 +279,27 @@ static void sslconn_delete(struct sslconn* sc)
 }
 
 #ifdef USE_WINSOCK
-static long win_bio_read_cb(BIO *b, int oper, const char* ATTR_UNUSED(argp),
+static long win_bio_cb(BIO *b, int oper, const char* ATTR_UNUSED(argp),
 	int ATTR_UNUSED(argi), long argl, long retvalue)
 {
-	verbose(VERB_ALGO, "bio_read_cb %d, %s", oper,
+	verbose(VERB_ALGO, "bio_cb %d, %s %s %s", oper,
+		(oper&BIO_CB_RETURN)?"return":"before",
+		(oper&BIO_CB_READ)?"read":((oper&BIO_CB_WRITE)?"write":"other"),
 		WSAGetLastError()==WSAEWOULDBLOCK?"wsawb":"");
-	/* on windows, check if previous read operation caused EWOULDBLOCK */
+	/* on windows, check if previous operation caused EWOULDBLOCK */
 	if( (oper == (BIO_CB_READ|BIO_CB_RETURN) && argl == 0) ||
 		(oper == (BIO_CB_GETS|BIO_CB_RETURN) && argl == 0)) {
 		if(WSAGetLastError() == WSAEWOULDBLOCK)
 			winsock_tcp_wouldblock((struct event*)
 				BIO_get_callback_arg(b), EV_READ);
 	}
-	return retvalue;
-}
-
-static long win_bio_write_cb(BIO *b, int oper, const char* ATTR_UNUSED(argp),
-	int ATTR_UNUSED(argi), long argl, long retvalue)
-{
-	verbose(VERB_ALGO, "bio_write_cb %d, %s", oper,
-		WSAGetLastError()==WSAEWOULDBLOCK?"wsawb":"");
-	/* on windows, check if previous write operation caused EWOULDBLOCK */
 	if( (oper == (BIO_CB_WRITE|BIO_CB_RETURN) && argl == 0) ||
 		(oper == (BIO_CB_PUTS|BIO_CB_RETURN) && argl == 0)) {
 		if(WSAGetLastError() == WSAEWOULDBLOCK)
 			winsock_tcp_wouldblock((struct event*)
 				BIO_get_callback_arg(b), EV_WRITE);
 	}
+	/* return original return value */
 	return retvalue;
 }
 #endif
@@ -376,10 +370,11 @@ int handle_ssl_accept(struct comm_point* c, void* ATTR_UNUSED(arg), int err,
 		return 0;
         }
 #ifdef USE_WINSOCK
-	BIO_set_callback(SSL_get_rbio(sc->ssl), &win_bio_read_cb);
+	/* set them both just in case, but usually they are the same BIO */
+	BIO_set_callback(SSL_get_rbio(sc->ssl), &win_bio_cb);
 	BIO_set_callback_arg(SSL_get_rbio(sc->ssl),
 		(char*)comm_point_internal(sc->c));
-	BIO_set_callback(SSL_get_wbio(sc->ssl), &win_bio_write_cb);
+	BIO_set_callback(SSL_get_wbio(sc->ssl), &win_bio_cb);
 	BIO_set_callback_arg(SSL_get_wbio(sc->ssl),
 		(char*)comm_point_internal(sc->c));
 #endif
