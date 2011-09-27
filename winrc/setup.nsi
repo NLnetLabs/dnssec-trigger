@@ -132,10 +132,10 @@ section "-hidden.postinstall"
 	File "..\dnssec-trigger-panel.exe"
 	File "..\dnssec-trigger-control.exe"
 	File "..\dnssec-trigger-keygen.exe"
-	File "/oname=dnssec-trigger.conf" "..\example.conf"
 	File "..\winrc\alert.ico"
 	File "..\winrc\status.ico"
 	File "..\tmp.collect\*.dll"
+	File "/oname=dnssec-trigger.conf" "..\example.conf"
 
 	# store installation folder
 	WriteRegStr HKLM "Software\DnssecTrigger" "InstallLocation" "$INSTDIR"
@@ -233,10 +233,10 @@ section "un.DnssecTrigger"
 	Delete "$INSTDIR\dnssec-trigger-panel.exe"
 	Delete "$INSTDIR\dnssec-trigger-control.exe"
 	Delete "$INSTDIR\dnssec-trigger-keygen.exe"
-	Delete "$INSTDIR\dnssec-trigger.conf"
 	Delete "$INSTDIR\alert.ico"
 	Delete "$INSTDIR\status.ico"
 	Delete "$INSTDIR\*.dll"
+	Delete "$INSTDIR\dnssec-trigger.conf"
 	RMDir "$INSTDIR"
 
 	# start menu items
