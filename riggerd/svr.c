@@ -501,9 +501,6 @@ int control_callback(struct comm_point* c, void* arg, int err,
 			sslconn_shutdown(s);
 			return 0;
 		}
-#ifdef USE_WINSOCK
-		winsock_tcp_wouldblock(comm_point_internal(c), EV_WRITE);
-#endif
 		comm_point_listen_for_rw(c, 1, 0);
 		s->line_state = persist_write_checkclose;
 	} else if(s->line_state == persist_write_checkclose) {
@@ -768,10 +765,6 @@ static void handle_results_cmd(struct sslconn* sc)
 	ldns_buffer_clear(sc->buffer);
 	ldns_buffer_flip(sc->buffer);
 	/* must listen for close of connection: reading */
-#ifdef USE_WINSOCK
-	/* we read to check for close event */
-	winsock_tcp_wouldblock(comm_point_internal(sc->c), EV_READ);
-#endif
 	comm_point_listen_for_rw(sc->c, 1, 0);
 	sc->line_state = persist_write_checkclose;
 	/* feed it the first results (if any) */
