@@ -282,6 +282,8 @@ static void sslconn_delete(struct sslconn* sc)
 static long win_bio_read_cb(BIO *b, int oper, const char* ATTR_UNUSED(argp),
 	int ATTR_UNUSED(argi), long argl, long retvalue)
 {
+	verbose(VERB_ALGO, "bio_read_cb %d, %s", oper,
+		WSAGetLastError()==WSAEWOULDBLOCK?"wsawb":"");
 	/* on windows, check if previous read operation caused EWOULDBLOCK */
 	if( (oper == (BIO_CB_READ|BIO_CB_RETURN) && argl == 0) ||
 		(oper == (BIO_CB_GETS|BIO_CB_RETURN) && argl == 0)) {
@@ -295,6 +297,8 @@ static long win_bio_read_cb(BIO *b, int oper, const char* ATTR_UNUSED(argp),
 static long win_bio_write_cb(BIO *b, int oper, const char* ATTR_UNUSED(argp),
 	int ATTR_UNUSED(argi), long argl, long retvalue)
 {
+	verbose(VERB_ALGO, "bio_write_cb %d, %s", oper,
+		WSAGetLastError()==WSAEWOULDBLOCK?"wsawb":"");
 	/* on windows, check if previous write operation caused EWOULDBLOCK */
 	if( (oper == (BIO_CB_WRITE|BIO_CB_RETURN) && argl == 0) ||
 		(oper == (BIO_CB_PUTS|BIO_CB_RETURN) && argl == 0)) {
@@ -521,6 +525,8 @@ static int sslconn_readline(struct sslconn* sc)
 		if((r=SSL_read(sc->ssl, ldns_buffer_current(sc->buffer), 1))
 			<= 0) {
 			int want = SSL_get_error(sc->ssl, r);
+			log_info("DEBUG: readline entry, %s",
+				WSAGetLastError()==WSAEWOULDBLOCK?"wsawb":"");
 			if(want == SSL_ERROR_ZERO_RETURN) {
 				sslconn_shutdown(sc);
 				return 0;
