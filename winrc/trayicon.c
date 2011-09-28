@@ -173,20 +173,20 @@ init_hotsignwnd(HINSTANCE hInstance)
 		TEXT("Hotspot Signon"),
 		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX |
 		WS_MAXIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT,
-		455, 250, NULL, NULL, hInstance, NULL);
+		455, 150, NULL, NULL, hInstance, NULL);
 	statictext = CreateWindow(TEXT("STATIC"), TEXT(
 "Some networks need insecure signon. After you log in to the\r\n"
 "network via its portal page, select Reprobe to get secure again.\r\n"
 "\r\n"
 "Please, stay safe out there.\r\n"
 	), WS_CHILD | WS_VISIBLE | SS_LEFT,
-		10, 10, 430, 170, hotsign_wnd, NULL, hInstance, NULL);
+		10, 10, 430, 70, hotsign_wnd, NULL, hInstance, NULL);
 	hotsign_cancel = CreateWindow(TEXT("BUTTON"), TEXT("Cancel"),
 		WS_CHILD | WS_VISIBLE,
-		180, 190, 100, 25, hotsign_wnd, NULL, hInstance, NULL);
+		180, 90, 100, 25, hotsign_wnd, NULL, hInstance, NULL);
 	hotsign_ok = CreateWindow(TEXT("BUTTON"), TEXT("OK"),
 		WS_CHILD | WS_VISIBLE,
-		300, 190, 100, 25, hotsign_wnd, NULL, hInstance, NULL);
+		300, 90, 100, 25, hotsign_wnd, NULL, hInstance, NULL);
 	SendMessage(statictext, WM_SETFONT, (WPARAM)font, TRUE);
 	SendMessage(hotsign_cancel, WM_SETFONT, (WPARAM)font_bold, TRUE);
 	SendMessage(hotsign_ok, WM_SETFONT, (WPARAM)font_bold, TRUE);
