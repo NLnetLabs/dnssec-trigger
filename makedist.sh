@@ -23,6 +23,9 @@ Generate a distribution tar file for dnssec-trigger.
     -l ldnsdir   Directory where ldns resides. Detected from Makefile.
     -wssl openssl.xx.tar.gz Also build openssl from tarball for windows dist.
     -wldns ldns.xx.tar.gz Also build libldns from tarball for windows dist.
+    -wunbound unbound.xx.tar.gz Also build unbound from tarball for windows dist.
+        The windows subbuilds are cached in ./..tar.gz-win32-store-dir, remove
+	that dir to rebuild the package.
     -w ...       Build windows binary dist. last args passed to configure.
 EOF
     exit 1
@@ -97,6 +100,7 @@ LDNSDIR=""
 DOWIN="no"
 WINSSL=""
 WINLDNS=""
+WINUNBOUND=""
 
 # Parse the command line arguments.
 while [ "$1" ]; do
@@ -114,6 +118,11 @@ while [ "$1" ]; do
         "-wldns")
             WINLDNS="$2"
 	    WINLDNS_STORE_DIR=`pwd`/`basename $WINLDNS`"-win32-store-dir"
+            shift
+            ;;
+        "-wunbound")
+            WINUNBOUND="$2"
+	    WINUNBOUND_STORE_DIR=`pwd`/`basename $WINUNBOUND`"-win32-store-dir"
             shift
             ;;
         "-wssl")
@@ -190,17 +199,44 @@ if [ "$DOWIN" = "yes" ]; then
                 info "ldns tar unpack"
                 (cd ..; gzip -cd $WINLDNS) | tar xf - || error_cleanup "tar unpack of $WINLDNS failed"
 		mv ldns-* $WINLDNS_STORE_DIR || error_cleanup "cannot move or no ldns-X dir in tarball"
+		backdir=`pwd`
 		cd $WINLDNS_STORE_DIR || error_cleanup "cannot cd ldnsdir"
                 # we can use the cross_flag with openssl in it
                 info "ldns: Configure $cross_flag"
                 mingw32-configure  $cross_flag || error_cleanup "ldns configure failed"
                 info "ldns: make"
                 make || error_cleanup "ldns crosscompile failed"
+    		$strip lib/*.dll || error_cleanup "cannot strip ldns dll"
                 # use from the build directory.
 		ldnsdir=`pwd`
                 cross_flag="$cross_flag --with-ldns=`pwd`"
-                cd ..
+		cd $backdir
         fi
+
+	unbounddir=""
+        if test -n "$WINUNBOUND" -a -d "$WINUNBOUND_STORE_DIR"; then
+		info "Cross compile $WINUNBOUND have $WINUNBOUND_STORE_DIR"
+		unbounddir="$WINUNBOUND_STORE_DIR"
+        elif test -n "$WINUNBOUND"; then
+                info "Cross compile $WINUNBOUND"
+                info "unbound tar unpack"
+                (cd ..; gzip -cd $WINUNBOUND) | tar xf - || error_cleanup "tar unpack of $WINUNBOUND failed"
+		mv unbound-* $WINUNBOUND_STORE_DIR || error_cleanup "cannot move or no unbound-X dir in tarball"
+		backdir=`pwd`
+		cd $WINUNBOUND_STORE_DIR || error_cleanup "cannot cd unbounddir"
+                # we can use the cross_flag with openssl and ldns in it
+                info "unbound: Configure $cross_flag"
+		# enable allsymbols because unbound-anchor wants wsa_strerror
+		# from util/log.c
+                mingw32-configure --enable-allsymbols --enable-debug $cross_flag || error_cleanup "unbound configure failed"
+                info "unbound: make"
+                make || error_cleanup "unbound crosscompile failed"
+		make strip || error_cleanup "unbound make strip failed"
+		$strip .libs/*.dll .libs/*.exe || error_cleanup "cannot strip"
+                # use from the build directory.
+		unbounddir=`pwd`
+		cd $backdir
+	fi
 
         info "Exporting source from SVN."
         svn export "$SVNROOT" dnssec-trigger || error_cleanup "SVN command failed"
@@ -259,7 +295,7 @@ if [ "$DOWIN" = "yes" ]; then
     # DLLs linked with the panel on windows (ship DLLs:)
     # libldns, libcrypto, libssl
     # openssl dlls
-    findpath="$sslinstall/bin $sslinstall/lib/engines $ldnsdir/lib /usr/bin /usr/i686-pc-mingw32/sys-root/mingw/bin /usr/i686-pc-mingw32/sys-root/mingw/lib/engines"
+    findpath="$sslinstall/bin $sslinstall/lib/engines $ldnsdir/lib $unbounddir/.libs /usr/bin /usr/i686-pc-mingw32/sys-root/mingw/bin /usr/i686-pc-mingw32/sys-root/mingw/lib/engines"
     # find a dll and copy it to local dir. $1 searchpath $2 name
     function find_dll () {
 	    for i in $1; do
@@ -276,7 +312,14 @@ if [ "$DOWIN" = "yes" ]; then
     find_dll "$findpath" "ssleay32.dll" || error_cleanup "no ssl dll"
     find_dll "$findpath" "gosteay32.dll" || echo "*** WARNING NO GOST DLL ***"
     find_dll "$findpath" "libldns-1.dll" || error_cleanup "no ldns dll"
+    find_dll "$findpath" "libexpat-1.dll" || error_cleanup "no expat dll"
+    find_dll "$findpath" "libunbound-2.dll" || error_cleanup "no unbound dll"
     sed -e 's/$/\r/' < ../README > README.txt
+    cp $unbounddir/.libs/unbound.exe . || error_cleanup "cannot get unbound"
+    cp $unbounddir/.libs/unbound-control.exe . || error_cleanup "cannot get unbound"
+    cp $unbounddir/.libs/unbound-anchor.exe . || error_cleanup "cannot get unbound"
+    cp $unbounddir/.libs/unbound-checkconf.exe . || error_cleanup "cannot get unbound"
+    cp $unbounddir/.libs/unbound-host.exe . || error_cleanup "cannot get unbound"
 
     #cp ../example.conf example.conf
     #cp ../panel/pui.xml ../panel/status-icon.png ../panel/status-icon-alert.png .
