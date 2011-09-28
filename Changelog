@@ -1,5 +1,6 @@
 28 Sep 2011: Wouter
 	- nsis uninstall welcome image.
+	- gtk menu item and dialog for hotspot signon.
 
 27 Sep 2011: Wouter
 	- for windows, get unbound-control config and path from registry.

@@ -697,6 +697,7 @@ static void sslconn_persist_command(struct sslconn* sc)
 	} else if(strcmp(str, "insecure no") == 0) {
 		persist_cmd_insecure(0);
 	} else if(strcmp(str, "reprobe") == 0) {
+		global_svr->forced_insecure = 0;
 		cmd_reprobe();
 	} else if(strcmp(str, "hotspot_signon") == 0) {
 		handle_hotspot_signon_cmd(global_svr);

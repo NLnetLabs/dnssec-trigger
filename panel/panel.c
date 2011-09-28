@@ -53,6 +53,7 @@ static GtkTextView* result_textview;
 static GtkStatusIcon* status_icon;
 static GtkWidget* result_window;
 static GtkWidget* unsafe_dialog;
+static GtkWidget* hotsign_dialog;
 static GdkPixbuf* normal_icon;
 static GdkPixbuf* alert_icon;
 static GtkMenu* statusmenu;
@@ -241,6 +242,40 @@ void on_proberesults_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 	/* show them */
 	gtk_widget_show(GTK_WIDGET(result_window));
 }
+
+G_MODULE_EXPORT
+gboolean
+on_hotsign_dialog_delete_event(GtkWidget* ATTR_UNUSED(widget),
+	GdkEvent* ATTR_UNUSED(event), gpointer ATTR_UNUSED(user_data))
+{
+	gtk_widget_hide(GTK_WIDGET(hotsign_dialog));
+	return TRUE; /* stop other handlers, do not destroy the window */
+}
+
+G_MODULE_EXPORT
+void 
+on_hotsign_ok_button_clicked(GtkButton* ATTR_UNUSED(button),
+	gpointer ATTR_UNUSED(user_data)) 
+{
+	attach_send_hotspot_signon();
+	gtk_widget_hide(GTK_WIDGET(hotsign_dialog));
+}
+
+G_MODULE_EXPORT
+void 
+on_hotsign_cancel_button_clicked(GtkButton* ATTR_UNUSED(button),
+	gpointer ATTR_UNUSED(user_data)) 
+{
+	gtk_widget_hide(GTK_WIDGET(hotsign_dialog));
+}
+
+G_MODULE_EXPORT
+void on_hotspotsignon_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
+	gpointer ATTR_UNUSED(user_data))
+{
+	gtk_widget_show(GTK_WIDGET(hotsign_dialog));
+}
+
 
 G_MODULE_EXPORT
 void 
@@ -437,12 +472,15 @@ init_gui(int debug)
 		"result_textview"));
 	unsafe_dialog = GTK_WIDGET(gtk_builder_get_object(builder,
 		"unsafe_dialog"));
+	hotsign_dialog = GTK_WIDGET(gtk_builder_get_object(builder,
+		"hotsign_dialog"));
 	statusmenu = GTK_MENU(gtk_builder_get_object(builder, "statusmenu"));
 	/* we need to incref otherwise we may lose the reference */
 	g_object_ref(G_OBJECT(statusmenu));
 	gtk_widget_hide(GTK_WIDGET(result_window));
 	g_object_ref(G_OBJECT(result_window));
 	g_object_ref(G_OBJECT(unsafe_dialog));
+	g_object_ref(G_OBJECT(hotsign_dialog));
 
 	/* no more need for the builder */
 	gtk_builder_connect_signals(builder, NULL);          
@@ -455,6 +493,7 @@ init_gui(int debug)
 	/* loaded the icons, also good for our windows */
 	gtk_window_set_icon(GTK_WINDOW(result_window), normal_icon);
 	gtk_window_set_icon(GTK_WINDOW(unsafe_dialog), alert_icon);
+	gtk_window_set_icon(GTK_WINDOW(hotsign_dialog), alert_icon);
 }
 
 /** remove GUI stuff on exit */
@@ -462,6 +501,7 @@ static void
 stop_gui(void)
 {
 	gtk_widget_hide(GTK_WIDGET(unsafe_dialog));
+	gtk_widget_hide(GTK_WIDGET(hotsign_dialog));
 	gtk_widget_hide(GTK_WIDGET(result_window));
 	gtk_widget_hide(GTK_WIDGET(statusmenu));
 	gtk_status_icon_set_visible(status_icon, FALSE);

@@ -82,6 +82,15 @@
       </object>
     </child>
     <child>
+      <object class="GtkMenuItem" id="hotspotsignon">
+        <property name="visible">True</property>
+        <property name="use_action_appearance">False</property>
+        <property name="label" translatable="yes">Hotspot signon</property>
+        <property name="use_underline">True</property>
+        <signal name="activate" handler="on_hotspotsignon_activate"/>
+      </object>
+    </child>
+    <child>
       <object class="GtkSeparatorMenuItem" id="sep1">
         <property name="visible">True</property>
       </object>
@@ -180,6 +189,77 @@ its signon page. Then use &lt;i&gt;Reprobe&lt;/i&gt; from the menu to retry.
     <action-widgets>
       <action-widget response="-2">disconnect_button</action-widget>
       <action-widget response="0">insecure_button</action-widget>
+    </action-widgets>
+  </object>
+  <object class="GtkDialog" id="hotsign_dialog">
+    <property name="border_width">5</property>
+    <property name="title" translatable="yes">Hotspot Signon</property>
+    <property name="type_hint">dialog</property>
+    <signal name="delete_event" handler="on_hotsign_dialog_delete_event"/>
+    <child internal-child="vbox">
+      <object class="GtkVBox" id="dialog-vbox3">
+        <property name="visible">True</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child>
+          <object class="GtkLabel" id="label2">
+            <property name="visible">True</property>
+            <property name="label" translatable="yes">Some networks need insecure signon. After you log in to the
+network via its portal page, select &lt;i&gt;Reprobe&lt;/i&gt; to get secure again.
+
+&lt;i&gt;Please, stay safe out there.&lt;/i&gt;</property>
+            <property name="use_markup">True</property>
+          </object>
+          <packing>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child internal-child="action_area">
+          <object class="GtkHButtonBox" id="dialog-action_area3">
+            <property name="visible">True</property>
+            <property name="layout_style">end</property>
+            <child>
+              <object class="GtkButton" id="hotsign_cancel_button">
+                <property name="label" translatable="yes">Cancel</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_action_appearance">False</property>
+                <signal name="clicked" handler="on_hotsign_cancel_button_clicked"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="hotsign_ok_button">
+                <property name="label" translatable="yes">OK</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_action_appearance">False</property>
+                <signal name="clicked" handler="on_hotsign_ok_button_clicked"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="pack_type">end</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+    <action-widgets>
+      <action-widget response="0">hotsign_cancel_button</action-widget>
+      <action-widget response="0">hotsign_ok_button</action-widget>
     </action-widgets>
   </object>
 </interface>
