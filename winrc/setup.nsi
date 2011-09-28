@@ -156,7 +156,6 @@ section "-hidden.postinstall"
 	# store installation folder
 	WriteRegStr HKLM "Software\DnssecTrigger" "InstallLocation" "$INSTDIR"
 	WriteRegStr HKLM "Software\DnssecTrigger" "ConfigFile" "$INSTDIR\dnssec-trigger.conf"
-	WriteRegStr HKLM "Software\DnssecTrigger" "Gtkrc" "$INSTDIR\gtkrc"
 	# no cron action at this time.
 	WriteRegStr HKLM "Software\DnssecTrigger" "CronAction" ""
 	WriteRegDWORD HKLM "Software\DnssecTrigger" "CronTime" 86400
