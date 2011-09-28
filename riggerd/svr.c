@@ -517,8 +517,6 @@ static int sslconn_readline(struct sslconn* sc)
 		if((r=SSL_read(sc->ssl, ldns_buffer_current(sc->buffer), 1))
 			<= 0) {
 			int want = SSL_get_error(sc->ssl, r);
-			log_info("DEBUG: readline entry, %s",
-				WSAGetLastError()==WSAEWOULDBLOCK?"wsawb":"");
 			if(want == SSL_ERROR_ZERO_RETURN) {
 				sslconn_shutdown(sc);
 				return 0;
