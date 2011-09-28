@@ -320,6 +320,7 @@ if [ "$DOWIN" = "yes" ]; then
     cp $unbounddir/.libs/unbound-anchor.exe . || error_cleanup "cannot get unbound"
     cp $unbounddir/.libs/unbound-checkconf.exe . || error_cleanup "cannot get unbound"
     cp $unbounddir/.libs/unbound-host.exe . || error_cleanup "cannot get unbound"
+    cp $unbounddir/doc/example.conf unbound.conf || error_cleanup "cannot get unbound example.conf"
 
     #cp ../example.conf example.conf
     #cp ../panel/pui.xml ../panel/status-icon.png ../panel/status-icon-alert.png .

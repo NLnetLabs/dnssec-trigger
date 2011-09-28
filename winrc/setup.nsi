@@ -125,6 +125,15 @@ section "DnssecTrigger" SectionDnssecTrigger
 sectionEnd
 
 section "-hidden.postinstall"
+	# check if unbound installed (but not via dnssec-trigger)
+	ReadRegStr $R1 HKLM "Software\Unbound\InstallLocation"
+	StrCmp $R1 "" doinstall 0
+	ReadRegStr $R1 HKLM "Software\Unbound\DnssecTrigger"
+	StrCmp $R1 "yes" doinstall 0
+	# unbound installed but not ours, fail
+	Abort "Unbound is already installed, please uninstall it"
+	doinstall:
+
 	# copy files
 	setOutPath $INSTDIR
 	File "..\LICENSE"
@@ -138,6 +147,7 @@ section "-hidden.postinstall"
 	File "..\tmp.collect\unbound-anchor.exe"
 	File "..\tmp.collect\unbound-host.exe"
 	File "..\tmp.collect\unbound-checkconf.exe"
+	File "..\tmp.collect\unbound.conf"
 	File "..\winrc\alert.ico"
 	File "..\winrc\status.ico"
 	File "..\tmp.collect\*.dll"
@@ -163,6 +173,29 @@ section "-hidden.postinstall"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DnssecTrigger" "URLInfoAbout" "http://nlnetlabs.nl"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DnssecTrigger" "Publisher" "NLnet Labs"
 
+	# setup unbound registry entries
+	WriteRegStr HKLM "Software\Unbound" "InstallLocation" "$INSTDIR"
+	WriteRegStr HKLM "Software\Unbound" "ConfigFile" "$INSTDIR\unbound.conf"
+	WriteRegStr HKLM "Software\Unbound" "CronAction" ""
+	# setup that unbound is 'ours'
+	WriteRegStr HKLM "Software\Unbound" "DnssecTrigger" "yes"
+	WriteRegDWORD HKLM "Software\Unbound" "CronTime" 86400
+	# setup unbound.conf 
+	ClearErrors
+	FileOpen $R1 "$INSTDIR\unbound.conf" a
+	IfErrors done_rk
+	FileSeek $R1 0 END
+	FileWrite $R1 "$\n$\nserver: auto-trust-anchor-file: $\"$INSTDIR\root.key$\"$\n"
+	FileWrite $R1 "remote-control: control-enable: yes$\n"
+	FileWrite $R1 "  server-key-file: $\"$INSTDIR\unbound_server.key$\"$\n"
+	FileWrite $R1 "  server-cert-file: $\"$INSTDIR\unbound_server.pem$\"$\n"
+	FileWrite $R1 "  control-key-file: $\"$INSTDIR\unbound_control.key$\"$\n"
+	FileWrite $R1 "  control-cert-file: $\"$INSTDIR\unbound_control.pem$\"$\n"
+	FileWrite $R1 "$\n"
+	FileClose $R1
+	done_rk:
+	WriteRegStr HKLM "Software\Unbound" "RootAnchor" "$\"$INSTDIR\unbound-anchor.exe$\" -a $\"$INSTDIR\root.key$\" -c $\"$INSTDIR\icannbundle.pem$\""
+
 	# write key locations to file
 	ClearErrors
 	FileOpen $R1 "$INSTDIR\dnssec-trigger.conf" a
@@ -176,15 +209,21 @@ section "-hidden.postinstall"
 	FileWrite $R1 "$\n"
 	FileClose $R1
 done_keys:
-	
+
 	# generate keys
 	nsExec::ExecToLog '"$INSTDIR\dnssec-trigger-keygen.exe" -d "$INSTDIR"'
+	# generate unbound keys
+	nsExec::ExecToLog '"$INSTDIR\dnssec-trigger-keygen.exe" -u -d "$INSTDIR"'
 
 	# start menu items
 	!insertmacro MUI_STARTMENU_WRITE_BEGIN DnssecTriggerStartMenu
 	CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
 	CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\uninst.exe" "" "" "" "" "" "Uninstall dnssec trigger"
 	!insertmacro MUI_STARTMENU_WRITE_END
+
+	# install unbound service entry
+	nsExec::ExecToLog '"$INSTDIR\unbound.exe" -w install'
+	nsExec::ExecToLog '"$INSTDIR\unbound.exe" -w start'
 
 	# install service entry
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w install'
@@ -221,6 +260,10 @@ section "un.DnssecTrigger"
 	# uninstall service entry
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w remove'
 
+	# stop unbound service
+	nsExec::ExecToLog '"$INSTDIR\unbound.exe" -w stop'
+	nsExec::ExecToLog '"$INSTDIR\unbound.exe" -w remove'
+
 	# give the panel time to process the messages.
 	Sleep 2000
 
@@ -244,6 +287,7 @@ section "un.DnssecTrigger"
 	Delete "$INSTDIR\unbound-anchor.exe"
 	Delete "$INSTDIR\unbound-host.exe"
 	Delete "$INSTDIR\unbound-checkconf.exe"
+	Delete "$INSTDIR\unbound.conf"
 	Delete "$INSTDIR\alert.ico"
 	Delete "$INSTDIR\status.ico"
 	Delete "$INSTDIR\*.dll"
@@ -255,5 +299,6 @@ section "un.DnssecTrigger"
 	Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk"
 	RMDir "$SMPROGRAMS\$StartMenuFolder"
 
+	DeleteRegKey HKLM "Software\Unbound"
 	DeleteRegKey HKLM "Software\DnssecTrigger"
 sectionEnd
