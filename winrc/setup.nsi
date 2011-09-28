@@ -110,6 +110,7 @@ Var StartMenuFolder
 !insertmacro MUI_PAGE_FINISH
 
 !define MUI_WELCOMEPAGE_TEXT "This wizard will guide you through the uninstallation of Dnssec Trigger.$\r$\n$\r$\nClick Next to continue."
+!define MUI_UNWELCOMEFINISHPAGE_BITMAP "setup_left_un.bmp"
 !insertmacro MUI_UNPAGE_WELCOME
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES

@@ -1,3 +1,6 @@
+28 Sep 2011: Wouter
+	- nsis uninstall welcome image.
+
 27 Sep 2011: Wouter
 	- for windows, get unbound-control config and path from registry.
 	- new IP6 address for the service at nlnetlabs.
