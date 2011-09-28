@@ -1,6 +1,9 @@
 28 Sep 2011: Wouter
 	- nsis uninstall welcome image.
 	- gtk menu item and dialog for hotspot signon.
+	- win32 menu item and dialog for hotspot signon.
+	- install unbound with dnssec-trigger on windows.  Reduced install
+	  size and available for configuration by installer.exe.
 
 27 Sep 2011: Wouter
 	- for windows, get unbound-control config and path from registry.
