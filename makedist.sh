@@ -314,7 +314,9 @@ if [ "$DOWIN" = "yes" ]; then
     find_dll "$findpath" "libldns-1.dll" || error_cleanup "no ldns dll"
     find_dll "$findpath" "libexpat-1.dll" || error_cleanup "no expat dll"
     find_dll "$findpath" "libunbound-2.dll" || error_cleanup "no unbound dll"
+    info "put cr's in readme"
     sed -e 's/$/\r/' < ../README > README.txt
+    info "copy unbound exe"
     cp $unbounddir/.libs/unbound.exe . || error_cleanup "cannot get unbound"
     cp $unbounddir/.libs/unbound-control.exe . || error_cleanup "cannot get unbound"
     cp $unbounddir/.libs/unbound-anchor.exe . || error_cleanup "cannot get unbound"

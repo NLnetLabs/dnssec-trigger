@@ -126,9 +126,9 @@ sectionEnd
 
 section "-hidden.postinstall"
 	# check if unbound installed (but not via dnssec-trigger)
-	ReadRegStr $R1 HKLM "Software\Unbound\InstallLocation"
+	ReadRegStr $R1 HKLM "Software\Unbound" "InstallLocation"
 	StrCmp $R1 "" doinstall 0
-	ReadRegStr $R1 HKLM "Software\Unbound\DnssecTrigger"
+	ReadRegStr $R1 HKLM "Software\Unbound" "DnssecTrigger"
 	StrCmp $R1 "yes" doinstall 0
 	# unbound installed but not ours, fail
 	Abort "Unbound is already installed, please uninstall it"
