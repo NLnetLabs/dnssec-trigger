@@ -54,12 +54,14 @@ static UINT WM_TASKBARCREATED;
 static NOTIFYICONDATA notifydata;
 static TCHAR trayclassname[] = TEXT("dnssec trigger tray icon");
 static TCHAR insecclassname[] = TEXT("Network DNSSEC Failure");
+static TCHAR hotsignclassname[] = TEXT("Hotspot Signon");
 #define ID_TRAY_APP_ICON 5000
 #define WM_TRAYICON (WM_USER + 1)
 #define WM_PANELALERT (WM_USER + 2)
 #define ID_TRAY_MENU_QUIT 3000
 #define ID_TRAY_MENU_REPROBE 3001
 #define ID_TRAY_MENU_PROBERESULTS 3002
+#define ID_TRAY_MENU_HOTSPOTSIGNON 3003
 static HWND mainwnd;
 static HMENU mainmenu;
 /* this one is small */
@@ -82,6 +84,13 @@ static HWND insec_wnd;
 static HWND insec_unsafe;
 /* insecure 'disconnect' button */
 static HWND insec_discon;
+
+/* the hotspot signon dialog */
+static HWND hotsign_wnd;
+/* hotsign 'OK' button */
+static HWND hotsign_ok;
+/* hotsign 'Cancel' button */
+static HWND hotsign_cancel;
 
 /** if we have asked about disconnect or insecure */
 static int unsafe_asked = 0;
@@ -151,6 +160,37 @@ init_insecwnd(HINSTANCE hInstance)
 	SendMessage(insec_discon, WM_SETFONT, (WPARAM)font_bold, TRUE);
 	SendMessage(insec_unsafe, WM_SETFONT, (WPARAM)font_bold, TRUE);
 	ShowWindow(insec_wnd, SW_HIDE);
+}
+
+static void
+init_hotsignwnd(HINSTANCE hInstance)
+{
+	HWND statictext;
+	/* hotspot signon dialog:
+	 * static text with explanation.
+	 * Cancel and OK buttons */
+	hotsign_wnd = CreateWindowEx(0, hotsignclassname,
+		TEXT("Hotspot Signon"),
+		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX |
+		WS_MAXIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT,
+		455, 250, NULL, NULL, hInstance, NULL);
+	statictext = CreateWindow(TEXT("STATIC"), TEXT(
+"Some networks need insecure signon. After you log in to the\r\n"
+"network via its portal page, select Reprobe to get secure again.\r\n"
+"\r\n"
+"Please, stay safe out there.\r\n"
+	), WS_CHILD | WS_VISIBLE | SS_LEFT,
+		10, 10, 430, 170, hotsign_wnd, NULL, hInstance, NULL);
+	hotsign_cancel = CreateWindow(TEXT("BUTTON"), TEXT("Cancel"),
+		WS_CHILD | WS_VISIBLE,
+		180, 190, 100, 25, hotsign_wnd, NULL, hInstance, NULL);
+	hotsign_ok = CreateWindow(TEXT("BUTTON"), TEXT("OK"),
+		WS_CHILD | WS_VISIBLE,
+		300, 190, 100, 25, hotsign_wnd, NULL, hInstance, NULL);
+	SendMessage(statictext, WM_SETFONT, (WPARAM)font, TRUE);
+	SendMessage(hotsign_cancel, WM_SETFONT, (WPARAM)font_bold, TRUE);
+	SendMessage(hotsign_ok, WM_SETFONT, (WPARAM)font_bold, TRUE);
+	ShowWindow(hotsign_wnd, SW_HIDE);
 }
 
 static void
@@ -241,6 +281,40 @@ LRESULT CALLBACK InsecWndProc(HWND hwnd, UINT message, WPARAM wParam,
 	return DefWindowProc(hwnd, message, wParam, lParam);
 }
 
+LRESULT CALLBACK HotsignWndProc(HWND hwnd, UINT message, WPARAM wParam,
+	LPARAM lParam)
+{
+	switch(message) {
+	case WM_SYSCOMMAND:
+		switch(wParam & 0xfff0) { /* removes reserved lower 4 bits */
+		case SC_MINIMIZE:
+			break;
+		case SC_CLOSE:
+			ShowWindow(hotsign_wnd, SW_HIDE);
+			return 0;
+			break;
+		}
+		break;
+	case WM_COMMAND:
+		/* buttons pressed */
+		if((HWND)lParam == hotsign_cancel) {
+			ShowWindow(hotsign_wnd, SW_HIDE);
+		} else if((HWND)lParam == hotsign_ok) {
+			attach_send_hotspot_signon();
+			ShowWindow(hotsign_wnd, SW_HIDE);
+		}
+		break;
+	case WM_CLOSE:
+		ShowWindow(hotsign_wnd, SW_HIDE);
+		return 0;
+		break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	}
+	return DefWindowProc(hwnd, message, wParam, lParam);
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	if(message==WM_TASKBARCREATED) {
@@ -255,6 +329,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			TEXT("Reprobe"));
 		AppendMenu(mainmenu, MF_STRING, ID_TRAY_MENU_PROBERESULTS,
 			TEXT("Probe Results"));
+		AppendMenu(mainmenu, MF_STRING, ID_TRAY_MENU_HOTSPOTSIGNON,
+			TEXT("Hotspot Signon"));
 		AppendMenu(mainmenu, MF_SEPARATOR, 0, NULL);
 		AppendMenu(mainmenu, MF_STRING, ID_TRAY_MENU_QUIT,
 			TEXT("Quit"));
@@ -310,6 +386,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				attach_send_reprobe();
 			} else if(wParam == ID_TRAY_MENU_PROBERESULTS) {
 				panel_proberesults();
+			} else if(wParam == ID_TRAY_MENU_HOTSPOTSIGNON) {
+				ShowWindow(hotsign_wnd, SW_SHOW);
+				SetForegroundWindow(hotsign_wnd);
 			}
 		}
 		break;
@@ -639,10 +718,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR args,
 	if(!RegisterClassEx(&wnd)) {
 		FatalAppExit(0, TEXT("Cannot RegisterClassEx"));
 	}
-	
+	wnd.lpszClassName = hotsignclassname;
+	wnd.hIcon = status_icon_alert_big;
+	wnd.hIconSm = status_icon_alert;
+	wnd.lpfnWndProc = HotsignWndProc;
+	if(!RegisterClassEx(&wnd)) {
+		FatalAppExit(0, TEXT("Cannot RegisterClassEx"));
+	}
+
 	init_font();
 	init_mainwnd(hInstance);
 	init_insecwnd(hInstance);
+	init_hotsignwnd(hInstance);
 	ShowWindow(mainwnd, SW_HIDE);
 	init_icon();
 	spawn_feed(cfg);
