@@ -113,10 +113,12 @@ while [ "$1" ]; do
             ;;
         "-wldns")
             WINLDNS="$2"
+	    WINLDNS_STORE_DIR=`pwd`/`basename $WINLDNS`"-win32-store-dir"
             shift
             ;;
         "-wssl")
             WINSSL="$2"
+	    WINSSL_STORE_DIR=`pwd`/`basename $WINSSL`"-win32-store-dir"
             shift
             ;;
         "-w")
@@ -154,11 +156,15 @@ if [ "$DOWIN" = "yes" ]; then
         create_temp_dir
 
         # crosscompile openssl for windows.
-        if test -n "$WINSSL"; then
+        if test -n "$WINSSL" -a -d "$WINSSL_STORE_DIR"; then
+		info "Cross compile $WINSSL have $WINSSL_STORE_DIR"
+		sslinstall="$WINSSL_STORE_DIR"
+                cross_flag="$cross_flag --with-ssl=$sslinstall"
+	elif test -n "$WINSSL"; then
                 info "Cross compile $WINSSL"
                 info "winssl tar unpack"
                 (cd ..; gzip -cd $WINSSL) | tar xf - || error_cleanup "tar unpack of $WINSSL failed"
-                sslinstall="`pwd`/sslinstall"
+		sslinstall="$WINSSL_STORE_DIR"
                 cd openssl-* || error_cleanup "no openssl-X dir in tarball"
                 # configure for crosscompile, without CAPI because it fails
                 # cross-compilation and it is not used anyway
@@ -175,11 +181,16 @@ if [ "$DOWIN" = "yes" ]; then
         fi
 
 	ldnsdir=""
-        if test -n "$WINLDNS"; then
+        if test -n "$WINLDNS" -a -d "$WINLDNS_STORE_DIR"; then
+		info "Cross compile $WINLDNS have $WINLDNS_STORE_DIR"
+		ldnsdir="$WINLDNS_STORE_DIR"
+                cross_flag="$cross_flag --with-ldns=$WINLDNS_STORE_DIR"
+        elif test -n "$WINLDNS"; then
                 info "Cross compile $WINLDNS"
                 info "ldns tar unpack"
                 (cd ..; gzip -cd $WINLDNS) | tar xf - || error_cleanup "tar unpack of $WINLDNS failed"
-                cd ldns-* || error_cleanup "no ldns-X dir in tarball"
+		mv ldns-* $WINLDNS_STORE_DIR || error_cleanup "cannot move or no ldns-X dir in tarball"
+		cd $WINLDNS_STORE_DIR || error_cleanup "cannot cd ldnsdir"
                 # we can use the cross_flag with openssl in it
                 info "ldns: Configure $cross_flag"
                 mingw32-configure  $cross_flag || error_cleanup "ldns configure failed"
@@ -248,7 +259,7 @@ if [ "$DOWIN" = "yes" ]; then
     # DLLs linked with the panel on windows (ship DLLs:)
     # libldns, libcrypto, libssl
     # openssl dlls
-    findpath="../../sslinstall/bin ../../sslinstall/lib/engines $ldnsdir/lib /usr/bin /usr/i686-pc-mingw32/sys-root/mingw/bin /usr/i686-pc-mingw32/sys-root/mingw/lib/engines"
+    findpath="$sslinstall/bin $sslinstall/lib/engines $ldnsdir/lib /usr/bin /usr/i686-pc-mingw32/sys-root/mingw/bin /usr/i686-pc-mingw32/sys-root/mingw/lib/engines"
     # find a dll and copy it to local dir. $1 searchpath $2 name
     function find_dll () {
 	    for i in $1; do
