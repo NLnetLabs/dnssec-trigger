@@ -19,6 +19,7 @@ struct cfg;
 	IBOutlet NSTextView* resultpane;
 	IBOutlet NSWindow* unsafewindow;
 	IBOutlet NSTextField* unsafepane;
+    IBOutlet NSWindow* hotsignwindow;
 	
 	/** if we have asked about disconnect or insecure */
 	int unsafe_asked;
@@ -32,6 +33,9 @@ struct cfg;
 -(IBAction)ProbeResultsOK:(id)sender;
 -(IBAction)UnsafeInsecure:(id)sender;
 -(IBAction)UnsafeDisconnect:(id)sender;
+-(IBAction)HotspotSignon:(id)sender;
+-(IBAction)HotsignOK:(id)sender;
+-(IBAction)HotsignCancel:(id)sender;
 -(BOOL)windowShouldClose:(NSWindow*)sender;
 -(void)SpawnFeed:(id)param;
 -(void)PanelAlert;

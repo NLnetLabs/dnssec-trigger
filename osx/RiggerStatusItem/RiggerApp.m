@@ -13,6 +13,8 @@
 
 extern char* test_config_file;
 
+/* if true logs trace for debug */
+static int verb = 0;
 static NSLock* feed_lock = NULL;
 
 /** basically these are the commandline arguments to PanelAlert */
@@ -49,7 +51,7 @@ static void feed_alert(struct alert_arg* a)
 	[alert_lock lock];
 	alertinfo = *a;
 	[alert_lock unlock];
-	printf("panel alert state in attach\n");
+	if(verb) printf("panel alert state in attach\n");
 	[mainapp performSelectorOnMainThread:@selector(PanelAlert)
 							  withObject:nil waitUntilDone:NO];
 }
@@ -114,7 +116,7 @@ awakeFromNib
 -(void)
 dealloc
 {
-	printf("dealloc routine\n");
+	if(verb) printf("dealloc routine\n");
 	attach_stop();
 	[feed_lock release];
 	free(feed);
@@ -131,7 +133,7 @@ dealloc
 
 -(IBAction)Reprobe:(id)sender
 {
-	NSLog(@"Reprobe");
+	if(verb) NSLog(@"Reprobe");
 	attach_send_reprobe();
 }
 
@@ -148,7 +150,7 @@ void append_txt(NSTextView* pane, char* str)
 
 -(IBAction)ProbeResults:(id)sender
 {
-	NSLog(@"ProbeResults");
+	if(verb) NSLog(@"ProbeResults");
 	/* this is to help us bring a window to the front
 	 * from the hidden app */
 	[NSApp activateIgnoringOtherApps:YES];
@@ -170,13 +172,13 @@ void append_txt(NSTextView* pane, char* str)
 
 -(IBAction)ProbeResultsOK:(id)sender
 {
-	NSLog(@"ProbeResultsOK");
+	if(verb) NSLog(@"ProbeResultsOK");
 	[resultwindow orderOut:sender];
 }
 
 -(IBAction)UnsafeInsecure:(id)sender
 {
-	NSLog(@"Unsafe:Insecure");
+	if(verb) NSLog(@"Unsafe:Insecure");
 	[unsafewindow orderOut:sender];
 	unsafe_asked = 1;
 	attach_send_insecure(1);
@@ -184,15 +186,39 @@ void append_txt(NSTextView* pane, char* str)
 
 -(IBAction)UnsafeDisconnect:(id)sender
 {
-	NSLog(@"Unsafe:Disconnect");
+	if(verb) NSLog(@"Unsafe:Disconnect");
 	[unsafewindow orderOut:sender];
 	unsafe_asked = 1;
 	attach_send_insecure(0);
 }
 
+-(IBAction)HotspotSignon:(id)sender
+{
+    if(verb) NSLog(@"menu-hotspotsignon");
+	/* this is to help us bring a window to the front
+	 * from the hidden app */
+	[NSApp activateIgnoringOtherApps:YES];
+    [hotsignwindow center];
+    [hotsignwindow deminiaturize:sender];
+    [hotsignwindow orderFront:sender];
+}
+
+-(IBAction)HotsignOK:(id)sender
+{
+    if(verb) NSLog(@"hotsign ok");
+    attach_send_hotspot_signon();
+    [hotsignwindow orderOut:sender];
+}
+
+-(IBAction)HotsignCancel:(id)sender
+{
+    if(verb) NSLog(@"hotsign cancel");
+    [hotsignwindow orderOut:sender];
+}
+
 -(BOOL)windowShouldClose:(NSWindow*)sender
 {
-	NSLog(@"unsafeclose handler");
+	if(verb) NSLog(@"unsafeclose handler");
 	/* like pressing disconnect */
 	unsafe_asked = 1;
 	attach_send_insecure(0);
@@ -234,7 +260,7 @@ static void do_ask(void)
 	NSString* tt;
 	const char* ctt;
 	struct alert_arg a;
-	NSLog(@"PanelAlert function");
+	if(verb) NSLog(@"PanelAlert function");
 	[alert_lock lock];
 	a = alertinfo;
 	[alert_lock unlock];
