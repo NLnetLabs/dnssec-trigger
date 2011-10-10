@@ -1,3 +1,6 @@
+10 Oct 2011: Wouter
+	- detect transparent proxies and avoid them.
+
 29 Sep 2011: Wouter
 	- mac cocoa gui for hotspot signon.
 	- 0.5 release.

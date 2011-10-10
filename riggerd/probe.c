@@ -371,6 +371,22 @@ outq_check_packet(struct outq* outq, uint8_t* wire, size_t len)
 		}
 	}
 
+	/* for authoritative probes we try to detect transparent proxies
+	 * that mess with the answer, we have to avoid them, if they
+	 * worked well, the DHCP DNS cache would work well. */
+	if(!outq->recurse) {
+		if(LDNS_RA_WIRE(wire)) {
+			outq_done(outq, "authority response has RA flag");
+			ldns_pkt_free(p);
+			return;
+		}
+		if(!LDNS_AA_WIRE(wire)) {
+			outq_done(outq, "authority response misses AA flag");
+			ldns_pkt_free(p);
+			return;
+		}
+	}
+
 	outq_done(outq, NULL);
 	ldns_pkt_free(p);
 }
