@@ -203,7 +203,7 @@ if test $ac_cv_func_daemon = yes; then
 ])
 fi
 
-AC_CHECK_FUNCS([strftime localtime_r fcntl setsid sleep usleep random srandom recvmsg sendmsg writev fchflags])
+AC_CHECK_FUNCS([strftime localtime_r fcntl setsid sleep usleep random srandom recvmsg sendmsg writev chflags])
 
 AC_REPLACE_FUNCS(inet_pton)
 AC_REPLACE_FUNCS(inet_ntop)

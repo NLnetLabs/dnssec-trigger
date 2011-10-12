@@ -6716,7 +6716,7 @@ fi
 
 fi
 
-for ac_func in strftime localtime_r fcntl setsid sleep usleep random srandom recvmsg sendmsg writev fchflags
+for ac_func in strftime localtime_r fcntl setsid sleep usleep random srandom recvmsg sendmsg writev chflags
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"

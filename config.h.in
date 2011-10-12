@@ -21,14 +21,14 @@
 /* Whether the C compiler accepts the "unused" attribute */
 #undef HAVE_ATTR_UNUSED
 
+/* Define to 1 if you have the `chflags' function. */
+#undef HAVE_CHFLAGS
+
 /* Define to 1 if your system has a working `chown' function. */
 #undef HAVE_CHOWN
 
 /* Define to 1 if you have the `daemon' function. */
 #undef HAVE_DAEMON
-
-/* Define to 1 if you have the `fchflags' function. */
-#undef HAVE_FCHFLAGS
 
 /* Define to 1 if you have the `fcntl' function. */
 #undef HAVE_FCNTL
