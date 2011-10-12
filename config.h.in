@@ -27,6 +27,9 @@
 /* Define to 1 if you have the `daemon' function. */
 #undef HAVE_DAEMON
 
+/* Define to 1 if you have the `fchflags' function. */
+#undef HAVE_FCHFLAGS
+
 /* Define to 1 if you have the `fcntl' function. */
 #undef HAVE_FCNTL
 
