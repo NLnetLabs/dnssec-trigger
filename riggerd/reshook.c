@@ -48,6 +48,9 @@
 #ifdef USE_WINSOCK
 #include "winrc/win_svc.h"
 #endif
+#ifdef HAVE_CHFLAGS
+#include <sys/stat.h>
+#endif
 
 #ifdef HOOKS_OSX
 static int set_to_localhost = 0;
@@ -68,7 +71,7 @@ set_dns_osx(struct cfg* cfg, char* iplist)
 			strchr(dm, ' ')[0] = 0; /* use first word as domain */
 		domain = dm;
 	}
-	snprintf(cmd, sizeof(cmd), "%s/dnssec-trigger-setdns.sh %s %s",
+	snprintf(cmd, sizeof(cmd), "%s/dnssec-trigger-setdns.sh set %s %s",
 		LIBEXEC_DIR, domain, iplist);
 	verbose(VERB_QUERY, "%s", cmd);
 	system(cmd);
@@ -94,10 +97,45 @@ static void prline(FILE* out, const char* line)
 	}
 }
 
+#if defined(HAVE_CHFLAGS) && !defined(HOOKS_OSX)
+static void r_mutable_bsd(const char* f)
+{
+	if(chflags(f, 0) < 0) {
+		log_err("chflags(%s, nouchg) failed: %s", f, strerror(errno));
+	}
+}
+static void r_immutable_bsd(const char* f)
+{
+	/* BSD method for immutable files */
+	if(chflags(f, UF_IMMUTABLE|UF_NOUNLINK) < 0) {
+		log_err("chflags(%s, uchg) failed: %s", f, strerror(errno));
+	}
+}
+#elif !defined(HAVE_CHFLAGS) && !defined(HOOKS_OSX)
+static void r_mutable_efs(const char* f)
+{
+	char buf[10240];
+	snprintf(buf, sizeof(buf), "chattr -i %s", f);
+	system(buf);
+}
+static void r_immutable_efs(const char* f)
+{
+	char buf[10240];
+	/* this chattr only works on extX file systems */
+	snprintf(buf, sizeof(buf), "chattr +i %s", f);
+	system(buf);
+}
+#endif /* mutable/immutable on BSD and Linux */
+
 static FILE* open_rescf(struct cfg* cfg)
 {
 	FILE* out;
 	char line[1024];
+#  if defined(HAVE_CHFLAGS) && !defined(HOOKS_OSX)
+	r_mutable_bsd(cfg->resolvconf);
+#  elif !defined(HAVE_CHFLAGS) && !defined(HOOKS_OSX)
+	r_mutable_efs(cfg->resolvconf);
+#  endif
 	if(chmod(cfg->resolvconf, 0644)<0) {
 		log_err("chmod(%s) failed: %s", cfg->resolvconf,
 			strerror(errno));
@@ -128,6 +166,11 @@ static void close_rescf(struct cfg* cfg, FILE* out)
 		log_err("chmod(%s) failed: %s", cfg->resolvconf,
 			strerror(errno));
 	}
+#if defined(HAVE_CHFLAGS) && !defined(HOOKS_OSX)
+	r_immutable_bsd(cfg->resolvconf);
+#elif !defined(HAVE_CHFLAGS) && !defined(HOOKS_OSX)
+	r_immutable_efs(cfg->resolvconf);
+#endif
 }
 #endif /* !USE_WINSOCK */
 
@@ -143,13 +186,13 @@ void hook_resolv_localhost(struct cfg* cfg)
 #endif
 #ifdef USE_WINSOCK
 	win_set_resolv("127.0.0.1");
-#else
+#else /* not on windows */
 	out = open_rescf(cfg);
 	if(!out) return;
 	/* write the nameserver records */
 	prline(out, "nameserver 127.0.0.1\n");
 	close_rescf(cfg, out);
-#endif
+#endif /* not on windows */
 }
 
 void hook_resolv_iplist(struct cfg* cfg, struct probe_ip* list)
@@ -207,5 +250,35 @@ void hook_resolv_flush(struct cfg* cfg)
 	win_run_cmd("ipconfig /flushdns");
 #else
 	/* TODO */
+#endif
+}
+
+#ifdef HOOKS_OSX
+static void osx_uninit(void)
+{
+	char cmd[10240];
+	snprintf(cmd, sizeof(cmd), "%s/dnssec-trigger-setdns.sh uninit",
+		LIBEXEC_DIR);
+	verbose(VERB_QUERY, "%s", cmd);
+	system(cmd);
+}
+#endif /* HOOKS_OSX */
+
+void hook_resolv_uninstall(struct cfg* cfg)
+{
+#ifdef HOOKS_OSX
+	/* on OSX: do the OSX thing */
+	(void)cfg;
+	osx_uninit();
+#elif defined(USE_WINSOCK)
+	/* on Windows: edit registry */
+	(void)cfg;
+	win_clear_resolv();
+#elif defined(HAVE_CHFLAGS)
+	/* on BSD: make file mutable again */
+	r_mutable_bsd(cfg->resolvconf);
+#else
+	/* other (unix) systems, make it via ext2fs mutable again */
+	r_mutable_efs(cfg->resolvconf);
 #endif
 }

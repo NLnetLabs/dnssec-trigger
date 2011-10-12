@@ -2,14 +2,29 @@
 # dnssec-trigger shell script to set DNS servers on OSX.
 # must run as root.
 #
-# usage:  example.com 192.0.2.1 192.0.2.2
+# usage:  set example.com 192.0.2.1 192.0.2.2
 
-domain="$1"
+cmd="$1"
 shift
-# remaining arguments are the servers to set
-servers="$*"
+if test "$cmd" = "set"; then
+	domain="$2"
+	shift
+	# remaining arguments are the servers to set
+	servers="$*"
+	logger "dnssec-trigger-setdns to $domain and $servers"
+else
+	if test "$cmd" = "uninit"; then
+		logger "dnssec-trigger-setdns uninit dns override"
+	else
+		echo "bad command: set domain [ip ..] | uninit"
+		exit 1
+	fi
+	domain=""
+	servers=""
+fi
 
-logger "dnssec-trigger-setdns to $domain and $servers"
+# sets the DNS settings via scutil.
+function with_scutil () {
 # find the ids of the networkservices that are running or important
 # output like: State:/Network/Service/AB5ED934-29E2-4E1B-BEDC-9167410B49A0/DNS
 ids=`echo "list State:/Network/Service/[^/]+/DNS" | scutil | sed -e "s?^.* = ??"`
@@ -23,5 +38,23 @@ d.add DomainName $domain
 set $i
 quit
 END
+done
+}
+
+# set the DNS settings via networksetup
+nws="networksetup"
+$nws -listallnetworkservices 2>/dev/null | grep -v "is disabled" | while \
+	read x ; do
+	#echo $x
+	if test -z "$domain" ; then
+		$nws -setsearchdomains "$x" "empty"
+	else
+		$nws -setsearchdomains "$x" $domain
+	fi
+	if test -z "$servers" ; then
+		$nws -setdnsservers "$x" "empty"
+	else
+		$nws -setdnsservers "$x" "$servers"
+	fi
 done
 

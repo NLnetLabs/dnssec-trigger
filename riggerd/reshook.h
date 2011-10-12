@@ -69,4 +69,10 @@ void hook_resolv_flush(struct cfg* cfg);
 void restore_resolv_osx(struct cfg* cfg);
 #endif /*  HOOKS_OSX */
 
+/**
+ * Unregister the override we put in place.
+ * The override survives reboots, this uninit is for uninstall.
+ */
+void hook_resolv_uninstall(struct cfg* cfg);
+
 #endif /* RESHOOKS_H */
