@@ -21,6 +21,7 @@
 .B dnssec-triggerd
 .RB [ \-d ]
 .RB [ \-v ]
+.RB [ \-u ]
 .RB [ \-c 
 .IR file ]
 .LP
@@ -56,6 +57,9 @@ syntax is described below.
 .TP
 .B \-d
 Debug flag, do not fork into the background, but stay attached to the console.
+.TP
+.B \-u
+uninstall dns override: makes resolv.conf mutable again, or other OS action.
 .TP
 .B \-v
 Increase verbosity. If given multiple times, more information is logged.

@@ -1,3 +1,6 @@
+12 Oct 2011: Wouter
+	- makes resolv.conf immutable and restores on uninstall.
+
 10 Oct 2011: Wouter
 	- detect transparent proxies and avoid them.
 

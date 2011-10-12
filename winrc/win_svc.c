@@ -284,9 +284,11 @@ service_init(struct svr** d, struct cfg** c)
 static void
 service_deinit(struct svr* svr, struct cfg* cfg)
 {
+	/* set localhost for safe reboot */
+	if(svr->insecure_state)
+		hook_resolv_localhost(cfg);
 	svr_delete(svr);
 	cfg_delete(cfg);
-	win_clear_resolv();
 }
 
 /**

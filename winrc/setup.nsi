@@ -263,6 +263,9 @@ section "un.DnssecTrigger"
 	nsExec::ExecToLog '"$INSTDIR\unbound.exe" -w stop'
 	nsExec::ExecToLog '"$INSTDIR\unbound.exe" -w remove'
 
+	# remove DNS override entries from registry
+	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -u'
+
 	# give the panel time to process the messages.
 	Sleep 2000
 

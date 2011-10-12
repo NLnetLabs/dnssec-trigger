@@ -7,7 +7,7 @@
 cmd="$1"
 shift
 if test "$cmd" = "set"; then
-	domain="$2"
+	domain="$1"
 	shift
 	# remaining arguments are the servers to set
 	servers="$*"
@@ -43,18 +43,15 @@ done
 
 # set the DNS settings via networksetup
 nws="networksetup"
-$nws -listallnetworkservices 2>/dev/null | grep -v "is disabled" | while \
-	read x ; do
+if test -z "$domain"; then
+	domain="empty"
+fi
+if test -z "$servers"; then
+	servers="empty"
+fi
+$nws -listallnetworkservices 2>/dev/null | grep -v '*' | while read x ; do
 	#echo $x
-	if test -z "$domain" ; then
-		$nws -setsearchdomains "$x" "empty"
-	else
-		$nws -setsearchdomains "$x" $domain
-	fi
-	if test -z "$servers" ; then
-		$nws -setdnsservers "$x" "empty"
-	else
-		$nws -setdnsservers "$x" "$servers"
-	fi
+	$nws -setsearchdomains "$x" $domain
+	$nws -setdnsservers "$x" "$servers"
 done
 

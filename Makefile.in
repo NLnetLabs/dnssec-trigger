@@ -335,6 +335,8 @@ networkmanager-hook-install:
 	$(INSTALL) -c -m 755 01-dnssec-trigger-hook $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger-hook
 
 networkmanager-hook-uninstall:
+	echo "attempt to restore resolv.conf mutability"
+	$(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT) -u
 	rm -f $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger-hook
 
 osx-hook-install:
@@ -347,6 +349,8 @@ osx-hook-install:
 	echo "To start the daemon, trigger and panel you can reboot; (after dnssec-trigger-control-setup)"
 
 osx-hook-uninstall:
+	echo "attempt to remove dns override from system preferences"
+	$(DESTDIR)$(libexecdir)/dnssec-trigger-setdns.sh uninit
 	rm -f $(DESTDIR)$(osx_launchdaemons_dir)/nl.nlnetlabs.dnssec-trigger-hook.plist
 	rm -f $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
 	rm -f $(DESTDIR)$(libexecdir)/dnssec-trigger-setdns.sh
@@ -377,6 +381,8 @@ netconfig-hook-install:
 	$(INSTALL) -c -m 755 dnssec-trigger-netconfig-hook $(DESTDIR)$(netconfig_dispatcher_dir)/dnssec-trigger-netconfig-hook
 
 netconfig-hook-uninstall:
+	echo "attempt to restore resolv.conf mutability"
+	$(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT) -u
 	rm -f $(DESTDIR)$(netconfig_dispatcher_dir)/dnssec-trigger-netconfig-hook
 
 windows-gui-install:

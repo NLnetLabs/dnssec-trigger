@@ -68,6 +68,8 @@ usage(void)
 	printf(" -v		increase verbosity\n");
 	printf(" -d		do not fork into the background\n");
 	printf(" -c file	config file, default %s\n", CONFIGFILE);
+	printf(" -u		uninstall the dns override on the system\n");
+	printf("		makes resolv.conf mutable again.\n");
 #ifdef USE_WINSOCK
 	printf("-w opt  windows option: \n");
 	printf("        install, remove, start, stop - manage the service\n");
@@ -252,6 +254,8 @@ do_main_work(const char* cfgfile, int nodaemonize, int verb)
 	log_info("%s start", PACKAGE_STRING);
 	/* start 127.0.0.1 service (assumes not left in insecure mode),
 	 * unbound starts in authority-direct mode by default */
+	/* TODO: check if already localhost and if so do not provide a small
+	 * window of opportunity here */
 	hook_resolv_localhost(cfg);
 #ifdef USE_WINSOCK
 	netlist_start(svr);
@@ -276,13 +280,14 @@ do_main_work(const char* cfgfile, int nodaemonize, int verb)
 		}
 		break;
 	}
+	/* attempt to set 127.0.0.1 in case we weren't, for next reboot,
+	   so that during the reboot there is no window of opportunity */ 
+	if(svr->insecure_state)
+		hook_resolv_localhost(cfg);
 	unlink_pid(cfg->pidfile);
 	log_info("%s stop", PACKAGE_STRING);
 	svr_delete(svr);
 	cfg_delete(cfg);
-#ifdef USE_WINSOCK
-	win_clear_resolv();
-#endif
 }
 
 /** getopt global, in case header files fail to declare it. */
@@ -300,7 +305,7 @@ int main(int argc, char *argv[])
 {
 	int c;
 	const char* cfgfile = CONFIGFILE;
-	int nodaemonize = 0, verb = 0;
+	int nodaemonize = 0, verb = 0, uninit_it = 0;
 	const char* winopt = NULL;
 #ifdef USE_WINSOCK
 	int cmdline_cfg = 0;
@@ -315,13 +320,16 @@ int main(int argc, char *argv[])
 
 	log_ident_set("dnssec-triggerd");
 	log_init(NULL, 0, NULL);
-	while( (c=getopt(argc, argv, "c:dhvw:")) != -1) {
+	while( (c=getopt(argc, argv, "c:dhuvw:")) != -1) {
 		switch(c) {
 		case 'c':
 			cfgfile = optarg;
 #ifdef USE_WINSOCK
 			cmdline_cfg = 1;
 #endif
+			break;
+		case 'u':
+			uninit_it = 1;
 			break;
 		case 'v':
 			verbosity++;
@@ -351,7 +359,11 @@ int main(int argc, char *argv[])
 	OpenSSL_add_all_algorithms();
 	(void)SSL_library_init();
 
-	if(winopt) {
+	if(uninit_it) {
+		struct cfg* cfg = cfg_create(cfgfile);
+		if(!cfg) fatal_exit("could not create config");
+		hook_resolv_uninstall(cfg);
+	} else if(winopt) {
 #ifdef USE_WINSOCK
 		wsvc_command_option(winopt, cfgfile, verb, cmdline_cfg);
 #else

@@ -51,10 +51,9 @@
 #ifdef HAVE_CHFLAGS
 #include <sys/stat.h>
 #endif
-
-#ifdef HOOKS_OSX
 static int set_to_localhost = 0;
 
+#ifdef HOOKS_OSX
 /** set the DNS the OSX way */
 static void
 set_dns_osx(struct cfg* cfg, char* iplist)
@@ -62,7 +61,6 @@ set_dns_osx(struct cfg* cfg, char* iplist)
 	char cmd[10240];
 	char dm[1024];
 	char* domain = "nothing.invalid";
-	set_to_localhost = (strcmp(iplist, "127.0.0.1") == 0);
 	if(cfg->rescf_domain && cfg->rescf_domain[0])
 		domain = cfg->rescf_domain;
 	else if(cfg->rescf_search && cfg->rescf_search[0]) {
@@ -179,6 +177,13 @@ void hook_resolv_localhost(struct cfg* cfg)
 #ifndef USE_WINSOCK
 	FILE* out;
 #endif
+	if(set_to_localhost) {
+		/* already done, do not do it again, it may
+		create a moment where the mutability fails */
+		/* TODO: check that it is localhost otherwise override rsconf*/
+		return;
+	}
+	set_to_localhost = 1;
 	if(cfg->noaction)
 		return;
 #ifdef HOOKS_OSX
@@ -205,6 +210,7 @@ void hook_resolv_iplist(struct cfg* cfg, struct probe_ip* list)
 	char iplist[10240];
 	iplist[0] = 0;
 #endif
+	set_to_localhost = 0;
 	if(cfg->noaction)
 		return;
 #ifndef USE_WINSOCK
