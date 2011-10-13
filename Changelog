@@ -1,5 +1,7 @@
 13 Oct 2011: Wouter
 	- the dnssec-trigger-panel (gtk2) works on the XFCE desktop.
+	- windows package works, tested Vista.
+	- osx fix for insecure mode.
 
 12 Oct 2011: Wouter
 	- makes resolv.conf immutable and restores on uninstall.

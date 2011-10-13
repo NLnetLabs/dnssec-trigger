@@ -52,6 +52,7 @@ fi
 $nws -listallnetworkservices 2>/dev/null | grep -v '*' | while read x ; do
 	#echo $x
 	$nws -setsearchdomains "$x" $domain
-	$nws -setdnsservers "$x" "$servers"
+	# no quotes around servers: the IPs have to be separate arguments.
+	$nws -setdnsservers "$x" $servers
 done
 
