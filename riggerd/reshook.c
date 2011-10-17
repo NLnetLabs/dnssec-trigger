@@ -177,10 +177,10 @@ static void close_rescf(struct cfg* cfg, FILE* out)
 static int
 check_line_arg(char* line, const char* opt)
 {
-	if(!opt) /* has opt but should not */
+	if(!opt) /* has opt in file but should not */
 		return 0;
 	if(strncmp(line, opt, strlen(opt)) != 0)
-		/* has wrong content */
+		/* file has wrong content */
 		return 0;
 	if(strcmp(line+strlen(opt), "\n") != 0)
 		/* stuff after opt (too many domains) */
@@ -195,10 +195,11 @@ really_set_to_localhost(struct cfg* cfg) {
 	int saw_127 = 0, saw_search = 0, saw_domain = 0;
 	char line[1024];
 	if(!in) {
-		log_err("fopen %s: %s", cfg->resolvconf, strerror(errno));
+		verbose(VERB_DETAIL, "fopen %s: %s",
+			cfg->resolvconf, strerror(errno));
 		return 0;
 	}
-	if(!fgets(line, sizeof(line), in)) {
+	if(!fgets(line, (int)sizeof(line), in)) {
 		fclose(in); /* failed to read first line */
 		return 0;
 	}
@@ -208,7 +209,7 @@ really_set_to_localhost(struct cfg* cfg) {
 		return 0;
 	}
 	/* must contain 127.0.0.1 and nothing else */
-	while(fgets(line, sizeof(line), in)) {
+	while(fgets(line, (int)sizeof(line), in)) {
 		line[sizeof(line)-1] = 0; /* robust end of string */
 		if(strcmp(line, "nameserver 127.0.0.1\n") == 0) {
 			saw_127 = 1;
