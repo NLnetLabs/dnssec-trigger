@@ -219,7 +219,7 @@ void hook_resolv_iplist(struct cfg* cfg, struct probe_ip* list)
 #endif
 	/* write the nameserver records */
 	while(list) {
-		if(!list->to_auth) {
+		if(!list->to_auth && !list->dnstcp) {
 #ifndef USE_WINSOCK
 			snprintf(line, sizeof(line), "nameserver %s\n",
 				list->name);

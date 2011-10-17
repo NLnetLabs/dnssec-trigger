@@ -53,7 +53,7 @@ void hook_resolv_localhost(struct cfg* cfg);
 
 /**
  * Set the system to resolve at the list of 'cache' (recursive) probes in
- * the given list.
+ * the given list.  The original servers are used, not DNSTCP recursive probes.
  * @param cfg: with config options.
  */
 void hook_resolv_iplist(struct cfg* cfg, struct probe_ip* list);
