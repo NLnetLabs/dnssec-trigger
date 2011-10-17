@@ -1,5 +1,7 @@
 17 Oct 2011: Wouter
 	- Fix insecure mode after dnstcp443 has been probed.
+	- Fix OS-race on Linux/BSD, it sets immutable settings on install, and
+	  checks this regularly (and fixes if necessary).
 
 13 Oct 2011: Wouter
 	- the dnssec-trigger-panel (gtk2) works on the XFCE desktop.
