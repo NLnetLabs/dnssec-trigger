@@ -1,5 +1,6 @@
 18 Oct 2011: Wouter
 	- Manpage fixes
+	- can build outside of sourcedir.
 
 17 Oct 2011: Wouter
 	- Fix insecure mode after dnstcp443 has been probed.

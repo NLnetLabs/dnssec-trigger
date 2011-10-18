@@ -397,8 +397,8 @@ windows-gui-install:
 	$(INSTALL) -m 755 -d $(DESTDIR)$(bindir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(uidir)
 	$(INSTALL) -c -m 755 dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
-	$(INSTALL) -c -m 644 winrc/alert.ico $(DESTDIR)$(uidir)/alert.ico
-	$(INSTALL) -c -m 644 winrc/status.ico $(DESTDIR)$(uidir)/status.ico
+	$(INSTALL) -c -m 644 $(srcdir)/winrc/alert.ico $(DESTDIR)$(uidir)/alert.ico
+	$(INSTALL) -c -m 644 $(srcdir)/winrc/status.ico $(DESTDIR)$(uidir)/status.ico
 
 windows-gui-uninstall:
 	rm -f $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
@@ -408,9 +408,9 @@ windows-gui-uninstall:
 gtk-gui-install:
 	$(INSTALL) -m 755 -d $(DESTDIR)$(bindir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(uidir)
-	$(INSTALL) -c -m 644 panel/pui.xml $(DESTDIR)$(uidir)/pui.xml
-	$(INSTALL) -c -m 644 panel/status-icon.png $(DESTDIR)$(uidir)/status-icon.png
-	$(INSTALL) -c -m 644 panel/status-icon-alert.png $(DESTDIR)$(uidir)/status-icon-alert.png
+	$(INSTALL) -c -m 644 $(srcdir)/panel/pui.xml $(DESTDIR)$(uidir)/pui.xml
+	$(INSTALL) -c -m 644 $(srcdir)/panel/status-icon.png $(DESTDIR)$(uidir)/status-icon.png
+	$(INSTALL) -c -m 644 $(srcdir)/panel/status-icon-alert.png $(DESTDIR)$(uidir)/status-icon-alert.png
 	$(INSTALL) -c -m 755 dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
 	if test -n "$(xdg_autostart_dir)"; then \
 		$(INSTALL) -m 755 -d $(DESTDIR)$(xdg_autostart_dir) ; \
