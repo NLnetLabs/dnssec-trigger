@@ -114,14 +114,16 @@ static void r_mutable_efs(const char* f)
 {
 	char buf[10240];
 	snprintf(buf, sizeof(buf), "chattr -i %s", f);
-	system(buf);
+	if(system(buf) < 0)
+		log_err("could not %s: %s", buf, strerror(errno));
 }
 static void r_immutable_efs(const char* f)
 {
 	char buf[10240];
 	/* this chattr only works on extX file systems */
 	snprintf(buf, sizeof(buf), "chattr +i %s", f);
-	system(buf);
+	if(system(buf) < 0)
+		log_err("could not %s: %s", buf, strerror(errno));
 }
 #endif /* mutable/immutable on BSD and Linux */
 
