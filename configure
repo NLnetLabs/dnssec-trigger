@@ -605,8 +605,6 @@ keydir
 xdg_autostart_dir
 GTK_LIBS
 GTK_CFLAGS
-APP_INDICATOR_LIBS
-APP_INDICATOR_CFLAGS
 gui
 hooks
 netconfig_dispatcher_dir
@@ -6979,7 +6977,15 @@ $as_echo "$gui" >&6; }
 
 
 if test "$gui" = "gtk"; then
-	APPINDICATOR_REQUIRED=0.1
+	# GTK
+	GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
+	GTK_LIBS=`pkg-config --libs gtk+-2.0`
+	if test -z "$GTK_LIBS"; then
+		as_fn_error "No gtk+-2.0 detected, please install glib-dev, gtk2-dev" "$LINENO" 5
+	fi
+
+
+
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libappindicator" >&5
 $as_echo_n "checking for libappindicator... " >&6; }
 	# Check whether --enable-appindicator was given.
@@ -6997,30 +7003,21 @@ fi
 		fi
 	fi
 	if test x$enable_appindicator = xyes ; then
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-		APP_INDICATOR_CFLAGS=`pkg-config --cflags appindicator-0.1`
-		APP_INDICATOR_LIBS=`pkg-config --libs appindicator-0.1`
-		if test -z "$APP_INDICATOR_LIBS"; then
+		# replace since GTK is included in the appindicator flags
+		GTK_CFLAGS=`pkg-config --cflags appindicator-0.1`
+		GTK_LIBS=`pkg-config --libs appindicator-0.1`
+		if test -z "$GTK_LIBS"; then
 			as_fn_error "appindicator-0.1 is not installed, need libappindicator-dev" "$LINENO" 5
 		fi
 
-
-
 $as_echo "#define HAVE_APP_INDICATOR 1" >>confdefs.h
 
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
 	else
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 	fi
-
-	# GTK
-	GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
-	GTK_LIBS=`pkg-config --libs gtk+-2.0`
-	if test -z "$GTK_LIBS"; then
-		as_fn_error "No gtk+-2.0 detected, please install glib-dev, gtk2-dev" "$LINENO" 5
-	fi
-
 
 	# check for missing -lgthread-2.0 in the GTK_LIBS string.
 	case "$GTK_LIBS" in *-lgthread* ) ;;

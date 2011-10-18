@@ -317,7 +317,15 @@ AC_MSG_RESULT([$gui])
 AC_SUBST(gui)
 
 if test "$gui" = "gtk"; then
-	APPINDICATOR_REQUIRED=0.1
+	# GTK
+	GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
+	GTK_LIBS=`pkg-config --libs gtk+-2.0`
+	if test -z "$GTK_LIBS"; then
+		AC_MSG_ERROR([No gtk+-2.0 detected, please install glib-dev, gtk2-dev])
+	fi
+	AC_SUBST(GTK_CFLAGS)
+	AC_SUBST(GTK_LIBS)
+
 	AC_MSG_CHECKING([for libappindicator])
 	AC_ARG_ENABLE(appindicator, AS_HELP_STRING([--enable-appindicator[=@<:@no/auto/yes@:>@]],[Build support for application indicators (for Ubuntu Unity)]), [enable_appindicator=$enableval], [enable_appindicator="auto"])
 	if test x$enable_appindicator = xauto ; then
@@ -328,27 +336,18 @@ if test "$gui" = "gtk"; then
 		fi
 	fi
 	if test x$enable_appindicator = xyes ; then
-		AC_MSG_RESULT([yes])
-		APP_INDICATOR_CFLAGS=`pkg-config --cflags appindicator-0.1`
-		APP_INDICATOR_LIBS=`pkg-config --libs appindicator-0.1`
-		if test -z "$APP_INDICATOR_LIBS"; then
+		# replace since GTK is included in the appindicator flags
+		GTK_CFLAGS=`pkg-config --cflags appindicator-0.1`
+		GTK_LIBS=`pkg-config --libs appindicator-0.1`
+		if test -z "$GTK_LIBS"; then
 			AC_MSG_ERROR([appindicator-0.1 is not installed, need libappindicator-dev])
 		fi
-		AC_SUBST(APP_INDICATOR_CFLAGS)
-		AC_SUBST(APP_INDICATOR_LIBS)
 		AC_DEFINE(HAVE_APP_INDICATOR, 1, [Have AppIndicator (Ubuntu Unity)])
+		AC_MSG_RESULT([yes])
 	else
 		AC_MSG_RESULT([no])
 	fi
 
-	# GTK
-	GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
-	GTK_LIBS=`pkg-config --libs gtk+-2.0`
-	if test -z "$GTK_LIBS"; then
-		AC_MSG_ERROR([No gtk+-2.0 detected, please install glib-dev, gtk2-dev])
-	fi
-	AC_SUBST(GTK_CFLAGS)
-	AC_SUBST(GTK_LIBS)
 	# check for missing -lgthread-2.0 in the GTK_LIBS string.
 	case "$GTK_LIBS" in *-lgthread* ) ;;
 	*) AC_CHECK_LIB(gthread-2.0, g_thread_init, [GTK_LIBS="$GTK_LIBS -lgthread-2.0"]) esac
