@@ -71,6 +71,7 @@ CFLAGS=@CFLAGS@ $(GTK_CFLAGS)
 LDFLAGS=@LDFLAGS@
 GTK_LIBS=@GTK_LIBS@
 LDNSLIBS=@LDNSLIBS@
+APP_INDICATOR=@APP_INDICATOR@
 LIBS=$(strip @LIBS@)
 LIBOBJS=@LIBOBJS@
 RUNTIME_PATH=@RUNTIME_PATH@
@@ -413,6 +414,15 @@ gtk-gui-install:
 	$(INSTALL) -c -m 644 $(srcdir)/panel/status-icon.png $(DESTDIR)$(uidir)/status-icon.png
 	$(INSTALL) -c -m 644 $(srcdir)/panel/status-icon-alert.png $(DESTDIR)$(uidir)/status-icon-alert.png
 	$(INSTALL) -c -m 755 dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
+ifeq "$(APP_INDICATOR)" "yes"
+	$(INSTALL) -m 755 -d $(DESTDIR)/usr/share/icons/hicolor/scalable/apps
+	$(INSTALL) -m 755 -d $(DESTDIR)/usr/share/icons/hicolor/64x64/apps
+	$(INSTALL) -c -m 644 $(srcdir)/panel/status-icon.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/dnssec-trigger.svg
+	$(INSTALL) -c -m 644 $(srcdir)/panel/status-icon-alert.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/dnssec-trigger-alert.svg
+	$(INSTALL) -c -m 644 $(srcdir)/panel/status-icon.png $(DESTDIR)/usr/share/icons/hicolor/64x64/apps/dnssec-trigger.png
+	$(INSTALL) -c -m 644 $(srcdir)/panel/status-icon-alert.png $(DESTDIR)/usr/share/icons/hicolor/64x64/apps/dnssec-trigger-alert.png
+	gtk-update-icon-cache $(DESTDIR)/usr/share/icons/hicolor
+endif
 	if test -n "$(xdg_autostart_dir)"; then \
 		$(INSTALL) -m 755 -d $(DESTDIR)$(xdg_autostart_dir) ; \
 		$(INSTALL) -c -m 644 dnssec-trigger-panel.desktop $(DESTDIR)$(xdg_autostart_dir)/dnssec-trigger-panel.desktop ; fi
@@ -422,6 +432,13 @@ gtk-gui-uninstall:
 	rm -f $(DESTDIR)$(uidir)/pui.xml
 	rm -f $(DESTDIR)$(uidir)/status-icon.png
 	rm -f $(DESTDIR)$(uidir)/status-icon-alert.png
+ifeq "$(APP_INDICATOR)" "yes"
+	rm -f $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/dnssec-trigger.svg
+	rm -f $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/dnssec-trigger-alert.svg
+	rm -f $(DESTDIR)/usr/share/icons/hicolor/64x64/apps/dnssec-trigger.png
+	rm -f $(DESTDIR)/usr/share/icons/hicolor/64x64/apps/dnssec-trigger-alert.png
+	gtk-update-icon-cache $(DESTDIR)/usr/share/icons/hicolor
+endif
 	if test -n "$(xdg_autostart_dir)"; then \
 		rm -f $(DESTDIR)$(xdg_autostart_dir)/dnssec-trigger-panel.desktop ; fi
 

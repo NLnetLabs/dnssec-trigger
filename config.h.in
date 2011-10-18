@@ -15,6 +15,9 @@
 /* Have AppIndicator (Ubuntu Unity) */
 #undef HAVE_APP_INDICATOR
 
+/* Define to 1 if you have the `app_indicator_set_icon_full' function. */
+#undef HAVE_APP_INDICATOR_SET_ICON_FULL
+
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 

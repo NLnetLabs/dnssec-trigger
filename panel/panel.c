@@ -44,13 +44,20 @@
 #include <signal.h>
 #include <gtk/gtk.h>
 #include <glib.h>
+#ifdef HAVE_APP_INDICATOR
+#include "libappindicator/app-indicator.h"
+#endif
 
 #include "riggerd/log.h"
 #include "riggerd/cfg.h"
 #include "panel/attach.h"
 
 static GtkTextView* result_textview;
+#ifndef HAVE_APP_INDICATOR
 static GtkStatusIcon* status_icon;
+#else
+static AppIndicator* app_ind;
+#endif
 static GtkWidget* result_window;
 static GtkWidget* unsafe_dialog;
 static GtkWidget* hotsign_dialog;
@@ -354,19 +361,31 @@ void present_unsafe_dialog(void)
 
 void panel_alert_danger(void)
 {
+#ifndef HAVE_APP_INDICATOR
 	gtk_status_icon_set_from_pixbuf(status_icon, alert_icon);
+#else
+	app_indicator_set_status(app_ind, APP_INDICATOR_STATUS_ATTENTION);
+#endif
 }
 
 void panel_alert_safe(void)
 {
+#ifndef HAVE_APP_INDICATOR
 	gtk_status_icon_set_from_pixbuf(status_icon, normal_icon);
+#else
+	app_indicator_set_status(app_ind, APP_INDICATOR_STATUS_ACTIVE);
+#endif
 }
 
 /** tell panel to update itself with new state information */
 void panel_alert_state(struct alert_arg* a)
 {
 	/* handle state changes */
+#ifndef HAVE_APP_INDICATOR
 	gtk_status_icon_set_tooltip_text(status_icon, state_tooltip(a));
+#else
+	/* no tooltip for appindicator */
+#endif
 	process_state(a, &unsafe_asked, &panel_alert_danger, &panel_alert_safe,
 		&present_unsafe_dialog);
 }
@@ -434,6 +453,7 @@ static GdkPixbuf* load_icon(const char* icon, int debug)
 
 static void make_tray_icon(void)
 {
+#ifndef HAVE_APP_INDICATOR
 	status_icon = gtk_status_icon_new_from_pixbuf(normal_icon);
 	g_signal_connect(G_OBJECT(status_icon), "activate",
 		G_CALLBACK(on_statusicon_activate), NULL);
@@ -441,6 +461,28 @@ static void make_tray_icon(void)
 		G_CALLBACK(on_statusicon_popup_menu), NULL);
 	gtk_status_icon_set_tooltip_text(status_icon, "dnssec-trigger");
 	gtk_status_icon_set_visible(status_icon, TRUE);
+#else
+	/* appindicator */
+	const char* i = "dnssec-trigger";
+	const char* a = "dnssec-trigger-alert";
+	if(gtk_icon_theme_get_default() &&
+	   !gtk_icon_theme_has_icon(gtk_icon_theme_get_default(), i)) {
+		printf("error: icon not found in icon theme, fallback\n");
+		i="gtk-add";
+		a="gtk-dialog-warning";
+	}
+
+	app_ind = app_indicator_new("dnssec-trigger", i, APP_INDICATOR_CATEGORY_SYSTEM_SERVICES);
+#  ifdef HAVE_APP_INDICATOR_SET_ICON_FULL
+	app_indicator_set_icon_full(app_ind, i, "dnssec-trigger");
+	app_indicator_set_attention_icon_full(app_ind, a, "DNS DANGER");
+#  else
+	app_indicator_set_icon(app_ind, i);
+	app_indicator_set_attention_icon(app_ind, a);
+#  endif
+	app_indicator_set_menu(app_ind, statusmenu);
+	app_indicator_set_status(app_ind, APP_INDICATOR_STATUS_ACTIVE);
+#endif
 }
 
 /* build UI from xml */
@@ -504,7 +546,11 @@ stop_gui(void)
 	gtk_widget_hide(GTK_WIDGET(hotsign_dialog));
 	gtk_widget_hide(GTK_WIDGET(result_window));
 	gtk_widget_hide(GTK_WIDGET(statusmenu));
+#ifndef HAVE_APP_INDICATOR
 	gtk_status_icon_set_visible(status_icon, FALSE);
+#else
+	app_indicator_set_status(app_ind, APP_INDICATOR_STATUS_PASSIVE);
+#endif
 }
 
 /** do main work */

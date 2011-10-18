@@ -343,8 +343,13 @@ if test "$gui" = "gtk"; then
 			AC_MSG_ERROR([appindicator-0.1 is not installed, need libappindicator-dev])
 		fi
 		AC_DEFINE(HAVE_APP_INDICATOR, 1, [Have AppIndicator (Ubuntu Unity)])
+		APP_INDICATOR="yes"
+		AC_SUBST(APP_INDICATOR)
 		AC_MSG_RESULT([yes])
-		AC_CHECK_FUNC([app_indicator_set_icon_full])
+		BAKLIBS="$LIBS"
+		LIBS="$LIBS $GTK_LIBS"
+		AC_CHECK_FUNCS([app_indicator_set_icon_full])
+		LIBS="$BAKLIBS"
 	else
 		AC_MSG_RESULT([no])
 	fi

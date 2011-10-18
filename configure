@@ -603,6 +603,7 @@ configfile
 uidir
 keydir
 xdg_autostart_dir
+APP_INDICATOR
 GTK_LIBS
 GTK_CFLAGS
 gui
@@ -7012,8 +7013,24 @@ fi
 
 $as_echo "#define HAVE_APP_INDICATOR 1" >>confdefs.h
 
+		APP_INDICATOR="yes"
+
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
+		BAKLIBS="$LIBS"
+		LIBS="$LIBS $GTK_LIBS"
+		for ac_func in app_indicator_set_icon_full
+do :
+  ac_fn_c_check_func "$LINENO" "app_indicator_set_icon_full" "ac_cv_func_app_indicator_set_icon_full"
+if test "x$ac_cv_func_app_indicator_set_icon_full" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_APP_INDICATOR_SET_ICON_FULL 1
+_ACEOF
+
+fi
+done
+
+		LIBS="$BAKLIBS"
 	else
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
