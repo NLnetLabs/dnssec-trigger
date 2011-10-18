@@ -344,6 +344,7 @@ if test "$gui" = "gtk"; then
 		fi
 		AC_DEFINE(HAVE_APP_INDICATOR, 1, [Have AppIndicator (Ubuntu Unity)])
 		AC_MSG_RESULT([yes])
+		AC_CHECK_FUNC([app_indicator_set_icon_full])
 	else
 		AC_MSG_RESULT([no])
 	fi
