@@ -322,9 +322,9 @@ tags:	$(srcdir)/*.[ch] $(srcdir)/*/*.[ch]
 	ctags  -f $(srcdir)/tags $(srcdir)/*.[ch] $(srcdir)/*/*.[ch]
 
 strip:
-	$(STRIP) dnssec-trigger-panel$(EXEEXT)
 	$(STRIP) dnssec-triggerd$(EXEEXT)
 	$(STRIP) dnssec-trigger-control$(EXEEXT)
+	if test -f dnssec-trigger-panel$(EXEEXT); then $(STRIP) dnssec-trigger-panel$(EXEEXT); fi
 	if test -f dnssec-trigger-keygen$(EXEEXT); then $(STRIP) dnssec-trigger-keygen$(EXEEXT); fi
 
 none-hook-install:
