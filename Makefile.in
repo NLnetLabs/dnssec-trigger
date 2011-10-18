@@ -193,35 +193,36 @@ networkmanager-hook:	01-dnssec-trigger-hook
 	sed -e 's?0SHELL0?$(SHELL)?' < $(srcdir)/01-dnssec-trigger-hook.sh.in > $@
 	chmod +x $@
 
-osx/RiggerStatusItem/log.c:	$(srcdir)/riggerd/log.c
+osx/RiggerStatusItem/log.c:	$(srcdir)/riggerd/log.c osx/RiggerStatusItem
 	cp $< $@
 
-osx/RiggerStatusItem/cfg.c:	$(srcdir)/riggerd/cfg.c
+osx/RiggerStatusItem/cfg.c:	$(srcdir)/riggerd/cfg.c osx/RiggerStatusItem
 	cp $< $@
 
-osx/RiggerStatusItem/net_help.c:	$(srcdir)/riggerd/net_help.c
+osx/RiggerStatusItem/net_help.c:	$(srcdir)/riggerd/net_help.c osx/RiggerStatusItem
 	cp $< $@
 
-osx/RiggerStatusItem/osxattach.m:	$(srcdir)/panel/attach.c
+osx/RiggerStatusItem/osxattach.m:	$(srcdir)/panel/attach.c osx/RiggerStatusItem
 	cp $< $@
 
-osx/RiggerStatusItem/osxattach.h:	$(srcdir)/panel/attach.h
+osx/RiggerStatusItem/osxattach.h:	$(srcdir)/panel/attach.h osx/RiggerStatusItem
 	cp $< $@
 
-osx/RiggerStatusItem/log.h:	$(srcdir)/riggerd/log.h
+osx/RiggerStatusItem/log.h:	$(srcdir)/riggerd/log.h osx/RiggerStatusItem
 	cp $< $@
 
-osx/RiggerStatusItem/cfg.h:	$(srcdir)/riggerd/cfg.h
+osx/RiggerStatusItem/cfg.h:	$(srcdir)/riggerd/cfg.h osx/RiggerStatusItem
 	cp $< $@
 
-osx/RiggerStatusItem/net_help.h:	$(srcdir)/riggerd/net_help.h
+osx/RiggerStatusItem/net_help.h:	$(srcdir)/riggerd/net_help.h osx/RiggerStatusItem
 	cp $< $@
 
-osx/RiggerStatusItem/config.h:	$(srcdir)/config.h
+osx/RiggerStatusItem/config.h:	$(srcdir)/config.h osx/RiggerStatusItem
 	cp $< $@
 
 ifeq "$(srcdir)" "."
 osx/RiggerStatusItem:
+
 else
 osx/RiggerStatusItem:	$(srcdir)/osx/RiggerStatusItem
 	-mkdir osx
