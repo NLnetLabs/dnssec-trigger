@@ -259,8 +259,10 @@ void hook_resolv_localhost(struct cfg* cfg)
 	if(really_set_to_localhost(cfg)) {
 		/* already done, do not do it again, that would open
 		 * a brief moment of mutable resolv.conf */
+		verbose(VERB_ALGO, "resolv.conf localhost already set");
 		return;
 	}
+	verbose(VERB_ALGO, "resolv.conf localhost write");
 #  endif
 	out = open_rescf(cfg);
 	if(!out) return;
