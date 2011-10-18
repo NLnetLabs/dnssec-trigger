@@ -1,3 +1,6 @@
+18 Oct 2011: Wouter
+	- Manpage fixes
+
 17 Oct 2011: Wouter
 	- Fix insecure mode after dnstcp443 has been probed.
 	- Fix OS-race on Linux/BSD, it sets immutable settings on install, and

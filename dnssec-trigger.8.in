@@ -43,6 +43,18 @@ system calls \fBdnssec\-trigger\-control\fR that contacts the daemon
 \fBdnssec\-triggerd\fR that probes the list of servers.  The daemon then
 adjusts a running unbound through \fIunbound\-control\fR(8) and notifies
 the user applet \fBdnssec\-trigger\-panel\fR for GUI display.
+.P
+The \fBdnssec\-trigger\-panel\fR runs after user login, displays notifications and
+status to the user.  It may popup a warning if no DNSSEC capable servers
+are available, with options to disconnect or to connect insecurely.
+.P
+The \fBdnssec\-trigger\-control\fR tool is used in the background by scripts to
+notify the daemon of new (DHCP) DNS servers.  It can be used to test the
+system by providing a (fake) list of DNS server IP addresses.
+.P
+The \fBdnssec\-trigger\-control\-setup\fR tool is used to setup the SSL keys
+that the daemon and user panel use to communicate securely.  It must be run
+once after installation.
 .SH "THE DNSSEC\-TRIGGERD DAEMON"
 .LP
 Thus the dnssec\-triggerd daemon runs continually, and is started after
@@ -52,7 +64,7 @@ running on 127.0.0.1.  And resolv.conf is modified to point to 127.0.0.1.
 .TP
 .B \-c\fI cfgfile
 Set the config file with settings for the dnssec\-triggerd to read
-instead of reading the file at the default location, 0configfile0. The
+instead of reading the file at the default location, \fI0configfile0\fR. The
 syntax is described below.
 .TP
 .B \-d
@@ -64,19 +76,6 @@ uninstall dns override: makes resolv.conf mutable again, or other OS action.
 .B \-v
 Increase verbosity. If given multiple times, more information is logged.
 This is in addition to the verbosity (if any) from the config file.
-.B
-.P
-The dnssec\-trigger\-panel runs after user login, displays notifications and
-status to the user.  It may popup a warning if no DNSSEC capable servers
-are available, with options to disconnect or to connect insecurely.
-.P
-The dnssec\-trigger\-control tool is used in the background by scripts to
-notify the daemon of new (DHCP) DNS servers.  It can be used to test the
-system by providing a (fake) list of DNS server IP addresses.
-.P
-The \fBdnssec\-trigger\-control\-setup\fR tool is used to setup the SSL keys
-that the daemon and user panel use to communicate securely.  It must be run
-once after installation.
 .SH "THE DNSSEC\-TRIGGER.CONF FILE"
 .LP
 The config file contains options.  It is fairly simple, key: value.
@@ -107,9 +106,10 @@ i.e. "/usr/local/bin/unbound\-control \-c my.conf".
 The resolv.conf file to edit (on posix systems).  The daemon keeps the file
 readonly and only make it writable shortly to change it itself.  This is
 to keep other software from interfering.  On OSX (if compiled in) also the
-DNS settings are changed in the runtime network configuration machinery,
-but because this is also where the DHCP info comes from there may be periods
-where the DNS server override does not exist.
+DNS settings are changed in the network configuration machinery (visible in
+the network settings control panel).  On Windows (if compiled), it sets
+registry settings for network configuration (may be visible in the control
+panel tab for network devices) and does not write a resolv.conf file.
 .TP
 .B domain: \fR"example.com"
 The domain to set in resolv.conf.  See \fIresolv.conf\fR(5).  Picked up
@@ -123,7 +123,7 @@ directing traffic elsewhere.
 .TP
 .B noaction: \fR<yes or no>
 Default is no.  If yes, no action is taken to change unbound\-control or
-resolv.conf.  The probe results are available for inspection.
+resolv.conf.  The software can be tested with this, probe results are available.
 .TP
 .B port: \fR<8955>
 Port number to use for communication with dnssec\-triggerd.  Communication
@@ -153,11 +153,15 @@ The dnssec\-trigger\-panel is an applet that runs in the tray.  It shows
 the DNSSEC status.  It can be invoked with \-d to test in the build
 directory.  The \-c \fIcfgfile\fR option can set the config file away
 from the default.  The applet keeps an SSL connection to the daemon
-and displays the status, and can show the user dialogs.  The applet
-has a small menu.  The menu item \fBReprobe\fR causes the daemon to
-probe the last seen DHCP DNS servers again, which may now work after a
-hotspot signon.  The \fBProbe Result\fR menu item shows the results of the
-previous probe to the user, for technical help with network difficulties.
+and displays the status, and can show the user dialogs.
+.P
+The applet has a small menu.  The menu item \fBReprobe\fR causes the
+daemon to probe the last seen DHCP DNS servers again, which may now
+work after a hotspot signon.  The menu item \fBHotspot Signon\fR goes
+into insecure mode for hotspots where this must be used to sign on to
+the hot spot: use reprobe when done to resume dnssec protection efforts.
+The \fBProbe Result\fR menu item shows the results of the previous probe
+to the user, for technical help with network difficulties.
 .SH "THE DNSSEC\-TRIGGER\-CONTROL TOOL"
 The dnssec\-trigger\-control tool can be used to test.  It is also used
 inside DHCP scripts (platform specific).  It can send commands to the daemon.
@@ -195,7 +199,7 @@ as the menu item with the same name.
 .B hotspot_signon
 This command acts as the menu item with the same name.  Use it to force
 insecure mode, where you can then interact with (weird) hotspot set ups.
-When you are done, do the reprobe command to resume DNSSEC.
+When you are done, do the reprobe command to resume DNSSEC protection efforts.
 .TP
 .B results
 continuous feed of probe results.
@@ -212,10 +216,10 @@ stops the daemon.
 .SH "THE DNSSEC\-TRIGGER\-CONTROL\-SETUP TOOL"
 This tool aids setup of files.  Without arguments it creates the key files.
 If key files already exist, it resigns certificates with existing private keys.
-With \-d dir the files are placed in the given directory.
+With \fB\-d\fR \fIdir\fR the files are placed in the given directory.
 .PP
-With \-i the tool changes configuration files.  It tests if unbound has
-\fBremote\-control\fR: \fBcontrol\-enable\fR: yes and if not appends
+With \fB\-i\fR the tool changes configuration files.  It tests if unbound has
+\fBremote\-control\fR: \fBcontrol\-enable:\fR \fIyes\fR and if not appends
 lines to unbound.conf that enable unbound\-control, and it runs
 unbound\-control\-setup to generate the keys for unbound\-control.
 It tests if unbound has a trust anchor, if not it enables the root.key as
@@ -226,7 +230,7 @@ configures the dnssec\-trigger.conf to use that.
 Note the tool trusts the domain and search path at install time.  You should
 review them or perform configuration manually.
 .PP
-With \-u it removes the options it enabled in \fIunbound.conf\fR(5).
+With \fB\-u\fR it removes the options it enabled in \fIunbound.conf\fR(5).
 .SH "FILES"
 .TP
 .I 0configfile0
@@ -238,9 +242,9 @@ Directory with keys used for SSL connections to dnssec\-triggerd.
 .I 0pidfile0
 Default pidfile with the pid of the running dnssec\-triggerd.
 .SH "SEE ALSO"
-\fIunbound.conf\fR(5), 
-\fIresolv.conf\fR(5), 
+\fIunbound\fR(8),
 \fIunbound\-control\fR(8),
-\fIunbound\fR(8).
+\fIunbound.conf\fR(5), 
+\fIresolv.conf\fR(5).
 .SH "AUTHORS"
 This program was developed by Wouter Wijngaards at NLnet Labs.
