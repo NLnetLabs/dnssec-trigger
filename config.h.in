@@ -12,6 +12,9 @@
 /* define this to enable debug checks. */
 #undef DO_DEBUG
 
+/* Have AppIndicator (Ubuntu Unity) */
+#undef HAVE_APP_INDICATOR
+
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 

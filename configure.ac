@@ -317,6 +317,30 @@ AC_MSG_RESULT([$gui])
 AC_SUBST(gui)
 
 if test "$gui" = "gtk"; then
+	APPINDICATOR_REQUIRED=0.1
+	AC_MSG_CHECKING([for libappindicator])
+	AC_ARG_ENABLE(appindicator, AS_HELP_STRING([--enable-appindicator[=@<:@no/auto/yes@:>@]],[Build support for application indicators (for Ubuntu Unity)]), [enable_appindicator=$enableval], [enable_appindicator="auto"])
+	if test x$enable_appindicator = xauto ; then
+		if pkg-config --exists appindicator-0.1; then
+			enable_appindicator="yes"
+		else
+			enable_appindicator="no"
+		fi
+	fi
+	if test x$enable_appindicator = xyes ; then
+		AC_MSG_RESULT([yes])
+		APP_INDICATOR_CFLAGS=`pkg-config --cflags appindicator-0.1`
+		APP_INDICATOR_LIBS=`pkg-config --libs appindicator-0.1`
+		if test -z "$APP_INDICATOR_LIBS"; then
+			AC_MSG_ERROR([appindicator-0.1 is not installed, need libappindicator-dev])
+		fi
+		AC_SUBST(APP_INDICATOR_CFLAGS)
+		AC_SUBST(APP_INDICATOR_LIBS)
+		AC_DEFINE(HAVE_APP_INDICATOR, 1, [Have AppIndicator (Ubuntu Unity)])
+	else
+		AC_MSG_RESULT([no])
+	fi
+
 	# GTK
 	GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
 	GTK_LIBS=`pkg-config --libs gtk+-2.0`
