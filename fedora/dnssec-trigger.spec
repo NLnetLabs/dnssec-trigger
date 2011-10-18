@@ -3,8 +3,8 @@ Name: dnssec-trigger
 Version: 0.3
 Release: 6%{?dist}
 License: BSD
-Url: http://www.nlnetlabs.nl/~wouter/dnssec-trigger/
-Source: http://www.nlnetlabs.nl/~wouter/%{name}-%{version}.tar.gz
+Url: http://www.nlnetlabs.nl/projects/dnssec-trigger
+Source: http://www.nlnetlabs.nl/downloads/dnssec-trigger/%{name}-%{version}.tar.gz
 Source1: dnssec-triggerd.init
 
 Group: System Environment/Daemons
