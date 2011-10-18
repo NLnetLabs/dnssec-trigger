@@ -220,7 +220,7 @@ osx/RiggerStatusItem/net_help.h:	$(srcdir)/riggerd/net_help.h
 osx/RiggerStatusItem/config.h:	$(srcdir)/config.h
 	cp $< $@
 
-ifeq("$(srcdir)",".")
+ifeq "$(srcdir)" "."
 osx/RiggerStatusItem:
 else
 osx/RiggerStatusItem:	$(srcdir)/osx/RiggerStatusItem
