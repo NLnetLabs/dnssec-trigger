@@ -16,7 +16,7 @@
    version="1.1"
    inkscape:version="0.47 r22583"
    sodipodi:docname="dmg-icon.svg"
-   inkscape:export-filename="/home/wouter/nlnetlabs/dnssec-trigger/trunk/panel/install-icon.png"
+   inkscape:export-filename="/home/wouter/nlnetlabs/dnssec-trigger/trunk/panel/dmg-icon.png"
    inkscape:export-xdpi="22.5"
    inkscape:export-ydpi="22.5">
   <defs
@@ -376,7 +376,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
