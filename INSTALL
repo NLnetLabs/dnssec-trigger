@@ -26,6 +26,7 @@ statically link with openssl and ldns.
 Install (Linux)
 ---------------
 1. Install required libraries and get the dnssec-trigger package.
+   On Ubuntu you must install libappindicator-dev, so it builds for Unity GUI.
 2. ./configure
    It needs to detect what sort of system you use - to hook into the DHCP
    network updates.  For many linux systems, networkmanager or netconfig.
