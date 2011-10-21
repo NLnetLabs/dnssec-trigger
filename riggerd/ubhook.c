@@ -86,7 +86,8 @@ ub_ctrl(struct cfg* cfg, const char* cmd, const char* args)
 	} else
 #endif
 	if(r != 0) {
-		log_warn("unbound-control exited with status %d", r);
+		log_warn("unbound-control exited with status %d, cmd: %s",
+			r, command);
 	}
 }
 
