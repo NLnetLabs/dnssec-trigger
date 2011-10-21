@@ -6,6 +6,7 @@
 	- fix that setup hint is not printed on a reinstall.
 	- stop executables before re-install of dnssec-trigger.
 	- tested to work on winXP (thanks Jan-Piet Mens).
+	- fix printout of 1970 date, instead that no probe was performed.
 
 18 Oct 2011: Wouter
 	- Manpage fixes
