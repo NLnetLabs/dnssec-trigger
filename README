@@ -69,11 +69,8 @@ How the different platforms operate is described here.
 
 * Security
 
-On many platforms there is a race condition between the dnssec-triggerd
-and the system from DHCP that updates resolv.conf (or similar subsystems).
-There may be short periods where the DHCP info is there and used.  This
-is not secure and would require tighter integration.  This is especially
-true at bootup.
+There used to be a race condition where DHCP info briefly overriddes
+the secure version, but this was fixed in 0.6.
 
 * unix - NetworkManager
 
