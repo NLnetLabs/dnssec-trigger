@@ -236,7 +236,7 @@ static void stop_lookup(HANDLE lookup)
 
 static int has_changed(char* netnames, char* ips, char* ssid)
 {
-	if(!netlist_ips || !netlist_netnames || !ssid ||
+	if(!netlist_ips || !netlist_netnames || !netlist_ssid ||
 		strcmp(netlist_ips, ips) != 0 ||
 		strcmp(netlist_netnames, netnames) != 0 ||
 		strcmp(netlist_ssid, ssid) != 0) {
