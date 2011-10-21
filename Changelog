@@ -5,6 +5,7 @@
 	- trunk is 0.7 under development.
 	- fix that setup hint is not printed on a reinstall.
 	- stop executables before re-install of dnssec-trigger.
+	- tested to work on winXP (thanks Jan-Piet Mens).
 
 18 Oct 2011: Wouter
 	- Manpage fixes
