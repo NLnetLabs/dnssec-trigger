@@ -776,6 +776,18 @@ static void handle_status_cmd(struct sslconn* sc)
 	handle_results_cmd(sc);
 }
 
+static void handle_printclose(struct sslconn* sc, char* str)
+{
+	/* write and then close */
+	sc->close_me = 1;
+	comm_point_listen_for_rw(sc->c, 1, 1);
+	sc->line_state = persist_write;
+	/* enter contents */
+	ldns_buffer_clear(sc->buffer);
+	ldns_buffer_printf(sc->buffer, "%s\n", str);
+	ldns_buffer_flip(sc->buffer);
+}
+
 static void handle_cmdtray_cmd(struct sslconn* sc)
 {
 #ifdef HOOKS_OSX
@@ -871,8 +883,8 @@ static void sslconn_command(struct sslconn* sc)
 		comm_base_exit(global_svr->base);
 		sslconn_shutdown(sc);
 	} else {
-		log_err("unknown command: %s", str);
-		sslconn_shutdown(sc);
+		verbose(VERB_DETAIL, "unknown command: %s", str);
+		handle_printclose(sc, "error unknown command");
 	}
 }
 

@@ -1,5 +1,6 @@
 19 Oct 2011: Wouter
 	- Add @ to echo in Makefile.
+	- print error on control unknown command, and exit status 1.
 
 18 Oct 2011: Wouter
 	- Manpage fixes
