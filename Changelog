@@ -2,6 +2,7 @@
 	- Add @ to echo in Makefile.
 	- print error on control unknown command, and exit status 1.
 	- tag 0.6
+	- trunk is 0.7 under development.
 
 18 Oct 2011: Wouter
 	- Manpage fixes
