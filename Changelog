@@ -1,3 +1,6 @@
+19 Oct 2011: Wouter
+	- Add @ to echo in Makefile.
+
 18 Oct 2011: Wouter
 	- Manpage fixes
 	- can build outside of sourcedir.

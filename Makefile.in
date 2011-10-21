@@ -183,7 +183,7 @@ gtk-gui:	dnssec-trigger-panel$(EXEEXT) dnssec-trigger-panel.desktop
 cocoa-gui:	osx/RiggerStatusItem osx/osx-riggerapp nl.nlnetlabs.dnssec-trigger-panel.plist
 
 none-hook:
-	echo "no dhcp hooks available, need trigger script"
+	@echo "no dhcp hooks available, need trigger script"
 
 windows-hook:	dnssec-trigger-keygen$(EXEEXT)
 
@@ -329,23 +329,23 @@ strip:
 	if test -f dnssec-trigger-keygen$(EXEEXT); then $(STRIP) dnssec-trigger-keygen$(EXEEXT); fi
 
 none-hook-install:
-	echo "no hook to install"
+	@echo "no hook to install"
 
 none-hook-uninstall:
-	echo "no hook to uninstall"
+	@echo "no hook to uninstall"
 
 windows-hook-install:
-	echo "TODO windows hook install"
+	@echo "Use makedist-makensis for windows hook install"
 
 windows-hook-uninstall:
-	echo "TODO windows hook uninstall"
+	@echo "Use makedist-makensis for windows hook uninstall"
 
 networkmanager-hook-install:
 	$(INSTALL) -m 755 -d $(DESTDIR)$(networkmanager_dispatcher_dir)
 	$(INSTALL) -c -m 755 01-dnssec-trigger-hook $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger-hook
 
 networkmanager-hook-uninstall:
-	echo "attempt to restore resolv.conf mutability"
+	@echo "attempt to restore resolv.conf mutability"
 	$(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT) -u
 	rm -f $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger-hook
 
@@ -356,10 +356,10 @@ osx-hook-install:
 	$(INSTALL) -c -m 755 dnssec-trigger-osx.sh $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
 	$(INSTALL) -c -m 755 dnssec-trigger-setdns.sh $(DESTDIR)$(libexecdir)/dnssec-trigger-setdns.sh
 	$(INSTALL) -c -m 644 nl.nlnetlabs.dnssec-triggerd.plist $(DESTDIR)$(osx_launchdaemons_dir)/nl.nlnetlabs.dnssec-triggerd.plist
-	echo "To start the daemon, trigger and panel you can reboot; (after dnssec-trigger-control-setup)"
+	@echo "To start the daemon, trigger and panel you can reboot; (after dnssec-trigger-control-setup)"
 
 osx-hook-uninstall:
-	echo "attempt to remove dns override from system preferences"
+	@echo "attempt to remove dns override from system preferences"
 	$(DESTDIR)$(libexecdir)/dnssec-trigger-setdns.sh uninit
 	rm -f $(DESTDIR)$(osx_launchdaemons_dir)/nl.nlnetlabs.dnssec-trigger-hook.plist
 	rm -f $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
@@ -391,7 +391,7 @@ netconfig-hook-install:
 	$(INSTALL) -c -m 755 dnssec-trigger-netconfig-hook $(DESTDIR)$(netconfig_dispatcher_dir)/dnssec-trigger-netconfig-hook
 
 netconfig-hook-uninstall:
-	echo "attempt to restore resolv.conf mutability"
+	@echo "attempt to restore resolv.conf mutability"
 	$(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT) -u
 	rm -f $(DESTDIR)$(netconfig_dispatcher_dir)/dnssec-trigger-netconfig-hook
 
@@ -456,7 +456,7 @@ install:	all $(installgui) $(installhook)
 		cp $(DESTDIR)/etc/resolv.conf $(DESTDIR)/etc/resolv.conf~; fi
 	if test ! -f $(DESTDIR)$(configfile); then \
 		$(INSTALL) -c -m 644 example.conf $(DESTDIR)$(configfile); fi
-	echo "It is probably good to run dnssec-trigger-control-setup to generate keys now, and possibly run dnssec-trigger-control-setup -i to edit unbound.conf if it does not have a trust anchor and remote-control"
+	@echo "It is probably good to run dnssec-trigger-control-setup to generate keys now, and possibly run dnssec-trigger-control-setup -i to edit unbound.conf if it does not have a trust anchor and remote-control"
 
 uninstall:	$(uninstallgui) $(uninstallhook)
 	rm -f $(DESTDIR)$(mandir)/man8/dnssec-trigger.8
