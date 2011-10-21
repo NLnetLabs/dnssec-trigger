@@ -134,6 +134,17 @@ section "-hidden.postinstall"
 	Abort "Unbound is already installed, please uninstall it"
 	doinstall:
 
+	# must stop dnssec-triggerd, panel and unbound to update their exe
+	# (if installed).
+	ReadRegStr $R1 HKLM "Software\Unbound" "InstallLocation"
+	StrCmp $R1 "" donestop 0
+	nsExec::ExecToLog '"$R1\dnssec-trigger-control.exe" stoppanels'
+	nsExec::ExecToLog '"$R1\dnssec-triggerd.exe" -w stop'
+	nsExec::ExecToLog '"$R1\unbound.exe" -w stop'
+	Sleep 2000
+	Call un.RefreshSysTray
+	donestop:
+
 	# copy files
 	setOutPath $INSTDIR
 	File "..\LICENSE"
@@ -250,10 +261,10 @@ LangString DESC_dnssectrigger ${LANG_ENGLISH} "The dnssec trigger package. $\r$\
 
 # uninstaller section
 section "un.DnssecTrigger"
-	# stop tray icon
-	nsExec::ExecToLog '"$INSTDIR\dnssec-trigger-control.exe" stoppanels'
 	# remove tray icon from startup list
 	DeleteRegValue HKLM "Software\Microsoft\Windows\CurrentVersion\Run" "DnssecTrigger"
+	# stop tray icon
+	nsExec::ExecToLog '"$INSTDIR\dnssec-trigger-control.exe" stoppanels'
 	# stop service
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w stop'
 	# uninstall service entry
