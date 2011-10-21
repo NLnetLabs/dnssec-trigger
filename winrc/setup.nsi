@@ -34,7 +34,7 @@ VIProductVersion "${QUADVERSION}"
 !define stRECT "(i, i, i, i) i"
 
 # http://nsis.sourceforge.net/Refresh_SysTray
-Function un.RefreshSysTray
+!macro RefreshSysTray
 	; $0: SysTray Window Handle
 	FindWindow $0 "Shell_TrayWnd" ""
 	FindWindow $0 "TrayNotifyWnd" "" $0
@@ -75,7 +75,7 @@ Function un.RefreshSysTray
 		IntOp $7 $7 - $5
 		IntCmp $7 0 EndLoopY EndLoopY LoopY
 	EndLoopY:
-FunctionEnd
+!macroend
 
 # Global Variables
 Var StartMenuFolder
@@ -142,7 +142,7 @@ section "-hidden.postinstall"
 	nsExec::ExecToLog '"$R1\dnssec-triggerd.exe" -w stop'
 	nsExec::ExecToLog '"$R1\unbound.exe" -w stop'
 	Sleep 2000
-	Call un.RefreshSysTray
+	Call RefreshSysTray
 	donestop:
 
 	# copy files
@@ -281,7 +281,7 @@ section "un.DnssecTrigger"
 	Sleep 2000
 
 	# remove tray icon if panel killed too fast to remove it itself.
-	Call un.RefreshSysTray
+	Call RefreshSysTray
 
 	# give the panel time to process the messages.
 	Sleep 1000
