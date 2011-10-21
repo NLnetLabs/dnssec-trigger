@@ -142,7 +142,7 @@ section "-hidden.postinstall"
 	nsExec::ExecToLog '"$R1\dnssec-triggerd.exe" -w stop'
 	nsExec::ExecToLog '"$R1\unbound.exe" -w stop'
 	Sleep 2000
-	Call RefreshSysTray
+	!insertmacro RefreshSysTray
 	donestop:
 
 	# copy files
@@ -281,7 +281,7 @@ section "un.DnssecTrigger"
 	Sleep 2000
 
 	# remove tray icon if panel killed too fast to remove it itself.
-	Call RefreshSysTray
+	!insertmacro RefreshSysTray
 
 	# give the panel time to process the messages.
 	Sleep 1000
