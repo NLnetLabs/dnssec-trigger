@@ -721,7 +721,9 @@ send_results_to_con(struct svr* svr, struct sslconn* s)
 	char at[32];
 	int numcache = 0, unfinished = 0;
 	ldns_buffer_clear(s->buffer);
-	if(strftime(at, sizeof(at), "%Y-%m-%d %H:%M:%S",
+	if(svr->probetime == 0)
+		ldns_buffer_printf(s->buffer, "at (no probe performed)")
+	else if(strftime(at, sizeof(at), "%Y-%m-%d %H:%M:%S",
 		localtime(&svr->probetime)))
 		ldns_buffer_printf(s->buffer, "at %s\n", at);
 	for(p=svr->probes; p; p=p->next) {
