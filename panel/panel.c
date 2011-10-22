@@ -77,6 +77,7 @@ usage(void)
 	printf(" -c config      use configfile, default is %s\n", CONFIGFILE);
 	printf(" -d		run from current directory (UIDIR=panel/)\n");
 	printf(" -h             this help\n");
+	printf("version %s\n", PACKAGE_VERSION);
 }
 
 #ifdef USE_WINSOCK
@@ -626,13 +627,13 @@ int main(int argc, char *argv[])
 #endif
         while( (c=getopt(argc, argv, "c:dh")) != -1) {
                 switch(c) {
-                default:
 		case 'd':
 			debug = 1;
 			break;
 		case 'c':
 			cfgfile = optarg;
 			break;
+                default:
                 case 'h':
                         usage();
                         return 1;
@@ -640,6 +641,11 @@ int main(int argc, char *argv[])
         }
         argc -= optind;
         argv += optind;
+
+ 	if(argc != 0) {
+                usage();
+                return 1;
+	}
 #ifdef USE_WINSOCK
 	if(debug)
 		putenv("GTK2_RC_FILES=./winrc/gtkrc");
@@ -675,11 +681,6 @@ int main(int argc, char *argv[])
        	g_thread_init(NULL);
 	gdk_threads_init();
 	gtk_init(&argc, &argv);
-
- 	if(argc != 0) {
-                usage();
-                return 1;
-	}
 
         ERR_load_crypto_strings();
 	ERR_load_SSL_strings();

@@ -1,4 +1,7 @@
-19 Oct 2011: Wouter
+22 Oct 2011: Wouter
+	- fix unknown options for dnssec-trigger-panel, prints version too.
+
+21 Oct 2011: Wouter
 	- Add @ to echo in Makefile.
 	- print error on control unknown command, and exit status 1.
 	- tag 0.6
