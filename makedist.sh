@@ -367,8 +367,8 @@ if [ "$DOMAC" = "yes" ]; then
     destdir="osx/pkg/DEST"
     cnf_flag=""
     ldns_flag="--prefix=/usr --disable-gost"
-    unbound_flag="--prefix=/usr --disable-gost"
-    dnssectrigger_flag="--prefix=/usr --with-unbound-control=/usr/sbin/unbound-control"
+    unbound_flag="--prefix=/usr --sysconfdir=/etc --disable-gost --enable-allsymbols"
+    dnssectrigger_flag="--prefix=/usr --sysconfdir=/etc --with-unbound-control=/usr/sbin/unbound-control"
 
     if test `uname` != "Darwin"; then
 	error_cleanup "Must make mac package on OSX"
@@ -453,16 +453,17 @@ if [ "$DOMAC" = "yes" ]; then
     # todo strip libraries, tray icon.
     info "make install"
     make install DESTDIR=$destdir || error_cleanup "make install failed"
+
     info "dnssec-trigger version: $version"
     rm -f osx/pkg/makepackage_ed
     sed -e 's/^VERSION=/VERSION='"$version"'/' < osx/pkg/makepackage > osx/pkg/makepackage_ed || error_cleanup "Could not edit makepackage"
     info "running makepackage"
-    (cd pkg/osx; ./makepackage) || error_cleanup "makepackage failed"
+    (cd osx/pkg; ./makepackage) || error_cleanup "makepackage failed"
 
     # see tar gz for debug
-    mv pkg/osx/*.tar.gz ../../.
+    mv osx/pkg/*.tar.gz ../../.
     # the dmg package
-    mv pkg/osx/dnssec*$version*.dmg ../../.
+    mv osx/pkg/dnssec*$version*.dmg ../../.
     cd ..
     cleanup
     ls -lG dnssec*$version*.dmg
