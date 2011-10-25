@@ -1,3 +1,6 @@
+25 Oct 2011: Wouter
+	- fix echo at end of make install.
+
 22 Oct 2011: Wouter
 	- fix unknown options for dnssec-trigger-panel, prints version too.
 
