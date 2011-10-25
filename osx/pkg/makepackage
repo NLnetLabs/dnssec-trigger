@@ -126,7 +126,7 @@ EOF
 # write the background picture
 cp $ORIG/package-bg.png package-manager/packages/Resources/unbound.png
 
-mv $ORIG/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz package-manager/packages/Package_Root/tmp
+cp $ORIG/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz package-manager/packages/Package_Root/tmp
 cat <<EOF > package-manager/${PRODUCT}.pmdoc/01package.xml
 <pkgref spec="1.12" uuid="2F9BC3A8-16DF-486E-9FB0-1B702DA93B5A">
 <config>

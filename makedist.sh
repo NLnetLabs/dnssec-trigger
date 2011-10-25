@@ -364,17 +364,20 @@ if [ "$DOMAC" = "yes" ]; then
     info "MacOSX compile and package"
     check_svn_root
     create_temp_dir
-    destdir="dnssec-trigger/osx/pkg/DEST"
+    destdir="osx/pkg/DEST"
     cnf_flag=""
-    ldns_flag="--prefix=/usr"
-    unbound_flag="--prefix=/usr"
-    dnssectrigger_flag="--prefix=/usr"
+    ldns_flag="--prefix=/usr --disable-gost"
+    unbound_flag="--prefix=/usr --disable-gost"
+    dnssectrigger_flag="--prefix=/usr --with-unbound-control=/usr/sbin/unbound-control"
 
     if test `uname` != "Darwin"; then
 	error_cleanup "Must make mac package on OSX"
     fi
-    rm -rf "$destdir"
-    mkdir -p $destdir || error_cleanup "cannot create destdir"
+
+    info "Exporting source from SVN."
+    svn export "$SVNROOT" dnssec-trigger || error_cleanup "SVN command failed"
+    rm -rf "dnssec-trigger/$destdir"
+    mkdir -p dnssec-trigger/$destdir || error_cleanup "cannot create destdir"
 
     # ldns
     ldnsdir=""
@@ -402,7 +405,7 @@ if [ "$DOMAC" = "yes" ]; then
 	backdir=`pwd`
 	cd $ldnsdir
 	info "ldns make install"
-	make install DEST=$backdir/$destdir || error_cleanup "cannot make install ldns"
+	make install DESTDIR=$backdir/dnssec-trigger/$destdir || error_cleanup "cannot make install ldns"
 	cd $backdir
     fi
 
@@ -432,13 +435,11 @@ if [ "$DOMAC" = "yes" ]; then
 	backdir=`pwd`
 	cd $unbounddir
 	info "unbound make install"
-	make install DEST=$backdir/$destdir || error_cleanup "cannot make install unbound"
+	make install DESTDIR=$backdir/dnssec-trigger/$destdir || error_cleanup "cannot make install unbound"
 	cd $backdir
     fi
 
     # dnssec-trigger
-    info "Exporting source from SVN."
-    svn export "$SVNROOT" dnssec-trigger || error_cleanup "SVN command failed"
     cd dnssec-trigger || error_cleanup "Not exported correctly from SVN"
 
     # version gets compiled into source, edit the configure to set  it
@@ -451,13 +452,20 @@ if [ "$DOMAC" = "yes" ]; then
     make strip || error_cleanup "make strip failed"
     # todo strip libraries, tray icon.
     info "make install"
-    make install DEST=$destdir || error_cleanup "make install failed"
+    make install DESTDIR=$destdir || error_cleanup "make install failed"
     info "dnssec-trigger version: $version"
     rm -f osx/pkg/makepackage_ed
-    sed -e '/^VERSION=/VERSION='"$version"'/' < osx/pkg/makepackage > osx/pkg/makepackage_ed || error_cleanup "Could not edit makepackage"
+    sed -e 's/^VERSION=/VERSION='"$version"'/' < osx/pkg/makepackage > osx/pkg/makepackage_ed || error_cleanup "Could not edit makepackage"
     info "running makepackage"
     (cd pkg/osx; ./makepackage) || error_cleanup "makepackage failed"
-    ls -lG pkg/osx/dnssec*$version*.dmg
+
+    # see tar gz for debug
+    mv pkg/osx/*.tar.gz ../../.
+    # the dmg package
+    mv pkg/osx/dnssec*$version*.dmg ../../.
+    cd ..
+    cleanup
+    ls -lG dnssec*$version*.dmg
 
     info "Done"
     exit 0
