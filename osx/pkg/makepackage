@@ -321,7 +321,7 @@ hdimnt=`echo $hdiline | sed -e 'sX^.*/VolumesX/VolumesX' `
 echo "hdiutil attach to device ${device} at ${hdimnt}"
 sleep 5
 sync
-rm -rf "$hdimnt/*.mpkg"
+rm -rf "$hdimnt"/*.mpkg
 cp -R ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg "$hdimnt"
 sleep 5
 sync
