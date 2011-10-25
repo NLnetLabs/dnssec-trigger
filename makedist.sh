@@ -27,6 +27,7 @@ Generate a distribution tar file for dnssec-trigger.
         The windows subbuilds are cached in ./..tar.gz-win32-store-dir, remove
 	that dir to rebuild the package.
     -w ...       Build windows binary dist. last args passed to configure.
+    -m ...       Build mac binary dist. last args passed to configure.
 EOF
     exit 1
 }
@@ -93,7 +94,6 @@ create_temp_dir () {
     cd $temp_dir
 }
 
-
 SNAPSHOT="no"
 RC="no"
 LDNSDIR=""
@@ -101,6 +101,7 @@ DOWIN="no"
 WINSSL=""
 WINLDNS=""
 WINUNBOUND=""
+DOMAC="no"
 
 # Parse the command line arguments.
 while [ "$1" ]; do
@@ -135,6 +136,11 @@ while [ "$1" ]; do
             shift
             break
             ;;
+        "-m")
+            DOMAC="yes"
+            shift
+            break
+            ;;
         "-l")
             LDNSDIR="$2"
             shift
@@ -149,6 +155,27 @@ while [ "$1" ]; do
     esac
     shift
 done
+
+change_configure_version() {
+    version=`./configure --version | head -1 | awk '{ print $3 }'` \
+        || error_cleanup "Cannot determine version number."
+    if [ "$RC" != "no" -o "$SNAPSHOT" != "no" ]; then
+        if [ "$RC" != "no" ]; then
+                version2=`echo $version | sed -e 's/rc.*$//' -e 's/_20.*$//'`
+                version2=`echo $version2 | sed -e 's/rc.*//'`"rc$RC"
+        fi
+        if [ "$SNAPSHOT" != "no" ]; then
+                version2=`echo $version | sed -e 's/rc.*$//' -e 's/_20.*$//'`
+                version2="${version2}_`date +%Y%m%d`"
+        fi
+        replace_text "configure.ac" "AC_INIT(dnssec-trigger, $version" "AC_INIT(dnssec-trigger, $version2"
+        version="$version2"
+        info "Rebuilding configure script (autoconf) snapshot."
+        autoconf || error_cleanup "Autoconf failed."
+        autoheader || error_cleanup "Autoheader failed."
+        rm -r autom4te* || echo "ignored"
+    fi
+}
 
 if [ "$DOWIN" = "yes" ]; then
     # detect crosscompile, from Fedora13 at this point.
@@ -253,25 +280,7 @@ if [ "$DOWIN" = "yes" ]; then
     fi
 
     # version gets compiled into source, edit the configure to set  it
-    version=`./configure --version | head -1 | awk '{ print $3 }'` \
-        || error_cleanup "Cannot determine version number."
-    if [ "$RC" != "no" -o "$SNAPSHOT" != "no" ]; then
-        if [ "$RC" != "no" ]; then
-                version2=`echo $version | sed -e 's/rc.*$//' -e 's/_20.*$//'`
-                version2=`echo $version2 | sed -e 's/rc.*//'`"rc$RC"
-        fi
-        if [ "$SNAPSHOT" != "no" ]; then
-                version2=`echo $version | sed -e 's/rc.*$//' -e 's/_20.*$//'`
-                version2="${version2}_`date +%Y%m%d`"
-        fi
-        replace_text "configure.ac" "AC_INIT(dnssec-trigger, $version" "AC_INIT(dnssec-trigger, $version2"
-        version="$version2"
-        info "Rebuilding configure script (autoconf) snapshot."
-        autoconf || error_cleanup "Autoconf failed."
-        autoheader || error_cleanup "Autoheader failed."
-        rm -r autom4te* || echo "ignored"
-    fi
-
+    change_configure_version
     # procedure for making installer on mingw. 
     info "Creating windows dist dnssec-trigger $version"
     info "Calling configure"
@@ -349,7 +358,110 @@ if [ "$DOWIN" = "yes" ]; then
     #ls -lG $file
     info "Done"
     exit 0
-fi
+fi  # end of DOWIN
+
+if [ "$DOMAC" = "yes" ]; then
+    info "MacOSX compile and package"
+    check_svn_root
+    create_temp_dir
+    destdir="dnssec-trigger/osx/pkg/DEST"
+    cnf_flag=""
+    ldns_flag="--prefix=/usr"
+    unbound_flag="--prefix=/usr"
+    dnssectrigger_flag="--prefix=/usr"
+
+    if test `uname` != "Darwin"; then
+	error_cleanup "Must make mac package on OSX"
+    fi
+    rm -rf "$destdir"
+    mkdir -p $destdir || error_cleanup "cannot create destdir"
+
+    # ldns
+    ldnsdir=""
+    if test -n "$WINLDNS" -a -d "$WINLDNS_STORE_DIR"; then
+	info "compile $WINLDNS have $WINLDNS_STORE_DIR"
+	ldnsdir="$WINLDNS_STORE_DIR"
+	cnf_flag="$cnf_flag --with-ldns=$WINLDNS_STORE_DIR"
+    elif test -n "$WINLDNS"; then
+	info "compile $WINLDNS"
+	info "ldns tar unpack"
+	(cd ..; gzip -cd $WINLDNS) | tar xf - || error_cleanup "tar unpack of $WINLDNS failed"
+	mv ldns-* $WINLDNS_STORE_DIR || error_cleanup "cannot move or no ldns-X dir in tarball"
+	backdir=`pwd`
+	cd $WINLDNS_STORE_DIR || error_cleanup "cannot cd ldnsdir"
+	info "ldns: Configure $cnf_flag $ldns_flag"
+	./configure $cnf_flag $ldns_flag || error_cleanup "ldns configure failed"
+	info "ldns: make"
+	make || error_cleanup "ldns compile failed"
+        # todo strip libraries.
+	ldnsdir=`pwd`
+	cnf_flag="$cnf_flag --with-ldns=$ldnsdir"
+	cd $backdir
+    fi
+    if test -n "$WINLDNS"; then
+	backdir=`pwd`
+	cd $ldnsdir
+	info "ldns make install"
+	make install DEST=$backdir/$destdir || error_cleanup "cannot make install ldns"
+	cd $backdir
+    fi
+
+    # unbound
+    unbounddir=""
+    if test -n "$WINUNBOUND" -a -d "$WINUNBOUND_STORE_DIR"; then
+	    info "compile $WINUNBOUND have $WINUNBOUND_STORE_DIR"
+	    unbounddir="$WINUNBOUND_STORE_DIR"
+    elif test -n "$WINUNBOUND"; then
+    	info "compile $WINUNBOUND"
+	info "unbound tar unpack"
+	(cd ..; gzip -cd $WINUNBOUND) | tar xf - || error_cleanup "tar unpack of $WINUNBOUND failed"
+	mv unbound-* $WINUNBOUND_STORE_DIR || error_cleanup "cannot move or no unbound-X dir in tarball"
+	backdir=`pwd`
+	cd $WINUNBOUND_STORE_DIR || error_cleanup "cannot cd unbounddir"
+	info "unbound: Configure $cnf_flag $unbound_flag"
+	./configure $cnf_flag $unbound_flag || error_cleanup "unbound configure failed"
+	info "unbound: make"
+	make || error_cleanup "unbound compile failed"
+	make strip || error_cleanup "unbound make strip failed"
+        # todo strip libraries.
+	# use from the build directory.
+	unbounddir=`pwd`
+	cd $backdir
+    fi
+    if test -n "$WINUNBOUND"; then
+	backdir=`pwd`
+	cd $unbounddir
+	info "unbound make install"
+	make install DEST=$backdir/$destdir || error_cleanup "cannot make install unbound"
+	cd $backdir
+    fi
+
+    # dnssec-trigger
+    info "Exporting source from SVN."
+    svn export "$SVNROOT" dnssec-trigger || error_cleanup "SVN command failed"
+    cd dnssec-trigger || error_cleanup "Not exported correctly from SVN"
+
+    # version gets compiled into source, edit the configure to set  it
+    change_configure_version
+    info "Creating mac dist dnssec-trigger $version"
+    info "Calling configure $cnf_flag $dnssectrigger_flag $*"
+    ./configure $cnf_flag $dnssectrigger_flag $* || error_cleanup "Could not configure"
+    info "Calling make"
+    make || error_cleanup "Could not make"
+    make strip || error_cleanup "make strip failed"
+    # todo strip libraries, tray icon.
+    info "make install"
+    make install DEST=$destdir || error_cleanup "make install failed"
+    info "dnssec-trigger version: $version"
+    rm -f osx/pkg/makepackage_ed
+    sed -e '/^VERSION=/VERSION='"$version"'/' < osx/pkg/makepackage > osx/pkg/makepackage_ed || error_cleanup "Could not edit makepackage"
+    info "running makepackage"
+    (cd pkg/osx; ./makepackage) || error_cleanup "makepackage failed"
+    ls -lG pkg/osx/dnssec*$version*.dmg
+
+    info "Done"
+    exit 0
+fi # end of DOMAC
 
 check_svn_root
 
