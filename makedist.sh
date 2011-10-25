@@ -367,6 +367,7 @@ cd dnssec-trigger || error_cleanup "Not exported correctly from SVN"
 find . -name .c-mode-rc.el -exec rm {} \;
 find . -name .cvsignore -exec rm {} \;
 rm makedist.sh || error_cleanup "Failed to remove makedist.sh."
+rm -rf osx/pkg || error_cleanup "Failed to remove osx/pkg"
 
 info "Determining version."
 version=`./configure --version | head -1 | awk '{ print $3 }'` || \
