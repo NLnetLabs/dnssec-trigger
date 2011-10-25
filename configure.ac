@@ -437,7 +437,7 @@ fi
 if test -n "$withval"; then
 	unbound_control_path="$withval"
 fi
-if test "$on_mingw" = "yes"; then
+if test "$on_mingw" = "yes" -o -n "$withval"; then
 	AC_MSG_RESULT($unbound_control_path)
 else
 	if test -x "$unbound_control_path"; then
