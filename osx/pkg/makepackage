@@ -318,7 +318,7 @@ gzip -d pack.dmg.gz
 hdiline=`hdiutil attach -readwrite "pack.dmg" | egrep '^/dev/' | sed 1q `
 echo $hdiline
 device=`echo $hdiline | awk '{print $1}' `
-hdimnt=`echo $hdiline | sed -e 's/^.* //' `
+hdimnt=`echo $hdiline | sed -e 's/^.*\t//' `
 echo "hdiutil attach to device ${device} at ${hdimnt}"
 sleep 5
 sync
