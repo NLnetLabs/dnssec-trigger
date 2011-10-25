@@ -4,7 +4,7 @@
 # version 201110 cas
 # changed for dnssec-trigger, 201110, wouter.
 
-PRODUCT="dnssec-trigger"
+PRODUCT="dnssectrigger"
 OS=`uname`
 DESTDIR=$(pwd)/DEST
 VERSION="@VERSION@"
@@ -28,9 +28,9 @@ macpackage_commands()
 { :
 
     cd ${DESTDIR}
-    rm ${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz
+    rm -f $ORIG/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz
     rm -rf package-manager
-    tar czf ${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz .
+    tar czf $ORIG/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz .
 
     # create package manager dir structure
     PKGDIR=`pwd`
@@ -123,7 +123,7 @@ EOF
 # write the background picture
 cp $ORIG/package-bg.png package-manager/packages/Resources/unbound.png
 
-mv ${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz package-manager/packages/Package_Root/tmp
+mv $ORIG/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz package-manager/packages/Package_Root/tmp
 cat <<EOF > package-manager/${PRODUCT}.pmdoc/01package.xml
 <pkgref spec="1.12" uuid="2F9BC3A8-16DF-486E-9FB0-1B702DA93B5A">
 <config>
@@ -295,11 +295,11 @@ EOF
 /Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker --doc package-manager/${PRODUCT}.pmdoc
 rm -rf ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg
 mv ${PRODUCT}.mpkg ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg
-rm ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.zip
-zip -r ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.zip ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg
+#rm -f ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.zip
+#zip -r ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.zip ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg
 
 # create DMG
-rm ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.dmg
+rm -f ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.dmg pack.dmg
 cp $ORIG/dmg-template.dmg.gz pack.dmg.gz
 gzip -d pack.dmg.gz
 device=$(hdiutil attach -readwrite "pack.dmg" | egrep '^/dev/' | sed 1q | awk '{print $1}')
@@ -337,8 +337,9 @@ go()
 };
 
 # Here we go:
-mkdir -p $ORIG/${VERSION}-logs
-echo -n "MacOS X Packaging... "  && go macpackage      || exit 7
+#mkdir -p $ORIG/${VERSION}-logs
+#echo -n "MacOS X Packaging... "  && go macpackage      || exit 7
+macpackage_commands || exit 7
 
 # All done
 
