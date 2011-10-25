@@ -7,7 +7,7 @@
 PRODUCT="dnssectrigger"
 OS=`uname`
 DESTDIR=$(pwd)/DEST
-VERSION="@VERSION@"
+VERSION=`grep " PACKAGE_VERSION" ../../config.h | sed -e 's/.*"\(.*\)"/\1/'`
 
 if [[ "$OS" == 'Darwin' ]]; then
    PLATFORM='MacOSX'
