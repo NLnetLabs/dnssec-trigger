@@ -51,6 +51,12 @@ if [[ -f /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist ]]; then
     launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
 fi
 
+if test -f /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist; then
+    launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+    launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
+    launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist
+fi
+
 # stop BIND if launch plist exists
 if [[ -f /System/Library/LaunchDaemons/org.isc.named.plist ]]; then
     launchctl unload -w /System/Library/LaunchDaemons/org.isc.named.plist
@@ -109,6 +115,9 @@ if [[ ! -f /etc/unbound/unbound.conf ]]; then
 	/usr/sbin/unbound-control-setup
 	/usr/sbin/dnssec-trigger-control-setup
 	/usr/sbin/dnssec-trigger-control-setup -i
+fi
+if [[ ! -f /etc/dnssec-trigger/dnssec-trigger.conf ]]; then
+	cp /etc/dnssec-trigger/dnssec-trigger.conf-default /etc/dnssec-trigger/dnssec-trigger.conf
 fi
 
 # clean up

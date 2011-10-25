@@ -368,7 +368,7 @@ if [ "$DOMAC" = "yes" ]; then
     cnf_flag=""
     ldns_flag="--prefix=/usr --disable-gost"
     unbound_flag="--prefix=/usr --sysconfdir=/etc --disable-gost --enable-allsymbols"
-    dnssectrigger_flag="--prefix=/usr --sysconfdir=/etc --with-unbound-control=/usr/sbin/unbound-control"
+    dnssectrigger_flag="--prefix=/usr --sysconfdir=/etc/dnssec-trigger --with-keydir=/etc/dnssec-trigger --with-unbound-control=/usr/sbin/unbound-control"
 
     if test `uname` != "Darwin"; then
 	error_cleanup "Must make mac package on OSX"
@@ -453,6 +453,9 @@ if [ "$DOMAC" = "yes" ]; then
     # todo strip libraries, tray icon.
     info "make install"
     make install DESTDIR=$destdir || error_cleanup "make install failed"
+    
+    mv $destdir/etc/unbound/unbound.conf $destdir/etc/unbound/unbound.conf-default
+    mv $destdir/etc/dnssec-trigger/dnssec-trigger.conf $destdir/etc/dnssec-trigger/dnssec-trigger.conf-default
 
     info "dnssec-trigger version: $version"
     rm -f osx/pkg/makepackage_ed
