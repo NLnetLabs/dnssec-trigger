@@ -322,9 +322,8 @@ echo "hdiutil attach to device ${device} at ${hdimnt}"
 sleep 5
 sync
 # attempt to keep the same icon
-rm -rf "$hdimnt"/*.mpkg/*
-mv "$hdimnt"/*.mpkg "$hdimnt"/${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg
-cp -R ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg/* "$hdimnt"/${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg
+rm -rf "$hdimnt"/*.mpkg
+cp -R ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg "$hdimnt"
 sleep 5
 sync
 hdiutil detach ${device}
