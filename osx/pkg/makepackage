@@ -105,6 +105,7 @@ fi
 
 # setup default configuration file and keys
 if [[ ! -f /etc/unbound/unbound.conf ]]; then
+	cp /etc/unbound/unbound.conf-default /etc/unbound/unbound.conf
 	/usr/sbin/unbound-control-setup
 	/usr/sbin/dnssec-trigger-control-setup
 	/usr/sbin/dnssec-trigger-control-setup -i
