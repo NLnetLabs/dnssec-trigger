@@ -315,12 +315,14 @@ mv ${PRODUCT}.mpkg ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg
 rm -f ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.dmg pack.dmg
 cp $ORIG/dmg-template.dmg.gz pack.dmg.gz
 gzip -d pack.dmg.gz
-device=$(hdiutil attach -readwrite "pack.dmg" | egrep '^/dev/' | sed 1q | awk '{print $1}')
-echo "hdiutil attach to device ${device}"
+hdiline=`hdiutil attach -readwrite "pack.dmg" | egrep '^/dev/' | sed 1q `
+device=`echo $hdiline | awk '{print $1}' `
+hdimnt=`echo $hdiline | awk '{print $3}' `
+echo "hdiutil attach to device ${device} at ${hdimnt}"
 sleep 5
 sync
-rm -rf /Volumes/Unbound\ DNS\ 1/${PRODUCT}-*.mpkg
-cp -R ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg "/Volumes/Unbound DNS 1"
+rm -rf "$hdimnt/${PRODUCT}-*.mpkg"
+cp -R ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg "$hdimnt"
 sleep 5
 sync
 hdiutil detach ${device}
