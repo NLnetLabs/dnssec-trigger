@@ -4,6 +4,9 @@
 # version 201110 cas
 # changed for dnssec-trigger, 201110, wouter.
 
+# put installed files in DESTDIR=DEST.
+# start in osx/pkg dir with osx/pkg/DEST for distfiles.
+
 PRODUCT="dnssectrigger"
 OS=`uname`
 DESTDIR=$(pwd)/DEST
