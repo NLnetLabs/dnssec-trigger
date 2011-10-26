@@ -1,3 +1,6 @@
+26 Oct 2011: Wouter
+	- uninstall command for OSX.
+
 25 Oct 2011: Wouter
 	- fix echo at end of make install.
 	- osx makepackage, donated by Carsten Strotmann.

@@ -11,6 +11,7 @@ PRODUCT="dnssectrigger"
 OS=`uname`
 DESTDIR=$(pwd)/DEST
 VERSION=`grep " PACKAGE_VERSION" ../../config.h | sed -e 's/.*"\(.*\)"/\1/'`
+FILELIST=/usr/share/dnssec-trigger/files.list
 
 if [[ "$OS" == 'Darwin' ]]; then
    PLATFORM='MacOSX'
@@ -33,9 +34,11 @@ macpackage_commands()
     cd ${DESTDIR}
     rm -f $ORIG/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz
     rm -rf package-manager
+    echo "create tarball"
     tar czf $ORIG/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz .
 
     # create package manager dir structure
+    echo "create package manager dir structure"
     PKGDIR=`pwd`
     mkdir -p package-manager/${PRODUCT}.pmdoc
     mkdir package-manager/packages
@@ -62,7 +65,10 @@ if [[ -f /System/Library/LaunchDaemons/org.isc.named.plist ]]; then
     launchctl unload -w /System/Library/LaunchDaemons/org.isc.named.plist
 fi
 
+mkdir -p "`dirname ${FILELIST}`"
 tar xzC / -f /tmp/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz
+tar tzf /tmp/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz > "${FILELIST}"
+echo "`dirname ${FILELIST}`" >> "${FILELIST}"
 
 # add unbound user
 if [[ "${OSVERSION}" == '10.4' ]]; then
@@ -103,6 +109,7 @@ cat << 'EOF2' > /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
 </dict>
 </plist>
 EOF2
+echo /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist >> "${FILELIST}"
 
 # fetch root DNS key
 if [[ ! -f /etc/unbound/root.key ]]; then
@@ -132,6 +139,81 @@ launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
 launchctl load -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
 
 EOF
+
+# write uninstall script
+cat <<EOF > ../uninstall-${PRODUCT}-${VERSION}.command
+#!/bin/bash
+# uninstall dnssec-trigger.
+
+question () {
+	printf "%s (y/n) " "$*"
+	read answer
+	case "$answer" in
+	    [Yy]|[Yy][Ee][Ss])
+		return 0
+		;;
+	    *)
+		return 1
+		;;
+	esac
+}
+
+if test "$*" = "uninstall"; then
+	echo ""
+	echo "proceeding with uninstall of ${PRODUCT} ${VERSION}"
+else
+	echo "uninstall ${PRODUCT} ${VERSION}"
+	echo ""
+	question "Are you sure you want to uninstall?" && sudo bash "$0" uninstall || echo "stop."
+	exit 0
+fi
+
+# see if file list exists
+if test ! -f "${FILELIST}"; then
+	echo "error: ${FILELIST} does not exist, nothing to uninstall"
+	exit 1
+fi
+
+# stop daemons if exist
+echo "unload plists ..."
+if [[ -f /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist ]]; then
+    launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
+fi
+
+if test -f /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist; then
+    launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+    launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
+    launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist
+fi
+
+# remove files.
+echo "delete files ..."
+cat "${FILELIST}" | while read f; do
+	# remove files not directories.
+	if test -f "$f"; then
+		rm -f "$f"
+	fi
+	echo -n "."
+done
+echo " done"
+
+echo "delete directories ..."
+cat "${FILELIST}" | while read f; do
+	# remove empty directories
+	if test -d "$f"; then
+		# error is piped into devnull if directory not empty.
+		rmdir "$f" >/dev/null 2>&1
+	fi
+	echo -n "."
+done
+echo " done"
+
+# remove filelist
+rm -f "${FILELIST}"
+echo "uninstall done"
+
+EOF
+chmod +x ../uninstall-${PRODUCT}-${VERSION}.command
 
 # write the background picture
 cp $ORIG/package-bg.png package-manager/packages/Resources/unbound.png
@@ -305,6 +387,7 @@ To use the locally installed Unbound DNS server, change the DNS server configura
 EOF
 
 # build package
+echo "build package"
 /Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker --doc package-manager/${PRODUCT}.pmdoc
 rm -rf ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg
 mv ${PRODUCT}.mpkg ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg
@@ -312,6 +395,7 @@ mv ${PRODUCT}.mpkg ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg
 #zip -r ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.zip ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg
 
 # create DMG
+echo "create pack.dmg"
 rm -f ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.dmg pack.dmg
 cp $ORIG/dmg-template.dmg.gz pack.dmg.gz
 gzip -d pack.dmg.gz
@@ -322,16 +406,21 @@ echo "hdiutil attach to device ${device} at ${hdimnt}"
 sleep 5
 sync
 # attempt to keep the same icon
+echo "copy files"
 rm -rf "$hdimnt"/*.mpkg
 cp -R ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg "$hdimnt"
+cp ../uninstall-${PRODUCT}-${VERSION}.command "$hdimnt"
 sleep 5
+echo "detach"
 sync
 hdiutil detach ${device}
 sync
 sleep 5
+echo "convert"
 sync
 hdiutil convert "pack.dmg" -format UDZO -imagekey zlib-level=9 -o "../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.dmg"
 rm pack.dmg
+rm ../uninstall-${PRODUCT}-${VERSION}.command
 
 }
 
