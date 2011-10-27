@@ -131,17 +131,29 @@ while [ "$1" ]; do
             ;;
         "-w")
             DOWIN="yes"
-	    WINLDNS_STORE_DIR=`pwd`/`basename $WINLDNS`"-win32-store-dir"
-	    WINUNBOUND_STORE_DIR=`pwd`/`basename $WINUNBOUND`"-win32-store-dir"
-	    WINSSL_STORE_DIR=`pwd`/`basename $WINSSL`"-win32-store-dir"
+	    if test -n "$WINLDNS"; then
+	    	WINLDNS_STORE_DIR=`pwd`/`basename $WINLDNS`"-win32-store-dir"
+	    fi
+	    if test -n "$WINUNBOUND"; then
+	    	WINUNBOUND_STORE_DIR=`pwd`/`basename $WINUNBOUND`"-win32-store-dir"
+	    fi
+	    if test -n "$WINSSL"; then
+	    	WINSSL_STORE_DIR=`pwd`/`basename $WINSSL`"-win32-store-dir"
+	    fi
             shift
             break
             ;;
         "-m")
             DOMAC="yes"
-	    WINLDNS_STORE_DIR=`pwd`/`basename $WINLDNS`"-osx-store-dir"
-	    WINUNBOUND_STORE_DIR=`pwd`/`basename $WINUNBOUND`"-osx-store-dir"
-	    WINSSL_STORE_DIR=`pwd`/`basename $WINSSL`"-osx-store-dir"
+	    if test -n "$WINLDNS"; then
+	    	WINLDNS_STORE_DIR=`pwd`/`basename $WINLDNS`"-osx-store-dir"
+	    fi
+	    if test -n "$WINUNBOUND"; then
+	    	WINUNBOUND_STORE_DIR=`pwd`/`basename $WINUNBOUND`"-osx-store-dir"
+	    fi
+	    if test -n "$WINSSL"; then
+	    	WINSSL_STORE_DIR=`pwd`/`basename $WINSSL`"-osx-store-dir"
+	    fi
             shift
             break
             ;;
