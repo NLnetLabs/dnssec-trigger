@@ -293,7 +293,7 @@ EOF
 cat <<EOF > package-manager/${PRODUCT}.pmdoc/index.xml
 <pkmkdoc spec="1.12">
 	<properties>
-		<title>NLnet Labs Unbound ${VERSION} for MacOS X ${OSVERSION}</title>
+		<title>NLnet Labs DnssecTrigger ${VERSION} for MacOS X ${OSVERSION}</title>
 		<build>$(pwd)/NLnet Labs Unbound ${VERSION} for MacOS X.mpkg</build>
 		<organization>nl.nlnetlabs</organization>
 		<userSees ui="both"/>
@@ -305,11 +305,9 @@ cat <<EOF > package-manager/${PRODUCT}.pmdoc/index.xml
 		<scripts></scripts>
 	</distribution>
 	<description>
-Unbound is a validating, recursive, and caching DNS resolver.
+DnssecTrigger configures a local DNSSEC validating resolver.
 
-The C implementation of Unbound is developed and maintained by NLnet Labs. It is based on ideas and algorithms taken from a java prototype developed by Verisign labs, Nominet, Kirei and ep.net.
-
-Unbound is designed as a set of modular components, so that also DNSSEC (secure DNS) validation and stub-resolvers (that do not run as a server, but are linked into an application) are easily possible.
+Dnssec-trigger reconfigures the local unbound DNS server. This unbound DNS server performs DNSSEC validation, but dnssec-trigger will signal it to to use the DHCP obtained forwarders if possible, and fallback to doing its own AUTH queries if that fails, and if that fails prompt the user via dnssec-trigger-applet the option to go with insecure DNS only.
 
 The source code is under a BSD License.
 	</description>
@@ -326,7 +324,7 @@ The source code is under a BSD License.
 {\colortbl;\red255\green255\blue255;}
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural\pardirnatural
 
-\f0\fs18 \cf0 Copyright (c) 2007, NLnet Labs. All rights reserved.\\
+\f0\fs18 \cf0 Copyright (c) 2011, NLnet Labs. All rights reserved.\\
 \\
 This software is open source.\\
 \\
@@ -361,39 +359,39 @@ POSSIBILITY OF SUCH DAMAGE.}]]></resource>
 {\colortbl;\red255\green255\blue255;}
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural\pardirnatural
 
-\f0\fs26 \cf0 This installs Unbound ${VERSION} for MacOS X ${OSVERSION} (${CPUARCH}). \\
+\f0\fs26 \cf0 This installs DnssecTrigger ${VERSION} for MacOS X ${OSVERSION} (${CPUARCH}). \\
 \\
-Unbound is a validating, recursive, and caching DNS resolver.\\
+This creates a local validating DNSSEC resolver on your machine (unbound, included in the package).\\
 \\
-The C implementation of Unbound is developed and maintained by NLnet Labs. It is based on ideas and algorithms taken from a java prototype developed by Verisign labs, Nominet, Kirei and ep.net.\\
+A tray icon appears, where you can see technical results and manage it. A dialog pops up if the network DNSSEC fails.  For some (for-pay) wifi hot-spots you may have to signon-while-insecure, then reprobe.\\
 \\
-Unbound is designed as a set of modular components, so that also DNSSEC (secure DNS) validation and stub-resolvers (that do not run as a server, but are linked into an application) are easily possible.\\
+Please subscribe to the user mailing list, to be notified about software updates (there is no autoupdater) http://www.nlnetlabs.nl/mailman/listinfo/dnssec-trigger\\
 \\
 The source code is under a BSD License.\\
 \\
+Information about DnssecTrigger can be found at \\
+http://www.nlnetlabs.nl/projects/dnssec-trigger\\
 Information about Unbound can be found at \\
 http://unbound.net}]]></resource><resource mime-type="text/rtf" kind="embedded" type="welcome"><![CDATA[{\rtf1\ansi\ansicpg1252\cocoartf1038\cocoasubrtf360
 {\fonttbl\f0\fnil\fcharset0 LucidaGrande;\f1\fnil\fcharset0 Monaco;}
 {\colortbl;\red255\green255\blue255;}
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural\pardirnatural
 
-\f0\fs26 \cf0 Welcome to the Unbound for MacOS X installer.\\
+\f0\fs26 \cf0 Welcome to the DnssecTrigger for MacOS X installer.\\
 \\
-The Unbound installer will install the Unbound validating DNS server on this system.  It will install a default configuration file in 
+This installer installs: libldns, unbound and dnssec-trigger.  It starts a
+validating DNSSEC cache on this system. The configuration file for unbound is in
 \f1 /etc/unbound/unbound.conf
-\f0  if no existing configuration file is found.\\
+\f0 The configuration file for dnssec-trigger is in
+\f1 /etc/dnssec-trigger/dnssec-trigger.conf
+\f0 .
 \\
-The trust anchor for the Internet root zone will be downloaded using '
+The trust anchor for the Internet root zone will be downloaded and configured for use using '
 \f1 unbound-anchor
 \f0 ' if the file 
 \f1 /etc/unbound/root.key
 \f0  does not exist.\\
 \\
-To use the locally installed Unbound DNS server, change the DNS server configuration in the network settings to point to your local machine (IPv4 loopback:127.0.0.1 or IPv6 loopback ::1).\\
-\\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural\pardirnatural
-
-\b \cf0 This installer will disable the BIND DNS Server on this system!\\
 }]]>
 	</resource>
 	</locale>
