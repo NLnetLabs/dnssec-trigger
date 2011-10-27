@@ -233,6 +233,8 @@ echo " done"
 
 # remove filelist
 rm -f "${FILELIST}"
+rmdir "`dirname "${FILELIST}"`"  >/dev/null 2>&1
+
 echo "uninstall done"
 
 EOF
