@@ -194,6 +194,9 @@ if test -f /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist; then
     launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist
 fi
 
+# uninit the resolv.conf override
+/usr/sbin/dnssec-triggerd -u
+
 # remove files.
 echo "delete files ..."
 cat "${FILELIST}" | while read f; do
