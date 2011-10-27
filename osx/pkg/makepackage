@@ -417,8 +417,8 @@ EOF
 # build package
 echo "build package"
 /Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker --doc package-manager/${PRODUCT}.pmdoc
-rm -rf ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg
-mv ${PRODUCT}.mpkg ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg
+rm -rf ../${PRODUCT}-${VERSION}-${CPUARCH}.mpkg
+mv ${PRODUCT}.mpkg ../${PRODUCT}-${VERSION}-${CPUARCH}.mpkg
 #rm -f ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.zip
 #zip -r ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.zip ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg
 
@@ -436,7 +436,7 @@ sync
 # attempt to keep the same icon
 echo "copy files"
 rm -rf "$hdimnt"/*.mpkg
-cp -R ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg "$hdimnt"
+cp -R ../${PRODUCT}-${VERSION}-${CPUARCH}.mpkg "$hdimnt"
 cp ../uninstall-${PRODUCT}-${VERSION}.command "$hdimnt"
 sleep 5
 echo "detach"
