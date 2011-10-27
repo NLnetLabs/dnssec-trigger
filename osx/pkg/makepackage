@@ -49,6 +49,7 @@ macpackage_commands()
     cat <<EOF > package-manager/packages/Resources/postflight
 #!/bin/bash
 # stop unbound if launch plist exists
+OSVERS=`sw_vers -productVersion | cut -d . -f 1,2`
 
 if [[ -f /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist ]]; then
     launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
@@ -77,20 +78,24 @@ tar tzf /tmp/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz > "${FI
 echo "`dirname ${FILELIST}`" >> "${FILELIST}"
 
 # add unbound user
-if [[ "${OSVERSION}" == '10.4' ]]; then
+if [[ "\${OSVERS}" == '10.4' ]]; then
     # Tiger
     dscl / -create /Users/unbound
     dscl / -create /Users/unbound UserShell /bin/nologin
-elif [[ "${OSVERSION}" == '10.5' ]]; then
+elif [[ "\${OSVERS}" == '10.5' ]]; then
     # Leopard
     dscl localhost -create /Local/Default/Users/unbound
     dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
-elif [[ "${OSVERSION}" == '10.6' ]]; then
+elif [[ "\${OSVERS}" == '10.6' ]]; then
     # SnowLeopard
     dscl localhost -create /Local/Default/Users/unbound
     dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
-elif [[ "${OSVERSION}" == '10.7' ]]; then
+elif [[ "\${OSVERS}" == '10.7' ]]; then
     # Lion
+    dscl localhost -create /Local/Default/Users/unbound
+    dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
+else
+    # guess
     dscl localhost -create /Local/Default/Users/unbound
     dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
 fi

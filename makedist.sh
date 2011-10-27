@@ -486,7 +486,8 @@ if [ "$DOMAC" = "yes" ]; then
     mv osx/pkg/dnssec*$version*.dmg ../../.
     cd ..
     cleanup
-    ls -lG dnssec*$version*.dmg
+    mv dnssec*$version*.dmg dnssectrigger-$version.dmg
+    ls -lG dnssectrigger-$version.dmg
 
     info "Done"
     exit 0
