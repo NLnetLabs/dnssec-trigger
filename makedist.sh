@@ -382,8 +382,8 @@ if [ "$DOMAC" = "yes" ]; then
     create_temp_dir
     destdir="osx/pkg/DEST"
     cnf_flag=""
-    ldns_flag="--prefix=/usr --disable-gost"
-    unbound_flag="--prefix=/usr --sysconfdir=/etc --disable-gost --enable-allsymbols"
+    ldns_flag="--prefix=/usr --disable-gost --disable-static"
+    unbound_flag="--prefix=/usr --sysconfdir=/etc --disable-gost --enable-allsymbols --disable-static"
     dnssectrigger_flag="--prefix=/usr --sysconfdir=/etc/dnssec-trigger --with-keydir=/etc/dnssec-trigger --with-unbound-control=/usr/sbin/unbound-control"
 
     if test `uname` != "Darwin"; then
