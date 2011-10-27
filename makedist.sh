@@ -483,11 +483,10 @@ if [ "$DOMAC" = "yes" ]; then
     # see tar gz for debug
     mv osx/pkg/*.tar.gz ../../.
     # the dmg package
-    mv osx/pkg/dnssec*$version*.dmg ../../.
+    mv osx/pkg/dnssec*$version*.dmg ../../dnssectrigger-$version.dmg
     cd ..
     cleanup
-    mv dnssec*$version*.dmg dnssectrigger-$version.dmg
-    ls -lG dnssectrigger-$version.dmg
+    ls -lhG dnssectrigger-$version.dmg
 
     info "Done"
     exit 0
