@@ -365,7 +365,7 @@ This creates a local validating DNSSEC resolver on your machine (unbound, includ
 \\
 A tray icon appears, where you can see technical results and manage it. A dialog pops up if the network DNSSEC fails.  For some (for-pay) wifi hot-spots you may have to signon-while-insecure, then reprobe.\\
 \\
-Please subscribe to the user mailing list, to be notified about software updates (there is no autoupdater) http://www.nlnetlabs.nl/mailman/listinfo/dnssec-trigger\\
+Please subscribe to the user mailing list, to hear about software updates http://www.nlnetlabs.nl/mailman/listinfo/dnssec-trigger\\
 \\
 The source code is under a BSD License.}]]></resource><resource mime-type="text/rtf" kind="embedded" type="welcome"><![CDATA[{\rtf1\ansi\ansicpg1252\cocoartf1038\cocoasubrtf360
 {\fonttbl\f0\fnil\fcharset0 LucidaGrande;\f1\fnil\fcharset0 Monaco;}
@@ -374,17 +374,11 @@ The source code is under a BSD License.}]]></resource><resource mime-type="text/
 
 \f0\fs26 \cf0 Welcome to the DnssecTrigger for MacOS X installer.\\
 \\
-This installer installs: libldns, unbound and dnssec-trigger.  It starts a
-validating DNSSEC cache on this system. The configuration file for unbound is in
-\f1 /etc/unbound/unbound.conf\\
-\f0 The configuration file for dnssec-trigger is in
-\f1 /etc/dnssec-trigger/dnssec-trigger.conf \\
+This installer installs: libldns, unbound and dnssec-trigger.  It starts a validating DNSSEC cache on this system.\\
 \\
-\f0 The trust anchor for the Internet root zone will be downloaded and configured for use using '
-\f1 unbound-anchor
-\f0 ' if the file 
-\f1 /etc/unbound/root.key
-\f0  does not exist.\\
+The configuration files are \f1 /etc/unbound/unbound.conf \f0 and \f1 /etc/dnssec-trigger/dnssec-trigger.conf \f0 \\
+\\
+The trust anchor for the Internet root zone will be downloaded and configured with \f1 unbound-anchor \f0 ' if the file \f1 /etc/unbound/root.key \f0  does not exist.\\
 \\
 Information about DnssecTrigger can be found at \\
 http://www.nlnetlabs.nl/projects/dnssec-trigger\\
