@@ -55,7 +55,7 @@ if [[ -f /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist ]]; then
 fi
 
 if test -f /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist; then
-    launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+    #launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
     launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
     launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist
 fi
@@ -164,20 +164,29 @@ question () {
 	esac
 }
 
+do_uninstall() {
+	if test -f /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist; then
+		echo "unload user panel plist"
+		launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+	fi
+	echo "run with root permission"
+	sudo bash "\$0" uninstall 
+}
+
+# see if file list exists
+if test ! -f "${FILELIST}"; then
+	echo "error: ${FILELIST} does not exist, nothing to uninstall"
+	exit 1
+fi
+
 if test "\$*" = "uninstall"; then
 	echo ""
 	echo "proceeding with uninstall of ${PRODUCT} ${VERSION}"
 else
 	echo "uninstall ${PRODUCT} ${VERSION}"
 	echo ""
-	question "Are you sure you want to uninstall?" && sudo bash "\$0" uninstall || echo "stop."
+	question "Are you sure you want to uninstall?" && do_uninstall || echo "stop."
 	exit 0
-fi
-
-# see if file list exists
-if test ! -f "${FILELIST}"; then
-	echo "error: ${FILELIST} does not exist, nothing to uninstall"
-	exit 1
 fi
 
 # from root dir.
@@ -193,7 +202,6 @@ if [[ -f /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist ]]; then
 fi
 
 if test -f /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist; then
-    launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
     launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
     launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist
 fi
