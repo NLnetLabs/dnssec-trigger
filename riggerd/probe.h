@@ -63,7 +63,7 @@ struct probe_ip {
 	struct outq* ds_c;
 	/* DNSKEY query, or NULL if done */
 	struct outq* dnskey_c;
-	/* NSEC3 query, or NULL if none/done */
+	/* nodata query probes NSEC3, or NULL if done or not used */
 	struct outq* nsec3_c;
 
 	/* if probe has finished */
