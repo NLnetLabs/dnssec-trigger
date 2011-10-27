@@ -54,8 +54,14 @@ if [[ -f /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist ]]; then
     launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
 fi
 
+guiuser="`stat -f "%Su" /dev/console`"
+if test -f /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist; then
+	if test -n "\$guiuser" -a "\$guiuser" != "root"; then
+		sudo -u "\$guiuser" launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+	fi
+fi
+
 if test -f /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist; then
-    #launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
     launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
     launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist
 fi
