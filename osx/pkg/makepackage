@@ -182,6 +182,9 @@ fi
 # from root dir.
 cd /
 
+echo "stop panel"
+/usr/sbin/dnssec-trigger-control stoppanels
+
 # stop daemons if exist
 echo "unload plists ..."
 if [[ -f /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist ]]; then
