@@ -412,7 +412,6 @@ if [ "$DOMAC" = "yes" ]; then
 	./configure $cnf_flag $ldns_flag || error_cleanup "ldns configure failed"
 	info "ldns: make"
 	make || error_cleanup "ldns compile failed"
-        # todo strip libraries.
 	ldnsdir=`pwd`
 	cnf_flag="$cnf_flag --with-ldns=$ldnsdir"
 	cd $backdir
@@ -442,7 +441,6 @@ if [ "$DOMAC" = "yes" ]; then
 	info "unbound: make"
 	make || error_cleanup "unbound compile failed"
 	make strip || error_cleanup "unbound make strip failed"
-        # todo strip libraries.
 	# use from the build directory.
 	unbounddir=`pwd`
 	cd $backdir
@@ -466,7 +464,6 @@ if [ "$DOMAC" = "yes" ]; then
     info "Calling make"
     make || error_cleanup "Could not make"
     make strip || error_cleanup "make strip failed"
-    # todo strip libraries, tray icon.
     info "make install"
     make install DESTDIR=$destdir || error_cleanup "make install failed"
     
