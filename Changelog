@@ -1,5 +1,6 @@
 27 Oct 2011: Wouter
 	- osx dmg install and uninstall works.
+	- for caches, also test if NSEC3 is present for QTYPE=NULL nodata.
 
 26 Oct 2011: Wouter
 	- uninstall command for OSX (put in the DMG).

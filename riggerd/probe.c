@@ -109,6 +109,7 @@ void probe_delete(struct probe_ip* p)
 	free(p->reason);
 	outq_delete(p->ds_c);
 	outq_delete(p->dnskey_c);
+	outq_delete(p->nsec3_c);
 	free(p);
 }
 
@@ -127,8 +128,19 @@ static const char*
 get_random_dest(void)
 {
 	const char* choices[] = { "se.", "uk.", "nl.", "de." };
-	return choices[ ldns_get_random() %4 ];
+	return choices[ ldns_get_random() % 4 ];
 }
+
+/** get random NSEC3 signed TLD */
+static const char*
+get_random_nsec3_dest(void)
+{
+	const char* choices[] = { "com.", "uk.", "nl.", "de." };
+	return choices[ ldns_get_random() % 4 ];
+}
+
+/** the NSEC3 qtype to elicit it (a nodata answer) */
+#define PROBE_NSEC3_QTYPE LDNS_RR_TYPE_NULL
 
 /** get random authority server */
 static const char*
@@ -210,7 +222,11 @@ outq_done(struct outq* outq, const char* reason)
 {
 	struct probe_ip* p = outq->probe;
 	const char* in = NULL;
-	if(p->ds_c == outq) {
+	if(p->nsec3_c == outq) {
+		outq_delete(p->nsec3_c);
+		p->nsec3_c = NULL;
+		in = "NSEC3";
+	} else if(p->ds_c == outq) {
 		outq_delete(p->ds_c);
 		p->ds_c = NULL;
 		in = "DS";
@@ -330,7 +346,14 @@ outq_check_packet(struct outq* outq, uint8_t* wire, size_t len)
 	}
 
 	/* test if the type, RRSIG present */
-	if(!check_type_in_answer(p, (int)outq->qtype)) {
+	if(outq->qtype == PROBE_NSEC3_QTYPE) {
+		if(!check_type_in_authority(p, LDNS_RR_TYPE_NSEC3)) {
+			outq_done(outq, "no NSEC3 in nodata reply");
+			ldns_pkt_free(p);
+			return;
+		}
+		rrsig_in_auth = 1;
+	} else if(!check_type_in_answer(p, (int)outq->qtype)) {
 		if(outq->qtype == LDNS_RR_TYPE_DS) {
 			/* if type DS, and it is not present, it is OK if
 			 * we get a proper denial from the parent with NSEC */
@@ -553,8 +576,8 @@ void outq_timeout(void* arg)
 {
 	struct outq* outq = (struct outq*)arg;
 	verbose(VERB_ALGO, "%s %s: UDP timeout after %d msec",
-		outq->probe->name,
-		outq->qtype==LDNS_RR_TYPE_DNSKEY?"DNSKEY":"DS", outq->timeout);
+		outq->probe->name, outq->qtype==PROBE_NSEC3_QTYPE?"NSEC3":(
+		outq->qtype==LDNS_RR_TYPE_DNSKEY?"DNSKEY":"DS"), outq->timeout);
 	if(outq->timeout > QUERY_END_TIMEOUT) {
 		/* too many timeouts */
 		outq_done(outq, "timeout");
@@ -737,6 +760,18 @@ static void probe_spawn(const char* ip, int recurse, int dnstcp, int port)
 		probe_delete(p);
 		return;
 	}
+	if(recurse && !dnstcp) {
+		/* for cache test NSEC3 */
+		const char* nd = get_random_nsec3_dest();
+		verbose(VERB_ALGO, "nsec3 query %s", nd);
+		p->nsec3_c = outq_create(p->name, PROBE_NSEC3_QTYPE, nd,
+			recurse, p, dnstcp, port);
+		if(!p->nsec3_c) {
+			log_err("could not send nsec3 query for probe");
+			probe_delete(p);
+			return;
+		}
+	}
 
 	/* put it in the svr list */
 	p->next = global_svr->probes;
@@ -832,7 +867,7 @@ int probe_has_work_tcp(struct svr* svr, int port, int ip6)
 static void
 probe_partial_done(struct probe_ip* p, const char* in, const char* reason)
 {
-	if(!reason && (p->ds_c || p->dnskey_c)) {
+	if(!reason && (p->ds_c || p->dnskey_c || p->nsec3_c)) {
 		/* this one success but wait for the other one */
 		verbose(VERB_ALGO, "probe %s: %s completed successfully",
 			p->name, in);
@@ -846,6 +881,8 @@ probe_partial_done(struct probe_ip* p, const char* in, const char* reason)
 		p->ds_c = NULL;
 		outq_delete(p->dnskey_c);
 		p->dnskey_c = NULL;
+		outq_delete(p->nsec3_c);
+		p->nsec3_c = NULL;
 		/* note failure */
 		p->reason = strdup(reason);
 		p->works = 0;
