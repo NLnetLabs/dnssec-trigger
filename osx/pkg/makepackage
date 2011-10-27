@@ -141,8 +141,11 @@ launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
 # start dnssec-trigger (-panel and -hooks)
 launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist
 launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
-# if we do this then a root-owned tray icon appears (not user-owned).
-#launchctl load -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+# start panel in GUI user space.
+guiuser="`stat -f "%Su" /dev/console`"
+if test -n "\$guiuser" -a "\$guiuser" != "root"; then
+	sudo -u "\$guiuser" launchctl load -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+fi
 
 EOF
 
