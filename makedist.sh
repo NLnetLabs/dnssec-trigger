@@ -28,6 +28,7 @@ Generate a distribution tar file for dnssec-trigger.
 	that dir to rebuild the package.
     -w ...       Build windows binary dist. last args passed to configure.
     -m ...       Build mac binary dist. last args passed to configure.
+    		 use -wldns and -wunbound with it.
 EOF
     exit 1
 }

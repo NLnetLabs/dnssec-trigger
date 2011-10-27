@@ -146,9 +146,9 @@ cat <<EOF > ../uninstall-${PRODUCT}-${VERSION}.command
 # uninstall dnssec-trigger.
 
 question () {
-	printf "%s (y/n) " "$*"
+	printf "%s (y/n) " "\$*"
 	read answer
-	case "$answer" in
+	case "\$answer" in
 	    [Yy]|[Yy][Ee][Ss])
 		return 0
 		;;
@@ -158,13 +158,13 @@ question () {
 	esac
 }
 
-if test "$*" = "uninstall"; then
+if test "\$*" = "uninstall"; then
 	echo ""
 	echo "proceeding with uninstall of ${PRODUCT} ${VERSION}"
 else
 	echo "uninstall ${PRODUCT} ${VERSION}"
 	echo ""
-	question "Are you sure you want to uninstall?" && sudo bash "$0" uninstall || echo "stop."
+	question "Are you sure you want to uninstall?" && sudo bash "\$0" uninstall || echo "stop."
 	exit 0
 fi
 
@@ -190,8 +190,8 @@ fi
 echo "delete files ..."
 cat "${FILELIST}" | while read f; do
 	# remove files not directories.
-	if test -f "$f"; then
-		rm -f "$f"
+	if test -f "\$f"; then
+		rm -f "\$f"
 	fi
 	echo -n "."
 done
@@ -200,9 +200,9 @@ echo " done"
 echo "delete directories ..."
 cat "${FILELIST}" | while read f; do
 	# remove empty directories
-	if test -d "$f"; then
+	if test -d "\$f"; then
 		# error is piped into devnull if directory not empty.
-		rmdir "$f" >/dev/null 2>&1
+		rmdir "\$f" >/dev/null 2>&1
 	fi
 	echo -n "."
 done
