@@ -457,6 +457,9 @@ if [ "$DOMAC" = "yes" ]; then
     
     mv $destdir/etc/unbound/unbound.conf $destdir/etc/unbound/unbound.conf-default
     mv $destdir/etc/dnssec-trigger/dnssec-trigger.conf $destdir/etc/dnssec-trigger/dnssec-trigger.conf-default
+    # must use /private/etc to write into /etc(symlink) on mac.
+    mkdir $destdir/private
+    mv $destdir/etc $destdir/private/etc
 
     info "dnssec-trigger version: $version"
     rm -f osx/pkg/makepackage_ed
