@@ -119,26 +119,29 @@ while [ "$1" ]; do
             ;;
         "-wldns")
             WINLDNS="$2"
-	    WINLDNS_STORE_DIR=`pwd`/`basename $WINLDNS`"-win32-store-dir"
             shift
             ;;
         "-wunbound")
             WINUNBOUND="$2"
-	    WINUNBOUND_STORE_DIR=`pwd`/`basename $WINUNBOUND`"-win32-store-dir"
             shift
             ;;
         "-wssl")
             WINSSL="$2"
-	    WINSSL_STORE_DIR=`pwd`/`basename $WINSSL`"-win32-store-dir"
             shift
             ;;
         "-w")
             DOWIN="yes"
+	    WINLDNS_STORE_DIR=`pwd`/`basename $WINLDNS`"-win32-store-dir"
+	    WINUNBOUND_STORE_DIR=`pwd`/`basename $WINUNBOUND`"-win32-store-dir"
+	    WINSSL_STORE_DIR=`pwd`/`basename $WINSSL`"-win32-store-dir"
             shift
             break
             ;;
         "-m")
             DOMAC="yes"
+	    WINLDNS_STORE_DIR=`pwd`/`basename $WINLDNS`"-osx-store-dir"
+	    WINUNBOUND_STORE_DIR=`pwd`/`basename $WINUNBOUND`"-osx-store-dir"
+	    WINSSL_STORE_DIR=`pwd`/`basename $WINSSL`"-osx-store-dir"
             shift
             break
             ;;
