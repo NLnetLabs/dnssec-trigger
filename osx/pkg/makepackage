@@ -130,6 +130,11 @@ fi
 # clean up
 rm -rf /tmp/${PRODUCT}-${VERSION}-binary*
 
+chown root /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
+chown root /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist
+chown root /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
+chown root /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+
 # start unbound
 launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
 
