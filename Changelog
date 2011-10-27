@@ -1,5 +1,8 @@
+27 Oct 2011: Wouter
+	- osx dmg install and uninstall works.
+
 26 Oct 2011: Wouter
-	- uninstall command for OSX.
+	- uninstall command for OSX (put in the DMG).
 
 25 Oct 2011: Wouter
 	- fix echo at end of make install.
