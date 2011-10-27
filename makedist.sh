@@ -475,6 +475,7 @@ if [ "$DOMAC" = "yes" ]; then
     # must use /private/etc to write into /etc(symlink) on mac.
     mkdir $destdir/private
     mv $destdir/etc $destdir/private/etc
+    mv $destdir/var $destdir/private/var
 
     info "dnssec-trigger version: $version"
     rm -f osx/pkg/makepackage_ed
