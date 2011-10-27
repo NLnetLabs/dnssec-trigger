@@ -376,12 +376,11 @@ The source code is under a BSD License.}]]></resource><resource mime-type="text/
 \\
 This installer installs: libldns, unbound and dnssec-trigger.  It starts a
 validating DNSSEC cache on this system. The configuration file for unbound is in
-\f1 /etc/unbound/unbound.conf
+\f1 /etc/unbound/unbound.conf\\
 \f0 The configuration file for dnssec-trigger is in
-\f1 /etc/dnssec-trigger/dnssec-trigger.conf
-\f0 .
+\f1 /etc/dnssec-trigger/dnssec-trigger.conf \\
 \\
-The trust anchor for the Internet root zone will be downloaded and configured for use using '
+\f0 The trust anchor for the Internet root zone will be downloaded and configured for use using '
 \f1 unbound-anchor
 \f0 ' if the file 
 \f1 /etc/unbound/root.key
