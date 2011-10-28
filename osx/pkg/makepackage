@@ -50,6 +50,9 @@ macpackage_commands()
 #!/bin/bash
 # stop unbound if launch plist exists
 OSVERS=`sw_vers -productVersion | cut -d . -f 1,2`
+INSTLOG=/tmp/${PRODUCT}-${VERSION}-install.log
+
+doinstall() {
 
 if [[ -f /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist ]]; then
     launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
@@ -158,6 +161,10 @@ launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
 if test -n "\$guiuser" -a "\$guiuser" != "root"; then
 	sudo -u "\$guiuser" launchctl load -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
 fi
+
+}
+
+doinstall 2>&1 | tee \$INSTLOG
 
 EOF
 
