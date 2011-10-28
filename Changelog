@@ -1,3 +1,6 @@
+28 Oct 2011: Wouter
+	- documentation fixes
+
 27 Oct 2011: Wouter
 	- osx dmg install and uninstall works.
 	- for caches, also test if NSEC3 is present for QTYPE=NULL nodata.

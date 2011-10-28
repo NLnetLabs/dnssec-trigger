@@ -100,17 +100,22 @@ The other watches the /Library/Preferences/SystemConfiguration for changes
 and launches a script.  This script uses ifconfig and parses plist files
 and then sends the results with dnssec-trigger-control to the daemon.
 
-The daemon changes resolv.conf, but on OSX also scutil is used to change
-the runtime system configuration (the Apple stuff).  Note that user input
-in the control panel overrides this; you need to remove the user override
-to enable the daemon's results to appear.
+The daemon changes resolv.conf but does not need to as on OSX it also
+sets the network preferences for the network interfaces to the values.
+These preferences survive a reboot, so the reboot is safe. There then
+is no connection until unbound is started during reboot.
 
 In /Library/LaunchAgents a plist file starts the tray icon (Cocoa app).
 It uses an SSL connection to the daemon over loopback (127.0.0.1).
 
 * Windows
 
-The daemon is a service.
+The daemon is a service.  It has a thread that listens to network changes
+and blocks on that, it notifies the main daemon when there is a change.
+The DHCP DNS servers are picked from the registry and the override DNS
+options are put in the registry as the network preferences.  These survive
+a reboot, so that the system is safe during a reboot.  There then is no
+DNS connection until unbound is started during reboot.
 
 The tray icon is a native application.  It uses SSL to talk to the daemon.
 
