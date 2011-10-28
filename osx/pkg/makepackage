@@ -126,6 +126,8 @@ echo /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist >> "${FILELIST}"
 if [[ ! -f /etc/unbound/root.key ]]; then
    /usr/sbin/unbound-anchor
 fi
+# make it writable by unbound
+chown unbound /etc/unbound/root.key
 
 # setup default configuration file and keys
 if [[ ! -f /etc/unbound/unbound.conf ]]; then
@@ -153,7 +155,6 @@ launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
 launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist
 launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
 # start panel in GUI user space.
-guiuser="`stat -f "%Su" /dev/console`"
 if test -n "\$guiuser" -a "\$guiuser" != "root"; then
 	sudo -u "\$guiuser" launchctl load -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
 fi
