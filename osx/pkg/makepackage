@@ -108,6 +108,17 @@ else
     dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
 fi
 
+# write unbound launcher script
+cat << 'EOF2' > /usr/libexec/unbound-launch.sh
+#!/bin/bash
+# update root anchor (if offline for long)
+/usr/sbin/unbound-anchor || logger "/etc/unbound/root.key has been changed"
+# exec so the shell does not hang around.
+exec /usr/sbin/unbound -d
+EOF2
+chmod +x /usr/libexec/unbound-launch.sh
+echo /usr/libexec/unbound-launch.sh >> "${FILELIST}"
+
 # write unbound plist
 cat << 'EOF2' > /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
 <?xml version="1.0" encoding="UTF-8"?>
@@ -118,8 +129,7 @@ cat << 'EOF2' > /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
         <string>nl.nlnetlabs.unbound</string>
         <key>ProgramArguments</key>
         <array>
-           <string>/usr/sbin/unbound</string>
-           <string>-d</string>
+           <string>/usr/libexec/unbound-launch.sh</string>
         </array>
         <key>RunAtLoad</key>
         <true/>

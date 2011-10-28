@@ -5,6 +5,7 @@
 	  10.6 packages work on 10.7.  10.7 packages work on 10.7.
 	- tag 0.7
 	- trunk is 0.8 under development.
+	- macinstall, launch unbound-anchor at boot (update if offline months)
 
 27 Oct 2011: Wouter
 	- osx dmg install and uninstall works.
