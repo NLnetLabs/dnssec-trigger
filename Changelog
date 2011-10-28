@@ -1,5 +1,8 @@
 28 Oct 2011: Wouter
 	- documentation fixes
+	- osx dmg install fix for 10.6 packager (start of userspace panel).
+	  also framework for debug logging in postflight of packager.
+	  10.6 packages work on 10.7.  10.7 packages work on 10.7.
 
 27 Oct 2011: Wouter
 	- osx dmg install and uninstall works.
