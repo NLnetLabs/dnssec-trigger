@@ -172,7 +172,7 @@ static int setup_ssl_ctx(struct svr* s)
 	s_cert = s->cfg->server_cert_file;
 	s_key = s->cfg->server_key_file;
 	verbose(VERB_ALGO, "setup SSL certificates");
-	if (!SSL_CTX_use_certificate_file(s->ctx,s_cert,SSL_FILETYPE_PEM)) {
+	if(!SSL_CTX_use_certificate_file(s->ctx,s_cert,SSL_FILETYPE_PEM)) {
 		log_err("Error for server-cert-file: %s", s_cert);
 		log_crypto_err("Error in SSL_CTX use_certificate_file");
 		return 0;
@@ -429,6 +429,12 @@ int control_callback(struct comm_point* c, void* arg, int err,
 				s->shake_state = rc_hs_write;
 				comm_point_listen_for_rw(c, 0, 1);
 				return 0;
+			} else if(r2 == SSL_ERROR_SYSCALL) {
+				if(errno != 0)
+					log_err("ssl_handshake syscall: %s",
+						strerror(errno));
+				sslconn_delete(s);
+				return 0;
 			} else {
 				if(r == 0)
 					log_err("remote control connection closed prematurely");
@@ -526,6 +532,12 @@ static int sslconn_readline(struct sslconn* sc)
 				sc->shake_state = rc_hs_want_write;
 				comm_point_listen_for_rw(sc->c, 0, 1);
 				return 0;
+			} else if(want == SSL_ERROR_SYSCALL) {
+				if(errno != 0)
+					log_err("ssl_read syscall: %s",
+						strerror(errno));
+				sslconn_delete(sc);
+				return 0;
 			}
 			log_crypto_err("could not SSL_read");
 			sslconn_delete(sc);
@@ -565,6 +577,13 @@ static int sslconn_write(struct sslconn* sc)
 				comm_point_listen_for_rw(sc->c, 1, 0);
 				return 0;
 			} else if(want == SSL_ERROR_WANT_WRITE) {
+				return 0;
+			} else if(want == SSL_ERROR_SYSCALL) {
+				/* want syscall, errno==0 : unclean closed */
+				if(errno != 0)
+					log_err("ssl_write syscall: %s",
+						strerror(errno));
+				sslconn_delete(sc);
 				return 0;
 			}
 			log_crypto_err("could not SSL_write");
@@ -619,6 +638,12 @@ static int sslconn_checkclose(struct sslconn* sc)
 		} else if(want == SSL_ERROR_WANT_WRITE) {
 			sc->shake_state = rc_hs_want_write;
 			comm_point_listen_for_rw(sc->c, 0, 1);
+			return 0;
+		} else if(want == SSL_ERROR_SYSCALL) {
+			if(errno != 0)
+				log_err("checkclose ssl_read syscall: %s",
+					strerror(errno));
+			sslconn_delete(sc);
 			return 0;
 		}
 		log_crypto_err("checkclose could not SSL_read");

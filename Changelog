@@ -1,3 +1,6 @@
+31 Oct 2011: Wouter
+	- do not log errors for unclean ssl close.
+
 28 Oct 2011: Wouter
 	- documentation fixes
 	- osx dmg install fix for 10.6 packager (start of userspace panel).
