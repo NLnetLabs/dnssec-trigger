@@ -44,6 +44,8 @@
 #include "log.h"
 #include "net_help.h"
 #include "fptr_wlist.h"
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 
 /* -------- Start of local definitions -------- */
 /** if CMSG_ALIGN is not defined on this platform, a workaround */
@@ -140,7 +142,7 @@ struct internal_signal {
 /** create a tcp handler with a parent */
 static struct comm_point* comm_point_create_tcp_handler(
 	struct comm_base *base, struct comm_point* parent, size_t bufsize,
-        comm_point_callback_t* callback, void* callback_arg);
+	comm_point_callback_t* callback, void* callback_arg);
 
 /* -------- End of local definitions -------- */
 
@@ -687,6 +689,44 @@ int comm_point_perform_accept(struct comm_point* c,
 	return new_fd;
 }
 
+#ifdef USE_WINSOCK
+static long win_bio_cb(BIO *b, int oper, const char* ATTR_UNUSED(argp),
+	int ATTR_UNUSED(argi), long argl, long retvalue)
+{
+	verbose(VERB_ALGO, "bio_cb %d, %s %s %s", oper,
+		(oper&BIO_CB_RETURN)?"return":"before",
+		(oper&BIO_CB_READ)?"read":((oper&BIO_CB_WRITE)?"write":"other"),
+		WSAGetLastError()==WSAEWOULDBLOCK?"wsawb":"");
+	/* on windows, check if previous operation caused EWOULDBLOCK */
+	if( (oper == (BIO_CB_READ|BIO_CB_RETURN) && argl == 0) ||
+		(oper == (BIO_CB_GETS|BIO_CB_RETURN) && argl == 0)) {
+		if(WSAGetLastError() == WSAEWOULDBLOCK)
+			winsock_tcp_wouldblock((struct event*)
+				BIO_get_callback_arg(b), EV_READ);
+	}
+	if( (oper == (BIO_CB_WRITE|BIO_CB_RETURN) && argl == 0) ||
+		(oper == (BIO_CB_PUTS|BIO_CB_RETURN) && argl == 0)) {
+		if(WSAGetLastError() == WSAEWOULDBLOCK)
+			winsock_tcp_wouldblock((struct event*)
+				BIO_get_callback_arg(b), EV_WRITE);
+	}
+	/* return original return value */
+	return retvalue;
+}
+
+/** set win bio callbacks for nonblocking operations */
+void
+comm_point_tcp_win_bio_cb(struct comm_point* c, void* thessl)
+{
+	SSL* ssl = (SSL*)thessl;
+	/* set them both just in case, but usually they are the same BIO */
+	BIO_set_callback(SSL_get_rbio(ssl), &win_bio_cb);
+	BIO_set_callback_arg(SSL_get_rbio(ssl), (char*)comm_point_internal(c));
+	BIO_set_callback(SSL_get_wbio(ssl), &win_bio_cb);
+	BIO_set_callback_arg(SSL_get_wbio(ssl), (char*)comm_point_internal(c));
+}
+#endif
+
 void 
 comm_point_tcp_accept_callback(int ATTR_UNUSED(fd), short event, void* arg)
 {
@@ -709,6 +749,18 @@ comm_point_tcp_accept_callback(int ATTR_UNUSED(fd), short event, void* arg)
 		&c_hdl->repinfo.addrlen);
 	if(new_fd == -1)
 		return;
+	if(c->ssl) {
+		c_hdl->ssl = incoming_ssl_fd(c->ssl, new_fd);
+		if(!c_hdl->ssl) {
+			c_hdl->fd = new_fd;
+			comm_point_close(c_hdl);
+			return;
+		}
+		c_hdl->ssl_shake_state = comm_ssl_shake_read;
+#ifdef USE_WINSOCK
+		comm_point_tcp_win_bio_cb(c_hdl, c_hdl->ssl);
+#endif
+	}
 
 	/* grab the tcp handler buffers */
 	c->tcp_free = c_hdl->tcp_free;
@@ -725,6 +777,11 @@ static void
 reclaim_tcp_handler(struct comm_point* c)
 {
 	log_assert(c->type == comm_tcp);
+	if(c->ssl) {
+		SSL_shutdown(c->ssl);
+		SSL_free(c->ssl);
+		c->ssl = NULL;
+	}
 	comm_point_close(c);
 	if(c->tcp_parent) {
 		c->tcp_free = c->tcp_parent->tcp_free;
@@ -767,6 +824,240 @@ tcp_callback_reader(struct comm_point* c)
 	}
 }
 
+/** continue ssl handshake */
+static int
+ssl_handshake(struct comm_point* c)
+{
+	int r;
+	if(c->ssl_shake_state == comm_ssl_shake_hs_read) {
+		/* read condition satisfied back to writing */
+		comm_point_listen_for_rw(c, 1, 1);
+		c->ssl_shake_state = comm_ssl_shake_none;
+		return 1;
+	}
+	if(c->ssl_shake_state == comm_ssl_shake_hs_write) {
+		/* write condition satisfied, back to reading */
+		comm_point_listen_for_rw(c, 1, 0);
+		c->ssl_shake_state = comm_ssl_shake_none;
+		return 1;
+	}
+
+	ERR_clear_error();
+	r = SSL_do_handshake(c->ssl);
+	if(r != 1) {
+		int want = SSL_get_error(c->ssl, r);
+		if(want == SSL_ERROR_WANT_READ) {
+			if(c->ssl_shake_state == comm_ssl_shake_read)
+				return 1;
+			c->ssl_shake_state = comm_ssl_shake_read;
+			comm_point_listen_for_rw(c, 1, 0);
+			return 1;
+		} else if(want == SSL_ERROR_WANT_WRITE) {
+			if(c->ssl_shake_state == comm_ssl_shake_write)
+				return 1;
+			c->ssl_shake_state = comm_ssl_shake_write;
+			comm_point_listen_for_rw(c, 0, 1);
+			return 1;
+		} else if(r == 0) {
+			return 0; /* closed */
+		} else if(want == SSL_ERROR_SYSCALL) {
+			/* SYSCALL and errno==0 means closed uncleanly */
+			if(errno != 0)
+				log_err("SSL_handshake syscall: %s",
+					strerror(errno));
+			return 0;
+		} else {
+			log_crypto_err("ssl handshake failed");
+			log_addr(1, "ssl handshake failed", &c->repinfo.addr,
+				c->repinfo.addrlen);
+			return 0;
+		}
+	}
+	/* this is where peer verification could take place */
+	log_addr(VERB_ALGO, "SSL DNS connection", &c->repinfo.addr,
+		c->repinfo.addrlen);
+
+	/* setup listen rw correctly */
+	if(c->tcp_is_reading) {
+		if(c->ssl_shake_state != comm_ssl_shake_read)
+			comm_point_listen_for_rw(c, 1, 0);
+	} else {
+		comm_point_listen_for_rw(c, 1, 1);
+	}
+	c->ssl_shake_state = comm_ssl_shake_none;
+	return 1;
+}
+
+/** ssl read callback on TCP */
+static int
+ssl_handle_read(struct comm_point* c)
+{
+	int r;
+	if(c->ssl_shake_state != comm_ssl_shake_none) {
+		if(!ssl_handshake(c))
+			return 0;
+		if(c->ssl_shake_state != comm_ssl_shake_none)
+			return 1;
+	}
+	if(c->tcp_byte_count < sizeof(uint16_t)) {
+		/* read length bytes */
+		ERR_clear_error();
+		if((r=SSL_read(c->ssl, (void*)ldns_buffer_at(c->buffer,
+			c->tcp_byte_count), (int)(sizeof(uint16_t) -
+			c->tcp_byte_count))) <= 0) {
+			int want = SSL_get_error(c->ssl, r);
+			if(want == SSL_ERROR_ZERO_RETURN) {
+				return 0; /* shutdown, closed */
+			} else if(want == SSL_ERROR_WANT_READ) {
+				return 1; /* read more later */
+			} else if(want == SSL_ERROR_WANT_WRITE) {
+				c->ssl_shake_state = comm_ssl_shake_hs_write;
+				comm_point_listen_for_rw(c, 0, 1);
+				return 1;
+			} else if(want == SSL_ERROR_SYSCALL) {
+				if(errno != 0)
+					log_err("SSL_read syscall: %s",
+						strerror(errno));
+				return 0;
+			}
+			log_crypto_err("could not SSL_read");
+			return 0;
+		}
+		c->tcp_byte_count += r;
+		if(c->tcp_byte_count != sizeof(uint16_t))
+			return 1;
+		if(ldns_buffer_read_u16_at(c->buffer, 0) >
+			ldns_buffer_capacity(c->buffer)) {
+			verbose(VERB_QUERY, "ssl: dropped larger than buffer");
+			return 0;
+		}
+		ldns_buffer_set_limit(c->buffer,
+			ldns_buffer_read_u16_at(c->buffer, 0));
+		if(ldns_buffer_limit(c->buffer) < LDNS_HEADER_SIZE) {
+			verbose(VERB_QUERY, "ssl: dropped bogus too short.");
+			return 0;
+		}
+		verbose(VERB_ALGO, "Reading ssl tcp query of length %d",
+			(int)ldns_buffer_limit(c->buffer));
+	}
+	log_assert(ldns_buffer_remaining(c->buffer) > 0);
+	ERR_clear_error();
+	r = SSL_read(c->ssl, (void*)ldns_buffer_current(c->buffer),
+		(int)ldns_buffer_remaining(c->buffer));
+	if(r <= 0) {
+		int want = SSL_get_error(c->ssl, r);
+		if(want == SSL_ERROR_ZERO_RETURN) {
+			return 0; /* shutdown, closed */
+		} else if(want == SSL_ERROR_WANT_READ) {
+			return 1; /* read more later */
+		} else if(want == SSL_ERROR_WANT_WRITE) {
+			c->ssl_shake_state = comm_ssl_shake_hs_write;
+			comm_point_listen_for_rw(c, 0, 1);
+			return 1;
+		} else if(want == SSL_ERROR_SYSCALL) {
+			if(errno != 0)
+				log_err("SSL_read syscall: %s",
+					strerror(errno));
+			return 0;
+		}
+		log_crypto_err("could not SSL_read");
+		return 0;
+	}
+	ldns_buffer_skip(c->buffer, (ssize_t)r);
+	if(ldns_buffer_remaining(c->buffer) <= 0) {
+		tcp_callback_reader(c);
+	}
+	return 1;
+}
+
+/** ssl write callback on TCP */
+static int
+ssl_handle_write(struct comm_point* c)
+{
+	int r;
+	if(c->ssl_shake_state != comm_ssl_shake_none) {
+		if(!ssl_handshake(c))
+			return 0;
+		if(c->ssl_shake_state != comm_ssl_shake_none)
+			return 1;
+	}
+	/* ignore return, if fails we may simply block */
+	(void)SSL_set_mode(c->ssl, SSL_MODE_ENABLE_PARTIAL_WRITE);
+	if(c->tcp_byte_count < sizeof(uint16_t)) {
+		uint16_t len = htons(ldns_buffer_limit(c->buffer));
+		ERR_clear_error();
+		r = SSL_write(c->ssl,
+			(void*)(((uint8_t*)&len)+c->tcp_byte_count),
+			(int)(sizeof(uint16_t)-c->tcp_byte_count));
+		if(r <= 0) {
+			int want = SSL_get_error(c->ssl, r);
+			if(want == SSL_ERROR_ZERO_RETURN) {
+				return 0; /* closed */
+			} else if(want == SSL_ERROR_WANT_READ) {
+				c->ssl_shake_state = comm_ssl_shake_read;
+				comm_point_listen_for_rw(c, 1, 0);
+				return 1; /* wait for read condition */
+			} else if(want == SSL_ERROR_WANT_WRITE) {
+				return 1; /* write more later */
+			} else if(want == SSL_ERROR_SYSCALL) {
+				if(errno != 0)
+					log_err("SSL_write syscall: %s",
+						strerror(errno));
+				return 0;
+			}
+			log_crypto_err("could not SSL_write");
+			return 0;
+		}
+		c->tcp_byte_count += r;
+		if(c->tcp_byte_count < sizeof(uint16_t))
+			return 1;
+		ldns_buffer_set_position(c->buffer, c->tcp_byte_count -
+			sizeof(uint16_t));
+		if(ldns_buffer_remaining(c->buffer) == 0) {
+			tcp_callback_writer(c);
+			return 1;
+		}
+	}
+	log_assert(ldns_buffer_remaining(c->buffer) > 0);
+	ERR_clear_error();
+	r = SSL_write(c->ssl, (void*)ldns_buffer_current(c->buffer),
+		(int)ldns_buffer_remaining(c->buffer));
+	if(r <= 0) {
+		int want = SSL_get_error(c->ssl, r);
+		if(want == SSL_ERROR_ZERO_RETURN) {
+			return 0; /* closed */
+		} else if(want == SSL_ERROR_WANT_READ) {
+			c->ssl_shake_state = comm_ssl_shake_read;
+			comm_point_listen_for_rw(c, 1, 0);
+			return 1; /* wait for read condition */
+		} else if(want == SSL_ERROR_WANT_WRITE) {
+			return 1; /* write more later */
+		} else if(want == SSL_ERROR_SYSCALL) {
+			if(errno != 0)
+				log_err("SSL_write syscall: %s",
+					strerror(errno));
+			return 0;
+		}
+		log_crypto_err("could not SSL_write");
+		return 0;
+	}
+	ldns_buffer_skip(c->buffer, (ssize_t)r);
+
+	if(ldns_buffer_remaining(c->buffer) == 0) {
+		tcp_callback_writer(c);
+	}
+	return 1;
+}
+
+/** handle ssl tcp connection with dns contents */
+static int
+ssl_handle_it(struct comm_point* c)
+{
+	if(c->tcp_is_reading)
+		return ssl_handle_read(c);
+	return ssl_handle_write(c);
+}
+
 /** Handle tcp reading callback. 
  * @param fd: file descriptor of socket.
  * @param c: comm point to read from into buffer.
@@ -778,6 +1069,8 @@ comm_point_tcp_handle_read(int fd, struct comm_point* c, int short_ok)
 {
 	ssize_t r;
 	log_assert(c->type == comm_tcp || c->type == comm_local);
+	if(c->ssl)
+		return ssl_handle_it(c);
 	if(!c->tcp_is_reading)
 		return 0;
 
@@ -876,7 +1169,7 @@ comm_point_tcp_handle_write(int fd, struct comm_point* c)
 {
 	ssize_t r;
 	log_assert(c->type == comm_tcp);
-	if(c->tcp_is_reading)
+	if(c->tcp_is_reading && !c->ssl)
 		return 0;
 	log_assert(fd != -1);
 	if(c->tcp_byte_count == 0 && c->tcp_check_nb_connect) {
@@ -899,7 +1192,7 @@ comm_point_tcp_handle_write(int fd, struct comm_point* c)
 #endif
 		else if(error != 0 && verbosity < 2)
 			return 0; /* silence lots of chatter in the logs */
-                else if(error != 0) {
+		else if(error != 0) {
 			log_err("tcp connect: %s", strerror(error));
 #else /* USE_WINSOCK */
 		/* examine error */
@@ -918,6 +1211,8 @@ comm_point_tcp_handle_write(int fd, struct comm_point* c)
 			return 0;
 		}
 	}
+	if(c->ssl)
+		return ssl_handle_it(c);
 
 	if(c->tcp_byte_count < sizeof(uint16_t)) {
 		uint16_t len = htons(ldns_buffer_limit(c->buffer));
@@ -937,8 +1232,8 @@ comm_point_tcp_handle_write(int fd, struct comm_point* c)
 		if(r == -1) {
 #ifndef USE_WINSOCK
 #ifdef EPIPE
-                	if(errno == EPIPE && verbosity < 2)
-                        	return 0; /* silence 'broken pipe' */
+			if(errno == EPIPE && verbosity < 2)
+				return 0; /* silence 'broken pipe' */
 #endif
 			if(errno == EINTR || errno == EAGAIN)
 				return 1;
@@ -1177,7 +1472,7 @@ comm_point_create_udp_ancil(struct comm_base *base, int fd,
 static struct comm_point* 
 comm_point_create_tcp_handler(struct comm_base *base, 
 	struct comm_point* parent, size_t bufsize,
-        comm_point_callback_t* callback, void* callback_arg)
+	comm_point_callback_t* callback, void* callback_arg)
 {
 	struct comm_point* c = (struct comm_point*)calloc(1,
 		sizeof(struct comm_point));
@@ -1238,7 +1533,7 @@ comm_point_create_tcp_handler(struct comm_base *base,
 
 struct comm_point* 
 comm_point_create_tcp(struct comm_base *base, int fd, int num, size_t bufsize,
-        comm_point_callback_t* callback, void* callback_arg)
+	comm_point_callback_t* callback, void* callback_arg)
 {
 	struct comm_point* c = (struct comm_point*)calloc(1,
 		sizeof(struct comm_point));
@@ -1302,7 +1597,7 @@ comm_point_create_tcp(struct comm_base *base, int fd, int num, size_t bufsize,
 
 struct comm_point* 
 comm_point_create_tcp_out(struct comm_base *base, size_t bufsize,
-        comm_point_callback_t* callback, void* callback_arg)
+	comm_point_callback_t* callback, void* callback_arg)
 {
 	struct comm_point* c = (struct comm_point*)calloc(1,
 		sizeof(struct comm_point));
@@ -1354,7 +1649,7 @@ comm_point_create_tcp_out(struct comm_base *base, size_t bufsize,
 
 struct comm_point* 
 comm_point_create_local(struct comm_base *base, int fd, size_t bufsize,
-        comm_point_callback_t* callback, void* callback_arg)
+	comm_point_callback_t* callback, void* callback_arg)
 {
 	struct comm_point* c = (struct comm_point*)calloc(1,
 		sizeof(struct comm_point));
@@ -1479,6 +1774,10 @@ comm_point_delete(struct comm_point* c)
 {
 	if(!c) 
 		return;
+	if(c->type == comm_tcp && c->ssl) {
+		SSL_shutdown(c->ssl);
+		SSL_free(c->ssl);
+	}
 	comm_point_close(c);
 	if(c->tcp_handlers) {
 		int i;
@@ -1698,7 +1997,7 @@ comm_timer_get_mem(struct comm_timer* timer)
 
 struct comm_signal* 
 comm_signal_create(struct comm_base* base,
-        void (*callback)(int, void*), void* cb_arg)
+	void (*callback)(int, void*), void* cb_arg)
 {
 	struct comm_signal* com = (struct comm_signal*)malloc(
 		sizeof(struct comm_signal));

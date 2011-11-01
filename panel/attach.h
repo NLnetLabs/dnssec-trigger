@@ -59,6 +59,7 @@ struct alert_arg {
 	int now_auth;
 	int now_disconn;
 	int now_tcp;
+	int now_ssl;
 	int now_forced_insecure;
 };
 

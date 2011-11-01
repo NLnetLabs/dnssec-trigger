@@ -57,7 +57,13 @@ struct probe_ip {
 	int to_auth;
 	/* for dnstcp? */
 	int dnstcp;
+	/* for ssl? */
+	int ssldns;
+	/* destination port */
 	int port;
+
+	/* the ssl context (if any) for this destination address */
+	void* sslctx;
 
 	/* DS query, or NULL if done */
 	struct outq* ds_c;
@@ -84,6 +90,7 @@ struct outq {
 	const char* qname; /* reference to a static string */
 	int timeout; /* in msec */
 	int on_tcp; /* if we are using TCP */
+	int on_ssl; /* if we are using SSL */
 	int port; /* port number (mostly 53) */
 	struct comm_point* c;
 	struct comm_timer* timer;
@@ -118,6 +125,7 @@ void probe_cache_done(void);
 void probe_all_done(void);
 void probe_unsafe_test(void);
 void probe_tcp_test(void);
+void probe_ssl_test(void);
 void probe_setup_cache(struct svr* svr, struct probe_ip* p);
 void probe_setup_hotspot_signon(struct svr* svr);
 void probe_setup_dnstcp(struct svr* svr);

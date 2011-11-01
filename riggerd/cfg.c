@@ -175,6 +175,10 @@ keyword(struct cfg* cfg, char* p)
 		tcp_arg(&cfg->tcp443_ip4, &cfg->tcp443_ip4_last,
 			&cfg->num_tcp443_ip4, &cfg->tcp443_ip6,
 			&cfg->tcp443_ip6_last, &cfg->num_tcp443_ip6, p+7);
+	} else if(strncmp(p, "ssl443:", 7) == 0) {
+		tcp_arg(&cfg->ssl443_ip4, &cfg->ssl443_ip4_last,
+			&cfg->num_ssl443_ip4, &cfg->ssl443_ip6,
+			&cfg->ssl443_ip6_last, &cfg->num_ssl443_ip6, p+7);
 	} else {
 		return 0;
 	}
@@ -245,8 +249,10 @@ void cfg_delete(struct cfg* cfg)
 	if(!cfg) return;
 	strlist_delete(cfg->tcp80_ip4);
 	strlist_delete(cfg->tcp443_ip4);
+	strlist_delete(cfg->ssl443_ip4);
 	strlist_delete(cfg->tcp80_ip6);
 	strlist_delete(cfg->tcp443_ip6);
+	strlist_delete(cfg->ssl443_ip6);
 	free(cfg->pidfile);
 	free(cfg->logfile);
 	free(cfg->chroot);
@@ -263,8 +269,13 @@ void cfg_delete(struct cfg* cfg)
 
 int cfg_have_dnstcp(struct cfg* cfg)
 {
-	return cfg->num_tcp80_ip4 || cfg->num_tcp80_ip6 || cfg->num_tcp443_ip4
-		|| cfg->num_tcp443_ip6;
+	return cfg->num_tcp80_ip4 || cfg->num_tcp80_ip6
+		|| cfg->num_tcp443_ip4 || cfg->num_tcp443_ip6;
+}
+
+int cfg_have_ssldns(struct cfg* cfg)
+{
+	return cfg->num_ssl443_ip4 || cfg->num_ssl443_ip6;
 }
 
 /** find nth element in strlist */

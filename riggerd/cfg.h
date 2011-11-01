@@ -82,6 +82,11 @@ struct cfg {
 	int num_tcp443_ip4;
 	struct strlist* tcp443_ip6, *tcp443_ip6_last;
 	int num_tcp443_ip6;
+	/** list of ssl port 443 resolvers on ip4 and ip6 */
+	struct strlist* ssl443_ip4, *ssl443_ip4_last;
+	int num_ssl443_ip4;
+	struct strlist* ssl443_ip6, *ssl443_ip6_last;
+	int num_ssl443_ip6;
 
 	/** port number for the control port */
 	int control_port;
@@ -120,5 +125,7 @@ char* strlist_get_num(struct strlist* list, unsigned n);
 
 /** have tcp80 or tcp443 configured */
 int cfg_have_dnstcp(struct cfg* cfg);
+/** have ssl443 configured */
+int cfg_have_ssldns(struct cfg* cfg);
 
 #endif /* CFG_H */

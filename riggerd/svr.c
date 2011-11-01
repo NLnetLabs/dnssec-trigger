@@ -63,21 +63,6 @@ static void sslconn_command(struct sslconn* sc);
 static void sslconn_persist_command(struct sslconn* sc);
 static void send_results_to_con(struct svr* svr, struct sslconn* s);
 
-/** log ssl crypto err */
-static void
-log_crypto_err(const char* str)
-{
-	/* error:[error code]:[library name]:[function name]:[reason string] */
-	char buf[128];
-	unsigned long e;
-	ERR_error_string_n(ERR_get_error(), buf, sizeof(buf));
-	log_err("%s crypto %s", str, buf);
-	while( (e=ERR_get_error()) ) {
-		ERR_error_string_n(e, buf, sizeof(buf));
-		log_err("and additionally crypto %s", buf);
-	}
-}
-
 struct svr* svr_create(struct cfg* cfg)
 {
 	struct svr* svr = (struct svr*)calloc(1, sizeof(*svr));
@@ -278,32 +263,6 @@ static void sslconn_delete(struct sslconn* sc)
 	free(sc);
 }
 
-#ifdef USE_WINSOCK
-static long win_bio_cb(BIO *b, int oper, const char* ATTR_UNUSED(argp),
-	int ATTR_UNUSED(argi), long argl, long retvalue)
-{
-	verbose(VERB_ALGO, "bio_cb %d, %s %s %s", oper,
-		(oper&BIO_CB_RETURN)?"return":"before",
-		(oper&BIO_CB_READ)?"read":((oper&BIO_CB_WRITE)?"write":"other"),
-		WSAGetLastError()==WSAEWOULDBLOCK?"wsawb":"");
-	/* on windows, check if previous operation caused EWOULDBLOCK */
-	if( (oper == (BIO_CB_READ|BIO_CB_RETURN) && argl == 0) ||
-		(oper == (BIO_CB_GETS|BIO_CB_RETURN) && argl == 0)) {
-		if(WSAGetLastError() == WSAEWOULDBLOCK)
-			winsock_tcp_wouldblock((struct event*)
-				BIO_get_callback_arg(b), EV_READ);
-	}
-	if( (oper == (BIO_CB_WRITE|BIO_CB_RETURN) && argl == 0) ||
-		(oper == (BIO_CB_PUTS|BIO_CB_RETURN) && argl == 0)) {
-		if(WSAGetLastError() == WSAEWOULDBLOCK)
-			winsock_tcp_wouldblock((struct event*)
-				BIO_get_callback_arg(b), EV_WRITE);
-	}
-	/* return original return value */
-	return retvalue;
-}
-#endif
-
 int handle_ssl_accept(struct comm_point* c, void* ATTR_UNUSED(arg), int err,
 	struct comm_reply* ATTR_UNUSED(reply_info))
 {
@@ -370,13 +329,7 @@ int handle_ssl_accept(struct comm_point* c, void* ATTR_UNUSED(arg), int err,
 		return 0;
         }
 #ifdef USE_WINSOCK
-	/* set them both just in case, but usually they are the same BIO */
-	BIO_set_callback(SSL_get_rbio(sc->ssl), &win_bio_cb);
-	BIO_set_callback_arg(SSL_get_rbio(sc->ssl),
-		(char*)comm_point_internal(sc->c));
-	BIO_set_callback(SSL_get_wbio(sc->ssl), &win_bio_cb);
-	BIO_set_callback_arg(SSL_get_wbio(sc->ssl),
-		(char*)comm_point_internal(sc->c));
+	comm_point_tcp_win_bio_cb(sc->c, sc->ssl);
 #endif
 	sc->buffer = ldns_buffer_new(65536);
 	if(!sc->buffer) {
@@ -689,7 +642,7 @@ static void cmd_reprobe(void)
 	struct probe_ip* p;
 	buf[0]=0; /* safe, robust */
 	for(p = global_svr->probes; p; p = p->next) {
-		if(!p->to_auth && !p->dnstcp) {
+		if(!p->to_auth && !p->dnstcp && !p->ssldns) {
 			int len;
 			if(left < strlen(p->name)+3)
 				break; /* no space for more */
@@ -752,15 +705,15 @@ send_results_to_con(struct svr* svr, struct sslconn* s)
 		localtime(&svr->probetime)))
 		ldns_buffer_printf(s->buffer, "at %s\n", at);
 	for(p=svr->probes; p; p=p->next) {
-		if(!p->to_auth && !p->dnstcp)
+		if(!p->to_auth && !p->dnstcp && !p->ssldns)
 			numcache++;
 		if(!p->finished) {
 			unfinished++;
 			continue;
 		}
 		if(p->dnstcp)
-		    ldns_buffer_printf(s->buffer, "tcp%d %s: %s %s\n",
-			p->port, p->name,
+		    ldns_buffer_printf(s->buffer, "%s%d %s: %s %s\n",
+		        p->ssldns?"ssl":"tcp", p->port, p->name,
 			p->works?"OK":"error", p->reason?p->reason:"");
 		else
 		    ldns_buffer_printf(s->buffer, "%s %s: %s %s\n",
@@ -775,8 +728,9 @@ send_results_to_con(struct svr* svr, struct sslconn* s)
 	ldns_buffer_printf(s->buffer, "state: %s %s\n",
 		svr->res_state==res_cache?"cache":(
 		svr->res_state==res_tcp?"tcp":(
+		svr->res_state==res_ssl?"ssl":(
 		svr->res_state==res_auth?"auth":(
-		svr->res_state==res_disconn?"disconnected":"nodnssec"))),
+		svr->res_state==res_disconn?"disconnected":"nodnssec")))),
 		svr->forced_insecure?"forced_insecure":(
 		svr->insecure_state?"insecure":"secure"));
 	ldns_buffer_printf(s->buffer, "\n");
@@ -836,6 +790,12 @@ static void handle_unsafe_cmd(struct sslconn* sc)
 static void handle_test_tcp_cmd(struct sslconn* sc)
 {
 	probe_tcp_test();
+	sslconn_shutdown(sc);
+}
+
+static void handle_test_ssl_cmd(struct sslconn* sc)
+{
+	probe_ssl_test();
 	sslconn_shutdown(sc);
 }
 
@@ -904,6 +864,8 @@ static void sslconn_command(struct sslconn* sc)
 		handle_unsafe_cmd(sc);
 	} else if(strncmp(str, "test_tcp", 8) == 0) {
 		handle_test_tcp_cmd(sc);
+	} else if(strncmp(str, "test_ssl", 8) == 0) {
+		handle_test_ssl_cmd(sc);
 	} else if(strncmp(str, "stoppanels", 10) == 0) {
 		handle_stoppanels_cmd(sc);
 	} else if(strncmp(str, "stop", 4) == 0) {
@@ -1004,7 +966,7 @@ void svr_tcp_callback(void* arg)
 	struct svr* svr = (struct svr*)arg;
 	verbose(VERB_ALGO, "retry dnstcp timeout");
 	comm_timer_disable(svr->tcp_timer);
-	if(svr->res_state == res_tcp) {
+	if(svr->res_state == res_tcp || svr->res_state == res_ssl) {
 		svr->tcp_timer_used = 1;
 		cmd_reprobe();
 	}

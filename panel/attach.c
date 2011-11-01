@@ -244,6 +244,7 @@ static void process_results(void)
 	a.now_cache = (strstr(feed->results_last->str, "cache")!=NULL);
 	a.now_auth = (strstr(feed->results_last->str, "auth")!=NULL);
 	a.now_tcp = (strstr(feed->results_last->str, "tcp")!=NULL);
+	a.now_ssl = (strstr(feed->results_last->str, "ssl")!=NULL);
 	a.now_disconn = (strstr(feed->results_last->str, "disconnected")!=NULL);
 	a.last_insecure = feed->insecure_mode;
 	feed->insecure_mode = a.now_insecure;
@@ -313,6 +314,8 @@ const char* state_tooltip(struct alert_arg* a)
 		return "DNSSEC via cache";
 	else if(a->now_tcp)
 		return "DNSSEC via tcp open resolver";
+	else if(a->now_ssl)
+		return "DNSSEC via ssl open resolver";
 	else if(a->now_disconn)
 		return "network disconnected";
 	return "DNSSEC via authorities";
@@ -378,6 +381,9 @@ void fetch_proberesults(char* buf, size_t len, const char* lf)
 			else if(strstr(p->str, "tcp"))
 				n=snprintf(pos, left, 
 		"DNSSEC results fetched from open resolvers over TCP%s", lf);
+			else if(strstr(p->str, "ssl"))
+				n=snprintf(pos, left, 
+		"DNSSEC results fetched from open resolvers over SSL%s", lf);
 			else if(strstr(p->str, "disconnected"))
 				n=snprintf(pos, left, 
 		"The network seems to be disconnected. A local cache of DNS%s"

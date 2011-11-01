@@ -113,6 +113,8 @@ struct svr {
 		res_cache,
 		/** to TCP open resolver */
 		res_tcp,
+		/** to SSL open resolver */
+		res_ssl,
 		/** no DNSSEC */
 		res_dark,
 		/** disconnected from the network */

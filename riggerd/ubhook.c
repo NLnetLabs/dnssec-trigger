@@ -48,7 +48,9 @@
 #include "winrc/win_svc.h"
 #endif
 
+/* the state configured for unbound */
 static int ub_has_tcp_upstream = 0;
+static int ub_has_ssl_upstream = 0;
 
 /**
  * Perform the unbound control command.
@@ -100,12 +102,23 @@ disable_tcp_upstream(struct cfg* cfg)
 	}
 }
 
+static void
+disable_ssl_upstream(struct cfg* cfg)
+{
+	if(ub_has_ssl_upstream) {
+		ub_ctrl(cfg, "set_option", "ssl-upstream: no");
+		ub_has_ssl_upstream = 0;
+	}
+}
+
+
 void hook_unbound_auth(struct cfg* cfg)
 {
 	verbose(VERB_QUERY, "unbound hook to auth");
 	if(cfg->noaction)
 		return;
 	disable_tcp_upstream(cfg);
+	disable_ssl_upstream(cfg);
 	ub_ctrl(cfg, "forward", "off");
 }
 
@@ -115,6 +128,7 @@ void hook_unbound_cache(struct cfg* cfg, const char* ip)
 	if(cfg->noaction)
 		return;
 	disable_tcp_upstream(cfg);
+	disable_ssl_upstream(cfg);
 	ub_ctrl(cfg, "forward", ip); 
 }
 
@@ -141,6 +155,7 @@ void hook_unbound_cache_list(struct cfg* cfg, struct probe_ip* list)
 		list = list->next;
 	}
 	disable_tcp_upstream(cfg);
+	disable_ssl_upstream(cfg);
 	ub_ctrl(cfg, "forward", buf); 
 }
 
@@ -150,15 +165,15 @@ void hook_unbound_dark(struct cfg* cfg)
 	if(cfg->noaction)
 		return;
 	disable_tcp_upstream(cfg);
+	disable_ssl_upstream(cfg);
 	ub_ctrl(cfg, "forward", UNBOUND_DARK_IP); 
 }
 
-int hook_unbound_supports_tcp_upstream(struct cfg* cfg)
+static int hook_unbound_supports_option(struct cfg* cfg, const char* args)
 {
 	char command[12000];
 	const char* ctrl = "unbound-control";
 	const char* cmd = "get_option";
-	const char* args = "tcp-upstream";
 	int r;
 	if(cfg->unbound_control)
 		ctrl = cfg->unbound_control;
@@ -176,6 +191,16 @@ int hook_unbound_supports_tcp_upstream(struct cfg* cfg)
 		return 0;
 	}
 	return 1;
+}
+
+int hook_unbound_supports_tcp_upstream(struct cfg* cfg)
+{
+	return hook_unbound_supports_option(cfg, "tcp-upstream");
+}
+
+int hook_unbound_supports_ssl_upstream(struct cfg* cfg)
+{
+	return hook_unbound_supports_option(cfg, "ssl-upstream");
 }
 
 static void append_str_port(char* buf, char** now, size_t* left,
@@ -220,8 +245,34 @@ void hook_unbound_tcp_upstream(struct cfg* cfg, int tcp80_ip4, int tcp80_ip6,
 			append_str_port(buf, &now, &left, p->str, 443);
 	}
 	/* effectuate tcp upstream and new list of servers */
+	disable_ssl_upstream(cfg);
 	ub_ctrl(cfg, "forward", buf);
 	ub_ctrl(cfg, "set_option", "tcp-upstream: yes");
 	ub_has_tcp_upstream = 1;
 }
 
+void hook_unbound_ssl_upstream(struct cfg* cfg, int ssl443_ip4, int ssl443_ip6)
+{
+	char buf[102400];
+	char* now = buf;
+	size_t left = sizeof(buf);
+	struct strlist *p;
+	verbose(VERB_QUERY, "unbound hook to ssl %s %s",
+		ssl443_ip4?"ssl443_ip4":"", ssl443_ip6?"ssl443_ip6":"");
+	if(cfg->noaction)
+		return;
+	buf[0] = 0;
+	if(ssl443_ip4) {
+		for(p=cfg->ssl443_ip4; p; p=p->next)
+			append_str_port(buf, &now, &left, p->str, 443);
+	}
+	if(ssl443_ip6) {
+		for(p=cfg->ssl443_ip6; p; p=p->next)
+			append_str_port(buf, &now, &left, p->str, 443);
+	}
+	/* effectuate ssl upstream and new list of servers */
+	disable_tcp_upstream(cfg);
+	ub_ctrl(cfg, "forward", buf);
+	ub_ctrl(cfg, "set_option", "ssl-upstream: yes");
+	ub_has_ssl_upstream = 1;
+}

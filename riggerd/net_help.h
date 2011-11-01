@@ -264,6 +264,46 @@ int addr_is_broadcast(struct sockaddr_storage* addr, socklen_t addrlen);
 int addr_is_any(struct sockaddr_storage* addr, socklen_t addrlen);
 
 /**
+ * Log libcrypto error with descriptive string. Calls log_err().
+ * @param str: what failed.
+ */
+void log_crypto_err(const char* str);
+
+/** 
+ * create SSL listen context
+ * @param key: private key file.
+ * @param pem: public key cert.
+ * @param verifypem: if nonNULL, verifylocation file.
+ * return SSL_CTX* or NULL on failure (logged).
+ */
+void* listen_sslctx_create(char* key, char* pem, char* verifypem);
+
+/**
+ * create SSL connect context
+ * @param key: if nonNULL (also pem nonNULL), the client private key.
+ * @param pem: client public key (or NULL if key is NULL).
+ * @param verifypem: if nonNULL used for verifylocation file.
+ * @return SSL_CTX* or NULL on failure (logged).
+ */
+void* connect_sslctx_create(char* key, char* pem, char* verifypem);
+
+/**
+ * accept a new fd and wrap it in a BIO in SSL
+ * @param sslctx: the SSL_CTX to use (from listen_sslctx_create()).
+ * @param fd: from accept, nonblocking.
+ * @return SSL or NULL on alloc failure.
+ */
+void* incoming_ssl_fd(void* sslctx, int fd);
+
+/**
+ * connect a new fd and wrap it in a BIO in SSL
+ * @param sslctx: the SSL_CTX to use (from connect_sslctx_create())
+ * @param fd: from connect.
+ * @return SSL or NULL on alloc failure
+ */
+void* outgoing_ssl_fd(void* sslctx, int fd);
+
+/**
  * Create tcp connection (blockingly) to the server.
  * @param svr: IP address (can have '@port').
  * @param port: used if no port specced.

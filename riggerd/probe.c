@@ -50,7 +50,7 @@
 #include <ldns/ldns.h>
 
 /* create probes for the ip addresses in the string */
-static void probe_spawn(const char* ip, int recurse, int dnstcp, int port);
+static void probe_spawn(const char* ip, int recurse, int dnstcp, int ssldns, int port);
 /* delete and stop outq */
 static void outq_delete(struct outq* outq);
 /* set timeout on outq and create UDP query and send it */
@@ -93,7 +93,7 @@ void probe_start(char* ips)
 			while(*next == ' ')
 				next++;
 		}
-		probe_spawn(ips, 1, 0, DNS_PORT);
+		probe_spawn(ips, 1, 0, 0, DNS_PORT);
 		ips = next;
 	}
 	svr->num_probes_to_cache = svr->num_probes;
@@ -107,6 +107,7 @@ void probe_delete(struct probe_ip* p)
 	if(!p) return;
 	free(p->name);
 	free(p->reason);
+	SSL_CTX_free(p->sslctx);
 	outq_delete(p->ds_c);
 	outq_delete(p->dnskey_c);
 	outq_delete(p->nsec3_c);
@@ -214,6 +215,22 @@ static const char* get_random_tcp443_ip6(struct cfg* cfg)
 		return NULL;
 	return strlist_get_num(cfg->tcp443_ip6,
 		((unsigned)ldns_get_random())%((unsigned)cfg->num_tcp443_ip6));
+}
+
+static const char* get_random_ssl443_ip4(struct cfg* cfg)
+{
+	if(cfg->num_ssl443_ip4 == 0)
+		return NULL;
+	return strlist_get_num(cfg->ssl443_ip4,
+		((unsigned)ldns_get_random())%((unsigned)cfg->num_ssl443_ip4));
+}
+
+static const char* get_random_ssl443_ip6(struct cfg* cfg)
+{
+	if(cfg->num_ssl443_ip6 == 0)
+		return NULL;
+	return strlist_get_num(cfg->ssl443_ip6,
+		((unsigned)ldns_get_random())%((unsigned)cfg->num_ssl443_ip6));
 }
 
 /** outq is done, NULL reason for success */
@@ -476,7 +493,7 @@ create_probe_query(struct outq* outq, ldns_buffer* buffer)
 
 static struct outq*
 outq_create(const char* ip, int tp, const char* domain, int recurse,
-	struct probe_ip* p, int tcp, int port)
+	struct probe_ip* p, int tcp, int onssl, int port)
 {
 	int fd;
 	struct outq* outq = (struct outq*)calloc(1, sizeof(*outq));
@@ -490,6 +507,7 @@ outq_create(const char* ip, int tp, const char* domain, int recurse,
 	outq->qtype = (uint16_t)tp;
 	outq->qid = (uint16_t)ldns_get_random();
 	outq->recurse = recurse;
+	outq->on_ssl = onssl;
 	outq->port = port;
 
 	if(!ipstrtoaddr(ip, port, &outq->addr, &outq->addrlen)) {
@@ -504,7 +522,7 @@ outq_create(const char* ip, int tp, const char* domain, int recurse,
 		return NULL;
 	}
 
-	if(tcp){
+	if(tcp || onssl){
 		/* also sets timeout, timer */
 		outq_send_tcp(outq);
 		return outq;
@@ -635,6 +653,18 @@ outq_tcp_take_into_use(struct outq* outq)
 			return 0;
 		}
 	}
+	if(outq->on_ssl) {
+		outq->c->ssl = outgoing_ssl_fd(outq->probe->sslctx, s);
+		if(!outq->c->ssl) {
+			outq->c->fd = s;
+			comm_point_close(outq->c);
+			return 0;
+		}
+#ifdef USE_WINSOCK
+		comm_point_tcp_win_bio_cb(outq->c, outq->c->ssl);
+#endif
+		outq->c->ssl_shake_state = comm_ssl_shake_write;
+	}
 	outq->c->repinfo.addrlen = outq->addrlen;
 	memcpy(&outq->c->repinfo.addr, &outq->addr, outq->addrlen);
 	outq->c->tcp_is_reading = 0;
@@ -652,6 +682,10 @@ static void outq_send_tcp(struct outq* outq)
 	outq->qid = (uint16_t)ldns_get_random();
 	outq->c = comm_point_create_tcp_out(global_svr->base, 65553,
 		outq_handle_tcp, outq);
+	if(!outq->c) {
+		outq_done(outq, "cannot create TCP comm_point");
+		return;
+	}
 	if(!create_probe_query(outq, outq->c->buffer)) {
 		outq_done(outq, "cannot create TCP probe query");
 		return;
@@ -714,7 +748,8 @@ static int addr_is_localhost(const char* ip)
 	return (sockaddr_cmp_addr(&lo, lolen, &addr, len) == 0);
 }
 
-static void probe_spawn(const char* ip, int recurse, int dnstcp, int port)
+static void probe_spawn(const char* ip, int recurse, int dnstcp, int ssldns,
+	int port)
 {
 	const char* dest;
 	struct probe_ip* p;
@@ -737,12 +772,22 @@ static void probe_spawn(const char* ip, int recurse, int dnstcp, int port)
 	/* create probe structure and register it */
 	p->to_auth = !recurse;
 	p->dnstcp = dnstcp;
+	p->ssldns = ssldns;
 	p->port = port;
 	p->name = strdup(ip);
 	if(!p->name) {
 		free(p);
 		log_err("out of memory");
 		return;
+	}
+	if(p->ssldns) {
+		/* this could contain verification certificates */
+		p->sslctx = connect_sslctx_create(NULL, NULL, NULL);
+		if(!p->sslctx) {
+			log_err("could not create sslctx for %s", p->name);
+			probe_delete(p);
+			return;
+		}
 	}
 
 	/* send the queries */
@@ -752,9 +797,9 @@ static void probe_spawn(const char* ip, int recurse, int dnstcp, int port)
 
 	/* send the probe queries and wait for reply */
 	p->dnskey_c = outq_create(p->name, LDNS_RR_TYPE_DNSKEY, ".",
-		recurse, p, dnstcp, port);
+		recurse, p, dnstcp, ssldns, port);
 	p->ds_c = outq_create(p->name, LDNS_RR_TYPE_DS, dest, recurse, p,
-		dnstcp, port);
+		dnstcp, ssldns, port);
 	if(!p->ds_c || !p->dnskey_c) {
 		log_err("could not send queries for probe");
 		probe_delete(p);
@@ -765,7 +810,7 @@ static void probe_spawn(const char* ip, int recurse, int dnstcp, int port)
 		const char* nd = get_random_nsec3_dest();
 		verbose(VERB_ALGO, "nsec3 query %s", nd);
 		p->nsec3_c = outq_create(p->name, PROBE_NSEC3_QTYPE, nd,
-			recurse, p, dnstcp, port);
+			recurse, p, dnstcp, ssldns, port);
 		if(!p->nsec3_c) {
 			log_err("could not send nsec3 query for probe");
 			probe_delete(p);
@@ -785,8 +830,8 @@ static void probe_spawn_direct(void)
 	int nump = global_svr->num_probes;
 	/* try both IP4 and IP6, one that works is enough */
 	verbose(VERB_ALGO, "probe authority servers");
-	probe_spawn(get_random_auth_ip4(), 0, 0, DNS_PORT);
-	probe_spawn(get_random_auth_ip6(), 0, 0, DNS_PORT);
+	probe_spawn(get_random_auth_ip4(), 0, 0, 0, DNS_PORT);
+	probe_spawn(get_random_auth_ip6(), 0, 0, 0, DNS_PORT);
 	if(global_svr->num_probes == nump) {
 		/* failed to create the probes */
 		/* not a loop since svr->probe_direct is true */
@@ -797,18 +842,20 @@ static void probe_spawn_direct(void)
 /** start probes for TCP to open resolvers on non53 port numbers */
 static void probe_spawn_dnstcp(void)
 {
-	int nump = global_svr->num_probes;
 	/* try ip4 and ip6, on port 80 and 443 (if configured) */
 	verbose(VERB_ALGO, "probe dnstcp servers");
-	probe_spawn(get_random_tcp80_ip4(global_svr->cfg), 1, 1, 80);
-	probe_spawn(get_random_tcp80_ip6(global_svr->cfg), 1, 1, 80);
-	probe_spawn(get_random_tcp443_ip4(global_svr->cfg), 1, 1, 443);
-	probe_spawn(get_random_tcp443_ip6(global_svr->cfg), 1, 1, 443);
-	if(global_svr->num_probes == nump) {
-		/* failed to create the probes */
-		/* not a loop since svr->probe_dnstcp is true */
-		probe_cache_done();
-	}
+	probe_spawn(get_random_tcp80_ip4(global_svr->cfg), 1, 1, 0, 80);
+	probe_spawn(get_random_tcp80_ip6(global_svr->cfg), 1, 1, 0, 80);
+	probe_spawn(get_random_tcp443_ip4(global_svr->cfg), 1, 1, 0, 443);
+	probe_spawn(get_random_tcp443_ip6(global_svr->cfg), 1, 1, 0, 443);
+}
+
+/** start probes for SSL DNS to open resolvers */
+static void probe_spawn_ssldns(void)
+{
+	verbose(VERB_ALGO, "probe ssl dns servers");
+	probe_spawn(get_random_ssl443_ip4(global_svr->cfg), 1, 1, 1, 443);
+	probe_spawn(get_random_ssl443_ip6(global_svr->cfg), 1, 1, 1, 443);
 }
 
 void probe_unsafe_test(void)
@@ -816,10 +863,11 @@ void probe_unsafe_test(void)
 	verbose(VERB_OPS, "test unsafe probe combination started");
 	probe_start("127.0.0.3");
 	global_svr->probe_direct = 1;
-	probe_spawn("127.0.0.4", 0, 0, DNS_PORT);
+	probe_spawn("127.0.0.4", 0, 0, 0, DNS_PORT);
 	global_svr->probe_dnstcp = 1;
-	probe_spawn("127.0.0.5", 1, 1, 80);
-	probe_spawn("127.0.0.6", 1, 1, 443);
+	probe_spawn("127.0.0.5", 1, 1, 0, 80);
+	probe_spawn("127.0.0.6", 1, 1, 0, 443);
+	probe_spawn("127.0.0.7", 1, 1, 1, 443);
 }
 
 void probe_tcp_test(void)
@@ -827,7 +875,17 @@ void probe_tcp_test(void)
 	verbose(VERB_OPS, "test tcp probe combination started");
 	probe_start("127.0.0.3");
 	global_svr->probe_direct = 1;
-	probe_spawn("127.0.0.4", 0, 0, DNS_PORT);
+	probe_spawn("127.0.0.4", 0, 0, 0, DNS_PORT);
+}
+
+void probe_ssl_test(void)
+{
+	verbose(VERB_OPS, "test ssl probe combination started");
+	probe_start("127.0.0.3");
+	global_svr->probe_direct = 1;
+	probe_spawn("127.0.0.4", 0, 0, 0, DNS_PORT);
+	global_svr->probe_dnstcp = 1;
+	probe_spawn_ssldns();
 }
 
 /* stop unfininished probes and remove them */
@@ -848,11 +906,15 @@ static void stop_unfinished_probes(void)
 }
 
 /* see if there are working dnstcp probes */
-int probe_has_work_tcp(struct svr* svr, int port, int ip6)
+int probe_has_work_tcp(struct svr* svr, int port, int ip6, int ssl)
 {
 	struct probe_ip* p;
 	for(p = svr->probes; p; p = p->next) {
 		if(p->works && p->dnstcp && p->port == port) {
+			if(ssl && !p->ssldns)
+				continue;
+			if(!ssl && p->ssldns)
+				continue;
 			if(ip6 && strchr(p->name, ':'))
 				return 1;
 			if(!ip6 && !strchr(p->name, ':'))
@@ -970,17 +1032,25 @@ void probe_setup_auth(struct svr* svr)
 /** setup for dnstcp (uses tcp to open resolver) */
 void probe_setup_dnstcp(struct svr* svr)
 {
-	int tcp80_ip4, tcp443_ip4, tcp80_ip6, tcp443_ip6;
-	svr->res_state = res_tcp;
+	int tcp80_ip4, tcp443_ip4, tcp80_ip6, tcp443_ip6, ssl443_ip4,
+		ssl443_ip6;
 	if(svr->insecure_state) hook_resolv_flush(svr->cfg);
 	svr->insecure_state = 0;
 	/* see which ports work */
-	tcp80_ip4 = probe_has_work_tcp(svr, 80, 0);
-	tcp443_ip4 = probe_has_work_tcp(svr, 443, 0);
-	tcp80_ip6 = probe_has_work_tcp(svr, 80, 1);
-	tcp443_ip6 = probe_has_work_tcp(svr, 443, 1);
-	hook_unbound_tcp_upstream(svr->cfg, tcp80_ip4, tcp80_ip6,
-		tcp443_ip4, tcp443_ip6);
+	tcp80_ip4 = probe_has_work_tcp(svr, 80, 0, 0);
+	tcp80_ip6 = probe_has_work_tcp(svr, 80, 1, 0);
+	tcp443_ip4 = probe_has_work_tcp(svr, 443, 0, 0);
+	tcp443_ip6 = probe_has_work_tcp(svr, 443, 1, 0);
+	ssl443_ip4 = probe_has_work_tcp(svr, 443, 0, 1);
+	ssl443_ip6 = probe_has_work_tcp(svr, 443, 1, 1);
+	if(tcp80_ip4 || tcp443_ip4 || tcp80_ip6 || tcp443_ip6) {
+		svr->res_state = res_tcp;
+		hook_unbound_tcp_upstream(svr->cfg, tcp80_ip4, tcp80_ip6,
+			tcp443_ip4, tcp443_ip6);
+	} else {
+		svr->res_state = res_ssl;
+		hook_unbound_ssl_upstream(svr->cfg, ssl443_ip4, ssl443_ip6);
+	}
 	/* set resolv.conf to 127.0.0.1 */
 	hook_resolv_localhost(svr->cfg);
 	svr_retry_timer_stop();
@@ -1049,7 +1119,10 @@ probe_cache_done(void)
 		return;
 	}
 	if(!svr->probe_dnstcp && !svr->saw_first_working
-		&& !svr->saw_direct_work && cfg_have_dnstcp(svr->cfg)) {
+		&& !svr->saw_direct_work && (cfg_have_dnstcp(svr->cfg) ||
+		cfg_have_ssldns(svr->cfg))) {
+		int nump = global_svr->num_probes;
+		int done = 0;
 		if(hook_unbound_supports_tcp_upstream(svr->cfg)) {
 			/* no working cache and authority-direct works.
 			 * probe dns-over-tcp on port 80 and 443.
@@ -1057,11 +1130,24 @@ probe_cache_done(void)
 			 * those resolvers when not necessary */
 			svr->probe_dnstcp = 1;
 			probe_spawn_dnstcp();
-			return;
-		} else {
+			done = 1;
+		}
+		if(hook_unbound_supports_ssl_upstream(svr->cfg)) {
+			/* probe for SSL wrapped service to avoid deepstuff */
+			svr->probe_dnstcp = 1;
+			probe_spawn_ssldns();
+			done = 1;
+		}
+		if(!done) {
 			verbose(VERB_OPS, "unbound does not support "
-				"tcp-upstream, but this feature is needed "
-				"now. Please upgrade unbound");
+				"tcp-upstream and ssl-upstream, but "
+				"these features are needed now. "
+				"Please upgrade unbound");
+		} else if(global_svr->num_probes == nump) {
+			/* failed to create the probes (outofmemory?) */
+		} else if(done) {
+			/* do the probes */
+			return;
 		}
 	}
 	probe_all_done();
@@ -1075,8 +1161,8 @@ probe_all_done(void)
 		struct probe_ip* p;
 		for(p=svr->probes; p; p=p->next) {
 			if(p->dnstcp)
-			    verbose(VERB_DETAIL, "tcp%d %s: %s %s", 
-			    	p->port, p->name,
+			    verbose(VERB_DETAIL, "%s%d %s: %s %s", 
+			    	p->ssldns?"ssl":"tcp", p->port, p->name,
 				p->works?"OK":"error", p->reason?p->reason:"");
 			else
 			    verbose(VERB_DETAIL, "%s %s: %s %s", 
@@ -1090,7 +1176,7 @@ probe_all_done(void)
 		probe_setup_hotspot_signon(svr);
 	} else if(svr->probe_dnstcp && svr->saw_dnstcp_work) {
 		/* set unbound to process over tcp */
-		verbose(VERB_OPS, "probe done: DNSSEC to tcp resolver");
+		verbose(VERB_OPS, "probe done: DNSSEC to tcp or ssl resolver");
 		probe_setup_dnstcp(svr);
 	} else if(svr->probe_direct && svr->saw_direct_work) {
 		/* set unbound to process directly */

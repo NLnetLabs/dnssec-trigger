@@ -1,3 +1,6 @@
+1 Nov 2011: Wouter
+	- probe ssl servers (nlnetlabs default server configured).
+
 31 Oct 2011: Wouter
 	- do not log errors for unclean ssl close.
 

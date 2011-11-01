@@ -83,6 +83,12 @@ void hook_unbound_dark(struct cfg* cfg);
 int hook_unbound_supports_tcp_upstream(struct cfg* cfg);
 
 /**
+ * Detect if unbound supports the ssl-upstream option (since 1.4.14).
+ * @param cfg: the config options.
+ */
+int hook_unbound_supports_ssl_upstream(struct cfg* cfg);
+
+/**
  * Set unbound to use tcp upstream.
  * @param cfg: the config options.
  * @param tcp80_ip4: if true, use those IP addresses.
@@ -92,5 +98,13 @@ int hook_unbound_supports_tcp_upstream(struct cfg* cfg);
  */
 void hook_unbound_tcp_upstream(struct cfg* cfg, int tcp80_ip4, int tcp80_ip6,
 	int tcp443_ip4, int tcp443_ip6);
+
+/**
+ * Set unbound to use ssl upstream.
+ * @param cfg: the config options.
+ * @param ssl443_ip4: if true, use those IP addresses.
+ * @param ssl443_ip6: if true, use those IP addresses.
+ */
+void hook_unbound_ssl_upstream(struct cfg* cfg, int ssl443_ip4, int ssl443_ip6);
 
 #endif /* UBHOOKS_H */
