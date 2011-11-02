@@ -1,5 +1,6 @@
 2 Nov 2011: Wouter
 	- check ssl fingerprint of servers.
+	- remind user on make install about ssl443.
 
 1 Nov 2011: Wouter
 	- probe ssl servers (nlnetlabs default server configured).

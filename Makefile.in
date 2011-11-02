@@ -457,6 +457,8 @@ install:	all $(installgui) $(installhook)
 	if test ! -f $(DESTDIR)$(configfile); then \
 		$(INSTALL) -c -m 644 example.conf $(DESTDIR)$(configfile); fi
 	@if test ! -f $(DESTDIR)$(keydir)/dnssec-trigger_server.key; then echo "It is probably good to run dnssec-trigger-control-setup to generate keys now, and possibly run dnssec-trigger-control-setup -i to edit unbound.conf if it does not have a trust anchor and remote-control"; fi
+	@if test -f $(DESTDIR)$(configfile); then \
+		if grep "ssl443" $(DESTDIR)$(configfile) >/dev/null; then : ; else echo "You should update your config file ($(DESTDIR)$(configfile)) with the ssl443 settings from the example.conf."; fi; fi
 
 uninstall:	$(uninstallgui) $(uninstallhook)
 	rm -f $(DESTDIR)$(mandir)/man8/dnssec-trigger.8
