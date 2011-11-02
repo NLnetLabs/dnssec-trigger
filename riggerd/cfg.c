@@ -72,6 +72,29 @@ strlist_delete(struct strlist* e)
 	}
 }
 
+/** append to ssllist */
+void
+ssllist_append(struct ssllist** first, struct ssllist** last, struct ssllist* e)
+{
+	e->next = NULL;
+	if(*last)
+		(*last)->next = e;
+	else	*first = e;
+	*last = e;
+}
+
+/** free ssllist */
+void
+ssllist_delete(struct ssllist* e)
+{
+	struct ssllist* p = e, *np;
+	while(p) {
+		np = p->next;
+		free(p->str);
+		free(p);
+		p = np;
+	}
+}
 
 /** get arg in line */
 static char* get_arg(char* line)
@@ -89,6 +112,20 @@ static char* get_arg(char* line)
 		line[strlen(line)-1] = 0;
 	}
 	return line;
+}
+
+/** get two arguments from the line */
+static void get_arg2(char* line, char** a1, char** a2)
+{
+	char* sp = strchr(line, ' ');
+	if(!sp) {
+		*a1 = line;
+		*a2 = NULL;
+		return;
+	}
+	*a1 = line;
+	*sp = 0;
+	*a2 = sp+1;
 }
 
 /** strdup the argument on the line */
@@ -118,6 +155,68 @@ static void tcp_arg(struct strlist** first4, struct strlist** last4, int* num4,
 		(*num6) ++;
 	} else {
 		strlist_append(first4, last4, line);
+		(*num4) ++;
+	}
+}
+
+static int read_hash(char* arg, struct ssllist* e)
+{
+	int i;
+	const int len = 32;
+	char* at = arg;
+	if(!arg || arg[0] == 0) {
+		e->has_hash = 0;
+		return 1;
+	}
+	if(strlen(arg) != len*3-1) { /* sha256, 32bytes of xx:xx:xx:xx */
+		return 0;
+	}
+	e->has_hash = 1;
+	e->hashlen = len;
+	for(i=0; i<len; i++) {
+		char *n = NULL;
+		e->hash[i] = strtol(at, &n, 16);
+		if(n != at+2) {
+			return 0;
+		}
+		/* skip two hex digits */
+		at += 2;
+		/* skip ':' (unless at EOS) */
+		if(*at) at ++;
+	}
+	return 1;
+}
+
+/** append the argument on the line */
+static void ssl_arg(struct ssllist** first4, struct ssllist** last4, int* num4,
+	struct ssllist** first6, struct ssllist** last6, int* num6, char* line)
+{
+	struct sockaddr_storage addr;
+	socklen_t len;
+	struct ssllist* e;
+	char* arg1=NULL, *arg2=NULL;
+	line = get_arg(line);
+	if(line[0] == 0) return; /* ignore empty ones */
+	e = (struct ssllist*)calloc(1, sizeof(*e));
+	if(!e) fatal_exit("out of memory");
+	get_arg2(line, &arg1, &arg2);
+	if(!ipstrtoaddr(arg1, DNS_PORT, &addr, &len)) {
+		log_err("cannot parse IP address: '%s', ssl ignored", arg1);
+		free(e);
+		return;
+	}
+	if(!read_hash(arg2, e)) {
+		log_err("cannot parse hash: '%s', ssl ignored", arg2);
+		free(e);
+		return;
+	}
+	e->str = strdup(arg1);
+	if(!e->str) fatal_exit("out of memory");
+	if(strchr(arg1, ':')) {
+		ssllist_append(first6, last6, e);
+		(*num6) ++;
+	} else {
+		ssllist_append(first4, last4, e);
 		(*num4) ++;
 	}
 }
@@ -176,7 +275,7 @@ keyword(struct cfg* cfg, char* p)
 			&cfg->num_tcp443_ip4, &cfg->tcp443_ip6,
 			&cfg->tcp443_ip6_last, &cfg->num_tcp443_ip6, p+7);
 	} else if(strncmp(p, "ssl443:", 7) == 0) {
-		tcp_arg(&cfg->ssl443_ip4, &cfg->ssl443_ip4_last,
+		ssl_arg(&cfg->ssl443_ip4, &cfg->ssl443_ip4_last,
 			&cfg->num_ssl443_ip4, &cfg->ssl443_ip6,
 			&cfg->ssl443_ip6_last, &cfg->num_ssl443_ip6, p+7);
 	} else {
@@ -248,11 +347,11 @@ void cfg_delete(struct cfg* cfg)
 {
 	if(!cfg) return;
 	strlist_delete(cfg->tcp80_ip4);
-	strlist_delete(cfg->tcp443_ip4);
-	strlist_delete(cfg->ssl443_ip4);
 	strlist_delete(cfg->tcp80_ip6);
+	strlist_delete(cfg->tcp443_ip4);
 	strlist_delete(cfg->tcp443_ip6);
-	strlist_delete(cfg->ssl443_ip6);
+	ssllist_delete(cfg->ssl443_ip4);
+	ssllist_delete(cfg->ssl443_ip6);
 	free(cfg->pidfile);
 	free(cfg->logfile);
 	free(cfg->chroot);
@@ -284,6 +383,18 @@ char* strlist_get_num(struct strlist* list, unsigned n)
 	unsigned i = 0;
 	while(list) {
 		if(i==n) return list->str;
+		list = list->next;
+		i++;
+	}
+	return NULL;
+}
+
+/** find nth element in ssllist */
+struct ssllist* ssllist_get_num(struct ssllist* list, unsigned n)
+{
+	unsigned i = 0;
+	while(list) {
+		if(i==n) return list;
 		list = list->next;
 		i++;
 	}

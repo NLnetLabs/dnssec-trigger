@@ -50,7 +50,8 @@
 #include <ldns/ldns.h>
 
 /* create probes for the ip addresses in the string */
-static void probe_spawn(const char* ip, int recurse, int dnstcp, int ssldns, int port);
+static void probe_spawn(const char* ip, int recurse, int dnstcp,
+	struct ssllist* ssldns, int port);
 /* delete and stop outq */
 static void outq_delete(struct outq* outq);
 /* set timeout on outq and create UDP query and send it */
@@ -217,20 +218,71 @@ static const char* get_random_tcp443_ip6(struct cfg* cfg)
 		((unsigned)ldns_get_random())%((unsigned)cfg->num_tcp443_ip6));
 }
 
-static const char* get_random_ssl443_ip4(struct cfg* cfg)
+static struct ssllist* get_random_ssl443_ip4(struct cfg* cfg)
 {
 	if(cfg->num_ssl443_ip4 == 0)
 		return NULL;
-	return strlist_get_num(cfg->ssl443_ip4,
+	return ssllist_get_num(cfg->ssl443_ip4,
 		((unsigned)ldns_get_random())%((unsigned)cfg->num_ssl443_ip4));
 }
 
-static const char* get_random_ssl443_ip6(struct cfg* cfg)
+static struct ssllist* get_random_ssl443_ip6(struct cfg* cfg)
 {
 	if(cfg->num_ssl443_ip6 == 0)
 		return NULL;
-	return strlist_get_num(cfg->ssl443_ip6,
+	return ssllist_get_num(cfg->ssl443_ip6,
 		((unsigned)ldns_get_random())%((unsigned)cfg->num_ssl443_ip6));
+}
+
+/** check SSL certificate on probe (that is otherwise DNSSEC OK) */
+static const char*
+check_ssl(struct outq* outq)
+{
+	/* verify the ssl connection */
+	/* there is also the SSL_get_verify_result, but that does PKIX
+	 * verification, we simply check the entire self-signed cert with
+	 * a stored hash, you can compute this hash with the command
+	 * openssl x509 -sha256 -fingerprint -in server.pem */
+	X509* x = SSL_get_peer_certificate(outq->c->ssl);
+	if(!outq->probe->ssldns->has_hash) {
+		/* no stored hash */
+		X509_free(x);
+	} else if(x) {
+		unsigned char hash[EVP_MAX_MD_SIZE];
+		unsigned int len = (unsigned int)sizeof(hash);
+		if(!X509_digest(x, EVP_sha256(), hash, &len)) {
+			log_err("out of memory");
+			X509_free(x);
+			return "out of memory in X509_digest";
+		}
+		X509_free(x);
+		if(verbosity >= 3) {
+			char buf[1024];
+			char* at = buf;
+			size_t blen = sizeof(buf);
+			unsigned int i;
+			for(i=0; i<len; i++) {
+				size_t a = snprintf(at, blen, "%2.2X%s",
+					(int)hash[i], (i==len-1)?"":":");
+				at += a; 
+				blen -= a;
+			}
+			log_info("the ssl fingerprint of server %s is %s",
+				outq->probe->name, buf);
+		}
+		if(len != outq->probe->ssldns->hashlen) {
+			/* should not happen, since we test sha256 length of
+			 * the cfg hash we read in */
+			return "SSL certificate hash length is wrong";
+		}
+		if(memcmp(hash, outq->probe->ssldns->hash, len) != 0) {
+			return "SSL certificate on internet does not match stored hash (ssl intercepted?)";
+		}
+	} else {
+		return "No SSL certificate on internet but have stored hash (ssl intercepted?)";
+	}
+	/* all OK */
+	return NULL;
 }
 
 /** outq is done, NULL reason for success */
@@ -239,6 +291,9 @@ outq_done(struct outq* outq, const char* reason)
 {
 	struct probe_ip* p = outq->probe;
 	const char* in = NULL;
+	if(p->sslctx && !reason) {
+		reason = check_ssl(outq);
+	}
 	if(p->nsec3_c == outq) {
 		outq_delete(p->nsec3_c);
 		p->nsec3_c = NULL;
@@ -748,8 +803,8 @@ static int addr_is_localhost(const char* ip)
 	return (sockaddr_cmp_addr(&lo, lolen, &addr, len) == 0);
 }
 
-static void probe_spawn(const char* ip, int recurse, int dnstcp, int ssldns,
-	int port)
+static void probe_spawn(const char* ip, int recurse, int dnstcp,
+	struct ssllist* ssldns, int port)
 {
 	const char* dest;
 	struct probe_ip* p;
@@ -797,9 +852,9 @@ static void probe_spawn(const char* ip, int recurse, int dnstcp, int ssldns,
 
 	/* send the probe queries and wait for reply */
 	p->dnskey_c = outq_create(p->name, LDNS_RR_TYPE_DNSKEY, ".",
-		recurse, p, dnstcp, ssldns, port);
+		recurse, p, dnstcp, ssldns!=0, port);
 	p->ds_c = outq_create(p->name, LDNS_RR_TYPE_DS, dest, recurse, p,
-		dnstcp, ssldns, port);
+		dnstcp, ssldns!=0, port);
 	if(!p->ds_c || !p->dnskey_c) {
 		log_err("could not send queries for probe");
 		probe_delete(p);
@@ -810,7 +865,7 @@ static void probe_spawn(const char* ip, int recurse, int dnstcp, int ssldns,
 		const char* nd = get_random_nsec3_dest();
 		verbose(VERB_ALGO, "nsec3 query %s", nd);
 		p->nsec3_c = outq_create(p->name, PROBE_NSEC3_QTYPE, nd,
-			recurse, p, dnstcp, ssldns, port);
+			recurse, p, dnstcp, ssldns!=0, port);
 		if(!p->nsec3_c) {
 			log_err("could not send nsec3 query for probe");
 			probe_delete(p);
@@ -853,9 +908,11 @@ static void probe_spawn_dnstcp(void)
 /** start probes for SSL DNS to open resolvers */
 static void probe_spawn_ssldns(void)
 {
+	struct ssllist* s4 = get_random_ssl443_ip4(global_svr->cfg);
+	struct ssllist* s6 = get_random_ssl443_ip6(global_svr->cfg);
 	verbose(VERB_ALGO, "probe ssl dns servers");
-	probe_spawn(get_random_ssl443_ip4(global_svr->cfg), 1, 1, 1, 443);
-	probe_spawn(get_random_ssl443_ip6(global_svr->cfg), 1, 1, 1, 443);
+	if(s4) probe_spawn(s4->str, 1, 1, s4, 443);
+	if(s6) probe_spawn(s6->str, 1, 1, s6, 443);
 }
 
 void probe_unsafe_test(void)
@@ -867,7 +924,8 @@ void probe_unsafe_test(void)
 	global_svr->probe_dnstcp = 1;
 	probe_spawn("127.0.0.5", 1, 1, 0, 80);
 	probe_spawn("127.0.0.6", 1, 1, 0, 443);
-	probe_spawn("127.0.0.7", 1, 1, 1, 443);
+	if(global_svr->cfg->ssl443_ip4)
+		probe_spawn("127.0.0.7", 1, 1, global_svr->cfg->ssl443_ip4, 443);
 }
 
 void probe_tcp_test(void)

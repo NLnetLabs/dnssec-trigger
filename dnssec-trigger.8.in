@@ -148,6 +148,11 @@ are used on TCP port 80.
 .B tcp443: \fR<ip>
 Add an IP4 or IP6 address to the list of fallback open DNSSEC resolvers that
 are used on TCP port 443.
+.TP
+.B tcp443: \fR<ip> or <ip> <hash>
+Add an IP4 of IP6 address to the list of fallback SSL open DNSSEC resolvers.
+They serve plain-DNS(tcp-style) over port 443, encapsulated in SSL.  The SSL
+certificate online is checked with the fingerprint (if configured here).
 .SH "THE DNSSEC\-TRIGGER\-PANEL"
 The dnssec\-trigger\-panel is an applet that runs in the tray.  It shows
 the DNSSEC status.  It can be invoked with \-d to test in the build

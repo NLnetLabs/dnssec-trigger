@@ -44,6 +44,9 @@
 # control-cert-file: "0keydir0/dnssec_trigger_control.pem"
 
 # fallback open DNSSEC resolvers that run on TCP port 80 and TCP port 443.
+# the ssl443 adds an ssl server IP, if you specify a hash it is checked, put
+# the following on one line: ssl443:<space><IP><space><HASHoutput>
+# hash is output of openssl x509 -sha256 -fingerprint -in server.pem
 # You can add more with extra config lines.
 
 # provided by NLnetLabs
@@ -51,6 +54,6 @@ tcp80: 213.154.224.42
 tcp80: 2001:7b8:206:1::42
 tcp443: 213.154.224.42
 tcp443: 2001:7b8:206:1::42
-ssl443: 213.154.224.32
-#ssl443: 2001:7b8:206:1:203:baff:fe05:2d9e
+ssl443: 213.154.224.32 00:D8:9C:FD:DE:C8:46:F6:3B:8F:8C:5C:7F:F4:F2:B4:41:2F:A7:42:5E:92:49:A6:DC:AE:2A:D4:75:FC:2C:FF
+#ssl443: 2001:7b8:206:1:203:baff:fe05:2d9e 00:D8:9C:FD:DE:C8:46:F6:3B:8F:8C:5C:7F:F4:F2:B4:41:2F:A7:42:5E:92:49:A6:DC:AE:2A:D4:75:FC:2C:FF
 

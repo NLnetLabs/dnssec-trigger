@@ -58,7 +58,7 @@ struct probe_ip {
 	/* for dnstcp? */
 	int dnstcp;
 	/* for ssl? */
-	int ssldns;
+	struct ssllist* ssldns;
 	/* destination port */
 	int port;
 

@@ -42,6 +42,7 @@
 #ifndef CFG_H
 #define CFG_H
 struct strlist;
+struct ssllist;
 
 /* version of control proto */
 #define CONTROL_VERSION 1
@@ -83,9 +84,9 @@ struct cfg {
 	struct strlist* tcp443_ip6, *tcp443_ip6_last;
 	int num_tcp443_ip6;
 	/** list of ssl port 443 resolvers on ip4 and ip6 */
-	struct strlist* ssl443_ip4, *ssl443_ip4_last;
+	struct ssllist* ssl443_ip4, *ssl443_ip4_last;
 	int num_ssl443_ip4;
-	struct strlist* ssl443_ip6, *ssl443_ip6_last;
+	struct ssllist* ssl443_ip6, *ssl443_ip6_last;
 	int num_ssl443_ip6;
 
 	/** port number for the control port */
@@ -106,6 +107,15 @@ struct strlist {
 	char* str;
 };
 
+/** list of ssl servers */
+struct ssllist {
+	struct ssllist* next; /* must be first for compatibility with strlist */
+	char* str; /* ip address */
+	int has_hash;
+	unsigned char hash[64]; /* hash (if any) */
+	unsigned int hashlen;
+};
+
 /** create config and read in */
 struct cfg* cfg_create(const char* cfgfile);
 /** delete config */
@@ -122,6 +132,14 @@ void strlist_append(struct strlist** first, struct strlist** last, char* str);
 void strlist_delete(struct strlist* first);
 /** get nth element of strlist */
 char* strlist_get_num(struct strlist* list, unsigned n);
+
+/** append to ssllist, first=last=NULL to start empty. fatal if malloc fails */
+void ssllist_append(struct ssllist** first, struct ssllist** last,
+	struct ssllist* e);
+/** free ssllist */
+void ssllist_delete(struct ssllist* first);
+/** get nth element of ssllist */
+struct ssllist* ssllist_get_num(struct ssllist* list, unsigned n);
 
 /** have tcp80 or tcp443 configured */
 int cfg_have_dnstcp(struct cfg* cfg);

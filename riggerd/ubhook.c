@@ -256,7 +256,7 @@ void hook_unbound_ssl_upstream(struct cfg* cfg, int ssl443_ip4, int ssl443_ip6)
 	char buf[102400];
 	char* now = buf;
 	size_t left = sizeof(buf);
-	struct strlist *p;
+	struct ssllist *p;
 	verbose(VERB_QUERY, "unbound hook to ssl %s %s",
 		ssl443_ip4?"ssl443_ip4":"", ssl443_ip6?"ssl443_ip6":"");
 	if(cfg->noaction)
