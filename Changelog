@@ -1,3 +1,6 @@
+3 Nov 2011: Wouter
+	- remove error dialog at end of osx install.
+
 2 Nov 2011: Wouter
 	- check ssl fingerprint of servers.
 	- remind user on make install about ssl443.

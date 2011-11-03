@@ -181,6 +181,7 @@ fi
 
 # for test create logfile: doinstall 2>&1 | tee \$INSTLOG
 doinstall
+exit 0
 
 EOF
 
