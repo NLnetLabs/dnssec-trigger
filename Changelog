@@ -1,5 +1,6 @@
 4 Nov 2011: Wouter
-	- on OSX update config file if not hand-edited by user.
+	- on OSX update config if old (no ssl443).
+	- on OSX install config file before attempting to modify it.
 
 3 Nov 2011: Wouter
 	- remove error dialog at end of osx install.
