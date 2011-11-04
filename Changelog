@@ -1,3 +1,6 @@
+4 Nov 2011: Wouter
+	- on OSX update config file if not hand-edited by user.
+
 3 Nov 2011: Wouter
 	- remove error dialog at end of osx install.
 

@@ -80,6 +80,17 @@ if [[ -f /System/Library/LaunchDaemons/org.isc.named.plist ]]; then
     launchctl unload -w /System/Library/LaunchDaemons/org.isc.named.plist
 fi
 
+# see if config was edited.
+if test -f /etc/dnssec-trigger/dnssec-trigger.conf; then
+	if diff /etc/dnssec-trigger/dnssec-trigger.conf /etc/dnssec-trigger/dnssec-trigger.conf-default >/dev/null; then
+		dt_config_edit="no";
+	else
+		dt_config_edit="yes";
+	fi
+else
+	dt_config_edit="no";
+fi
+
 mkdir -p "`dirname ${FILELIST}`"
 tar xzopC / -f /tmp/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz
 tar tzf /tmp/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz > "${FILELIST}"
@@ -155,6 +166,8 @@ if [[ ! -f /etc/unbound/unbound.conf ]]; then
 	/usr/sbin/dnssec-trigger-control-setup -i
 fi
 if [[ ! -f /etc/dnssec-trigger/dnssec-trigger.conf ]]; then
+	cp /etc/dnssec-trigger/dnssec-trigger.conf-default /etc/dnssec-trigger/dnssec-trigger.conf
+elif test "\$dt_config_edit" = "no"; then
 	cp /etc/dnssec-trigger/dnssec-trigger.conf-default /etc/dnssec-trigger/dnssec-trigger.conf
 fi
 
