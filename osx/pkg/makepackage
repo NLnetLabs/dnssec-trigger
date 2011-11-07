@@ -66,7 +66,9 @@ if test -z "\$guiuser" -o "\$guiuser" = "root"; then
 fi
 if test -f /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist; then
 	if test -n "\$guiuser" -a "\$guiuser" != "root"; then
+		# remove as root and as user.
 		sudo -u "\$guiuser" launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+		launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
 	fi
 fi
 
