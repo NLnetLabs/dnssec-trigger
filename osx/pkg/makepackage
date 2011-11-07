@@ -190,12 +190,17 @@ launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
 # start dnssec-trigger (-panel and -hooks)
 launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist
 launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
+
 # start panel in GUI user space.
-#if test -n "\$guiuser" -a "\$guiuser" != "root"; then
-	#sudo -u "\$guiuser" launchctl load -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
-#fi
-# load the panel plist as root. This works.
-launchctl load -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+# this is really difficult, because as root would show the user widget now,
+# but not after a reboot.  If as user, then it would show up after reboot.
+# but maybe not now, because sudo -u user is not good enough, thus this:
+
+# If possible, tell launchd to start the LaunchAgent. This will fail on 10.4.
+# \$F[0] is the pid
+# \$F[1] is the username
+# \$F[2] is the first word of the command
+ps -ww -A -opid,user,command | perl -nae 'if(\$F[2] =~ /\\bloginwindow\\b/) { system(qq(launchctl bsexec \$F[0] su \$F[1] -c "launchctl load -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist")) }'
 
 }
 
