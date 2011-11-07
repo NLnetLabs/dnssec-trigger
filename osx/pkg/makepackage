@@ -66,12 +66,12 @@ if test -z "\$guiuser" -o "\$guiuser" = "root"; then
 fi
 if test -f /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist; then
 	if test -n "\$guiuser" -a "\$guiuser" != "root"; then
-		if sudo -u "\$guiuser" launchctl list | grep nl.nlnetlabs.dnssec-trigger-panel.plist >/dev/null; then
+		if sudo -u "\$guiuser" launchctl list | grep nl.nlnetlabs.dnssec-trigger-panel >/dev/null; then
 			# panel loaded as user, remove as user.
 			sudo -u "\$guiuser" launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
 		fi
 	fi
-	if launchctl list | grep nl.nlnetlabs.dnssec-trigger-panel.plist >/dev/null; then
+	if launchctl list | grep nl.nlnetlabs.dnssec-trigger-panel >/dev/null; then
 		# panel loaded as root, unload as root.
 		launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
 	fi
@@ -225,7 +225,7 @@ question () {
 
 do_uninstall() {
 	if test -f /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist; then
-		if launchctl list | grep nl.nlnetlabs.dnssec-trigger-panel.plist >/dev/null; then
+		if launchctl list | grep nl.nlnetlabs.dnssec-trigger-panel >/dev/null; then
 			echo "unload user panel plist"
 			launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
 		fi
@@ -253,7 +253,7 @@ fi
 # from root dir.
 cd /
 
-if launchctl list | grep nl.nlnetlabs.dnssec-trigger-panel.plist >/dev/null; then
+if launchctl list | grep nl.nlnetlabs.dnssec-trigger-panel >/dev/null; then
 	echo "unload user panel plist (as root)"
 	launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
 fi
