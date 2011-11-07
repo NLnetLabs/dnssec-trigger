@@ -185,7 +185,8 @@ launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist
 launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
 # start panel in GUI user space.
 if test -n "\$guiuser" -a "\$guiuser" != "root"; then
-	sudo -u "\$guiuser" launchctl load -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+	#sudo -u "\$guiuser" launchctl load -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+	launchctl load -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
 fi
 
 }
