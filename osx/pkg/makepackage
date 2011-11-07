@@ -259,7 +259,6 @@ if launchctl list | grep nl.nlnetlabs.dnssec-trigger-panel >/dev/null; then
 fi
 
 echo "stop panel"
-launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
 /usr/sbin/dnssec-trigger-control stoppanels
 
 # stop daemons if exist
