@@ -1,6 +1,7 @@
 7 Nov 2011: Wouter
 	- fixed the OSX installer problem, launchd does not load userspace
 	  agents without hacks, and has side-effects that enables boot-start.
+	- more detailed logging at verbosity 4 (prints wire and dig output).
 
 4 Nov 2011: Wouter
 	- on OSX update config if old (no ssl443).

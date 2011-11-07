@@ -373,6 +373,18 @@ outq_check_packet(struct outq* outq, uint8_t* wire, size_t len)
 	int rrsig_in_auth = 0;
 	ldns_pkt *p = NULL;
 	ldns_status s;
+	if(verbosity >= VERB_ALGO) {
+		verbose(VERB_ALGO, "from %s %s %s received",
+			outq->probe->name,
+			outq->qtype==PROBE_NSEC3_QTYPE?"NSEC3":(
+			outq->qtype==LDNS_RR_TYPE_DNSKEY?"DNSKEY":"DS"),
+			outq->probe->ssldns?"SSLprobe":(
+			outq->probe->dnstcp?"TCPprobe":(
+			outq->probe->to_auth?"AUTHprobe":"cacheprobe"
+			)));
+		log_hex("packet", wire, len);
+	}
+
 	if(!LDNS_QR_WIRE(wire)) {
 		outq_done(outq, "reply without QR flag");
 		return;
@@ -393,6 +405,11 @@ outq_check_packet(struct outq* outq, uint8_t* wire, size_t len)
 	if(!p) {
 		outq_done(outq, "out of memory");
 		return;
+	}
+	if(verbosity >= VERB_ALGO) {
+		char* desc = ldns_pkt2str(p);
+		if(desc) verbose(VERB_ALGO, "%s", desc);
+		free(desc);
 	}
 
 	/* does DNS work? */
