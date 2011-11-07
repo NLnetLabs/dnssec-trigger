@@ -220,7 +220,7 @@ question () {
 do_uninstall() {
 	if test -f /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist; then
 		echo "unload user panel plist"
-		launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+		launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist || echo "try again as root"
 	fi
 	echo "run with root permission"
 	sudo bash "\$0" uninstall 
@@ -246,6 +246,7 @@ fi
 cd /
 
 echo "stop panel"
+launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
 /usr/sbin/dnssec-trigger-control stoppanels
 
 # stop daemons if exist
