@@ -1,6 +1,8 @@
 8 Nov 2011: Wouter
 	- the test_tcp and test_ssl command do not have the 20-sec tcpretry
 	  once timer, so that the test can try unbound.
+	- config for new open resolver (port 80 TCP, port 443 SSL).  No more
+	  probe plain tcp on port 443.
 
 7 Nov 2011: Wouter
 	- fixed the OSX installer problem, launchd does not load userspace
