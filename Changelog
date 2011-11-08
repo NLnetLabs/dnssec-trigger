@@ -1,3 +1,7 @@
+8 Nov 2011: Wouter
+	- the test_tcp and test_ssl command do not have the 20-sec tcpretry
+	  once timer, so that the test can try unbound.
+
 7 Nov 2011: Wouter
 	- fixed the OSX installer problem, launchd does not load userspace
 	  agents without hacks, and has side-effects that enables boot-start.

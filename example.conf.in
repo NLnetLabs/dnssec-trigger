@@ -50,6 +50,7 @@
 # You can add more with extra config lines.
 
 # provided by NLnetLabs
+# It is provided on a best effort basis, with no service guarantee.
 tcp80: 213.154.224.42
 tcp80: 2001:7b8:206:1::42
 tcp443: 213.154.224.42

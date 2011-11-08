@@ -951,6 +951,7 @@ void probe_tcp_test(void)
 	probe_start("127.0.0.3");
 	global_svr->probe_direct = 1;
 	probe_spawn("127.0.0.4", 0, 0, 0, DNS_PORT);
+	global_svr->tcp_timer_used = 1; /* avoid retry after 20 sec */
 }
 
 void probe_ssl_test(void)
@@ -961,6 +962,7 @@ void probe_ssl_test(void)
 	probe_spawn("127.0.0.4", 0, 0, 0, DNS_PORT);
 	global_svr->probe_dnstcp = 1;
 	probe_spawn_ssldns();
+	global_svr->tcp_timer_used = 1; /* avoid retry after 20 sec */
 }
 
 /* stop unfininished probes and remove them */
