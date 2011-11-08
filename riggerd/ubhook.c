@@ -188,8 +188,10 @@ static int hook_unbound_supports_option(struct cfg* cfg, const char* args)
 	} else
 #endif
 	if(r != 0) {
+		verbose(VERB_OPS, "unbound does not support option: %s", args);
 		return 0;
 	}
+	verbose(VERB_OPS, "unbound supports option: %s", args);
 	return 1;
 }
 

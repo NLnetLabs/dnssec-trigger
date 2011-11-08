@@ -307,6 +307,10 @@ outq_done(struct outq* outq, const char* reason)
 		p->dnskey_c = NULL;
 		in = "DNSKEY";
 	}
+	/*  This is a good place for test code.
+	if(!p->ssldns && !reason)
+		reason = "failed for test purposes";
+	*/
 	probe_partial_done(p, in, reason);
 }
 
@@ -865,7 +869,7 @@ static void probe_spawn(const char* ip, int recurse, int dnstcp,
 	/* send the queries */
 	dest = get_random_dest();
 	verbose(VERB_ALGO, "probe %s %s %s (tld %s)",
-		p->name, (recurse?"rec":"norec"), (dnstcp?"tcp":"udp"), dest);
+		p->name, (recurse?"rec":"norec"), ssldns?"ssl":(dnstcp?"tcp":"udp"), dest);
 
 	/* send the probe queries and wait for reply */
 	p->dnskey_c = outq_create(p->name, LDNS_RR_TYPE_DNSKEY, ".",
