@@ -1,3 +1,7 @@
+9 Nov 2011: Wouter
+	- Fix that if network down (nothing pings) then it picks disconnect,
+	  for slow bootup where the machine has the previous network settings.
+
 8 Nov 2011: Wouter
 	- the test_tcp and test_ssl command do not have the 20-sec tcpretry
 	  once timer, so that the test can try unbound.

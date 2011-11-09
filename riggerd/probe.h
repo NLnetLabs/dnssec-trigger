@@ -78,6 +78,8 @@ struct probe_ip {
 	int works;
 	/* string with explanation of failure */
 	char* reason;
+	/* if a packet has been received by a query (i.e. network is up) */
+	int got_packet;
 };
 
 /** outstanding query */

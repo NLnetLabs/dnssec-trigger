@@ -388,6 +388,7 @@ outq_check_packet(struct outq* outq, uint8_t* wire, size_t len)
 			)));
 		log_hex("packet", wire, len);
 	}
+	outq->probe->got_packet = 1;
 
 	if(!LDNS_QR_WIRE(wire)) {
 		outq_done(outq, "reply without QR flag");
@@ -850,6 +851,7 @@ static void probe_spawn(const char* ip, int recurse, int dnstcp,
 	p->dnstcp = dnstcp;
 	p->ssldns = ssldns;
 	p->port = port;
+	p->got_packet = 0;
 	p->name = strdup(ip);
 	if(!p->name) {
 		free(p);
@@ -1234,6 +1236,18 @@ probe_cache_done(void)
 	probe_all_done();
 }
 
+/** true if no packets were received during the probe: network seems down */
+static int
+got_no_packets(struct svr* svr)
+{
+	struct probe_ip* p;
+	for(p=svr->probes; p; p=p->next) {
+		if(p->got_packet)
+			return 0;
+	}
+	return 1;
+}
+
 void
 probe_all_done(void)
 {
@@ -1268,7 +1282,10 @@ probe_all_done(void)
 		/* if there are no cache IPs, then there is nothing else
 		 * we can do, we are in offline mode, most likely. No DHCP,
 		 * no network connectivity */
-		if(svr->num_probes_to_cache == 0) {
+		/* if none of the probes got a packet, then nothing pings,
+		 * we have a stored network state without a network connect.
+		 * The insecure option cannot ping the cache, so disconnect. */
+		if(svr->num_probes_to_cache == 0 || got_no_packets(svr)) {
 			verbose(VERB_OPS, "probe done: disconnected");
 			probe_setup_disconnected(svr);
 		} else {
