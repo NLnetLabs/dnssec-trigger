@@ -39,7 +39,7 @@
  * This file contains event notification functions.
  */
 #include "config.h"
-#include "ldns/wire2host.h"
+#include <ldns/wire2host.h>
 #include "netevent.h"
 #include "log.h"
 #include "net_help.h"
