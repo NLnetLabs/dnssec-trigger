@@ -1,3 +1,6 @@
+13 Nov 2011: Wouter
+	- control unsafe shows the dialog popup again.
+
 9 Nov 2011: Wouter
 	- Fix that if network down (nothing pings) then it picks disconnect,
 	  for slow bootup where the machine has the previous network settings.

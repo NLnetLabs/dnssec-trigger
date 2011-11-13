@@ -942,6 +942,9 @@ void probe_unsafe_test(void)
 {
 	verbose(VERB_OPS, "test unsafe probe combination started");
 	probe_start("127.0.0.3");
+	/* pretend we got a reply from the cache (so not disconnected) */
+	if(global_svr->probes)
+		global_svr->probes->got_packet = 1;
 	global_svr->probe_direct = 1;
 	probe_spawn("127.0.0.4", 0, 0, 0, DNS_PORT);
 	global_svr->probe_dnstcp = 1;
