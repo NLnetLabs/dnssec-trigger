@@ -57,7 +57,7 @@ static void outq_delete(struct outq* outq);
 /* set timeout on outq and create UDP query and send it */
 static int outq_settimeout_and_send(struct outq* outq);
 /* send outq over tcp */
-static void outq_send_tcp(struct outq* outq);
+static int outq_send_tcp(struct outq* outq);
 /* a query is done, check probe to see if failed, succeed or wait */
 static void probe_partial_done(struct probe_ip* p, const char* in,
 	const char* reason);
@@ -398,7 +398,9 @@ outq_check_packet(struct outq* outq, uint8_t* wire, size_t len)
 		/* start TCP query and wait for it */
 		verbose(VERB_ALGO, "%s: TC flag, switching to TCP",
 			outq->probe->name);
-		outq_send_tcp(outq);
+		if(!outq_send_tcp(outq)) {
+			outq_done(outq, "cannot send TCP query after TC flag");
+		}
 		return;
 	}
 	if( (s=ldns_wire2pkt(&p, wire, len)) != LDNS_STATUS_OK) {
@@ -601,7 +603,13 @@ outq_create(const char* ip, int tp, const char* domain, int recurse,
 
 	if(tcp || onssl){
 		/* also sets timeout, timer */
-		outq_send_tcp(outq);
+		/* we test if it works, because if it were to call outq_done
+		 * with an error reason the query counts go wrong and the
+		 * probe does not work correctly. */
+		if(!outq_send_tcp(outq)) {
+			outq_delete(outq);
+			return NULL;
+		}
 		return outq;
 	}
 
@@ -750,7 +758,7 @@ outq_tcp_take_into_use(struct outq* outq)
 	return 1;
 }
 
-static void outq_send_tcp(struct outq* outq)
+static int outq_send_tcp(struct outq* outq)
 {
 	/* send outq over tcp, stop UDP in progress (if any) */
 	if(outq->c) comm_point_delete(outq->c);
@@ -760,18 +768,15 @@ static void outq_send_tcp(struct outq* outq)
 	outq->c = comm_point_create_tcp_out(global_svr->base, 65553,
 		outq_handle_tcp, outq);
 	if(!outq->c) {
-		outq_done(outq, "cannot create TCP comm_point");
-		return;
+		log_err("cannot create tcp comm point, out of memory");
+		return 0;
 	}
-	if(!create_probe_query(outq, outq->c->buffer)) {
-		outq_done(outq, "cannot create TCP probe query");
-		return;
-	}
-	if(!outq_tcp_take_into_use(outq)) {
-		outq_done(outq, "cannot send TCP probe query");
-		return;
-	}
+	if(!create_probe_query(outq, outq->c->buffer))
+		return 0;
+	if(!outq_tcp_take_into_use(outq))
+		return 0;
 	outq_settimer(outq);
+	return 1;
 }
 
 int outq_handle_tcp(struct comm_point* c, void* my_arg, int error,
