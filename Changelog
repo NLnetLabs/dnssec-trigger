@@ -1,5 +1,8 @@
 30 Nov 2011: Wouter
 	- Fix where race condition could cause blacklist of open resolver.
+	- Fix to flush_infra and flush_requestlist when we use open resolver,
+	  the proxy that causes this to be used as fallback has polluted those
+	  entries (possibly).
 
 29 Nov 2011: Wouter
 	- Fix bug where no IPv6 causes wrong test results, notably SSL, due

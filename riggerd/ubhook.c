@@ -250,6 +250,10 @@ void hook_unbound_tcp_upstream(struct cfg* cfg, int tcp80_ip4, int tcp80_ip6,
 	disable_ssl_upstream(cfg);
 	ub_ctrl(cfg, "set_option", "tcp-upstream: yes");
 	ub_ctrl(cfg, "forward", buf);
+	if(!ub_has_tcp_upstream) {
+		ub_ctrl(cfg, "flush_requestlist", "");
+		ub_ctrl(cfg, "flush_infra", "all");
+	}
 	ub_has_tcp_upstream = 1;
 }
 
@@ -278,5 +282,13 @@ void hook_unbound_ssl_upstream(struct cfg* cfg, int ssl443_ip4, int ssl443_ip6)
 	disable_tcp_upstream(cfg);
 	ub_ctrl(cfg, "set_option", "ssl-upstream: yes");
 	ub_ctrl(cfg, "forward", buf);
+	/* flush requestlist to remove queries over normal transport that
+	 * may be waiting very long.  And remove bad timeouts from infra
+	 * cache.  Removes edns and so on from all infra because the proxy
+	 * that causes SSL to be used may have caused fake values for some. */
+	if(!ub_has_ssl_upstream) {
+		ub_ctrl(cfg, "flush_requestlist", "");
+		ub_ctrl(cfg, "flush_infra", "all");
+	}
 	ub_has_ssl_upstream = 1;
 }
