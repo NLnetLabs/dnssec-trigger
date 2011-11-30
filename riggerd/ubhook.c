@@ -248,8 +248,8 @@ void hook_unbound_tcp_upstream(struct cfg* cfg, int tcp80_ip4, int tcp80_ip6,
 	}
 	/* effectuate tcp upstream and new list of servers */
 	disable_ssl_upstream(cfg);
-	ub_ctrl(cfg, "forward", buf);
 	ub_ctrl(cfg, "set_option", "tcp-upstream: yes");
+	ub_ctrl(cfg, "forward", buf);
 	ub_has_tcp_upstream = 1;
 }
 
@@ -273,8 +273,10 @@ void hook_unbound_ssl_upstream(struct cfg* cfg, int ssl443_ip4, int ssl443_ip6)
 			append_str_port(buf, &now, &left, p->str, 443);
 	}
 	/* effectuate ssl upstream and new list of servers */
+	/* set SSL first, so no contact of this server over normal DNS,
+	 * because the fake answer may cause it to be blacklisted then */
 	disable_tcp_upstream(cfg);
-	ub_ctrl(cfg, "forward", buf);
 	ub_ctrl(cfg, "set_option", "ssl-upstream: yes");
+	ub_ctrl(cfg, "forward", buf);
 	ub_has_ssl_upstream = 1;
 }

@@ -1,3 +1,6 @@
+30 Nov 2011: Wouter
+	- Fix where race condition could cause blacklist of open resolver.
+
 29 Nov 2011: Wouter
 	- Fix bug where no IPv6 causes wrong test results, notably SSL, due
 	  to the error report code.
