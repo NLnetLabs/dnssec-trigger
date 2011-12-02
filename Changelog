@@ -1,3 +1,6 @@
+2 Dec 2011: Wouter
+	- configure generated with autoconf 2.6.8.
+
 30 Nov 2011: Wouter
 	- Fix where race condition could cause blacklist of open resolver.
 	- Fix to flush_infra and flush_requestlist when we use open resolver,
