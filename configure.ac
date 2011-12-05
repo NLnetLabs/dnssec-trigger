@@ -58,8 +58,9 @@ case "$enable_debug" in
 esac
 
 if test "$on_mingw" = "yes"; then
-	#EXPORT_DYNAMIC="-Wl,-export-all-symbols"
-	EXPORT_DYNAMIC=""
+	# this flag is only really needed for GTK+ applications for its
+	# linkback of event functions.
+	EXPORT_DYNAMIC="-Wl,-export-all-symbols"
 else
 AC_MSG_CHECKING([if -export-dynamic works])
 bakld="$LDFLAGS"

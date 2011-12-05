@@ -1,6 +1,7 @@
 5 Dec 2011: Wouter
 	- sigHUP reloads config and reopens logfile for log rotation support.
 	- acxnlnetlabs updated to version 17.
+	- fix fedora16 windows crosscompile.
 
 2 Dec 2011: Wouter
 	- configure generated with autoconf 2.6.8.
