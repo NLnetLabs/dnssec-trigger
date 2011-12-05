@@ -75,6 +75,9 @@
 /* Define to 1 if you have the `localtime_r' function. */
 #undef HAVE_LOCALTIME_R
 
+/* If have GNU libc compatible malloc */
+#undef HAVE_MALLOC
+
 /* Define to 1 if you have the `memmove' function. */
 #undef HAVE_MEMMOVE
 
