@@ -2,7 +2,10 @@
 # Copyright 2009, Wouter Wijngaards, NLnet Labs.   
 # BSD licensed.
 #
-# Version 14
+# Version 17
+# 2011-12-05 Fix getaddrinfowithincludes on windows with fedora16 mingw32-gcc.
+# 2011-11-10 Fix FLTO test to not drop a.out in current directory.
+# 2011-11-01 Fix FLTO test for llvm on Lion.
 # 2011-08-01 Fix nonblock test (broken at v13).
 # 2011-08-01 Fix autoconf 2.68 warnings
 # 2011-06-23 Add ACX_CHECK_FLTO to check -flto.
@@ -394,7 +397,15 @@ AC_DEFUN([ACX_CHECK_FLTO],
 [AC_MSG_CHECKING([if $CC supports -flto])
 BAKCFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -flto"
-AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])], [AC_MSG_RESULT(yes)], [CFLAGS="$BAKCFLAGS" ; AC_MSG_RESULT(no)])
+AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])], [
+    if $CC $CFLAGS -o conftest conftest.c 2>&1 | grep "warning: no debug symbols in executable" >/dev/null; then
+	CFLAGS="$BAKCFLAGS"
+	AC_MSG_RESULT(no)
+    else
+	AC_MSG_RESULT(yes)
+    fi
+    rm -f conftest conftest.c conftest.o
+], [CFLAGS="$BAKCFLAGS" ; AC_MSG_RESULT(no)])
 ])
 
 dnl Check the printf-format attribute (if any)
@@ -784,7 +795,13 @@ int main() {
 }
 ]])],
 dnl this case on linux, solaris, bsd
-[ac_cv_func_getaddrinfo="yes"],
+[ac_cv_func_getaddrinfo="yes"
+dnl see if on windows
+if test "$ac_cv_header_windows_h" = "yes"; then
+	AC_DEFINE(USE_WINSOCK, 1, [Whether the windows socket API is used])
+	USE_WINSOCK="1"
+fi
+],
 dnl no quick getaddrinfo, try mingw32 and winsock2 library.
 ORIGLIBS="$LIBS"
 LIBS="$LIBS -lws2_32"
