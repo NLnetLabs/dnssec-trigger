@@ -4487,7 +4487,8 @@ $as_echo "#define DO_DEBUG /**/" >>confdefs.h
 esac
 
 if test "$on_mingw" = "yes"; then
-	EXPORT_DYNAMIC="--export-all-symbols"
+	# export dynamic symbols (-export-dynamic)
+	EXPORT_DYNAMIC="-rdynamic"
 else
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking if -export-dynamic works" >&5
 $as_echo_n "checking if -export-dynamic works... " >&6; }
