@@ -58,7 +58,8 @@ case "$enable_debug" in
 esac
 
 if test "$on_mingw" = "yes"; then
-	EXPORT_DYNAMIC="-Wl,-export-all-symbols"
+	#EXPORT_DYNAMIC="-Wl,-export-all-symbols"
+	EXPORT_DYNAMIC=""
 else
 AC_MSG_CHECKING([if -export-dynamic works])
 bakld="$LDFLAGS"
