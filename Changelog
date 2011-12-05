@@ -1,3 +1,6 @@
+5 Dec 2011: Wouter
+	- sigHUP reloads config and reopens logfile for log rotation support.
+
 2 Dec 2011: Wouter
 	- configure generated with autoconf 2.6.8.
 

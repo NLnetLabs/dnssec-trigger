@@ -275,6 +275,9 @@ do_main_work(const char* cfgfile, int nodaemonize, int verb)
 				cfg = c2;
 				svr->cfg = cfg;
 			}
+			/* reopen log after HUP to facilitate log rotation */
+			if(!cfg->use_syslog)
+				log_init(cfg->logfile, 0, cfg->chroot);
 			sig_reload = 0;
 			continue;
 		}
