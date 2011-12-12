@@ -1,5 +1,6 @@
 12 Dec 2011: Wouter
-	- Fix apple brick by installer, because of user panel.
+	- Fix apple brick by installer, because of tarfile inclusion of
+	  extended attributes that overwrote system dir extended attributes.
 
 5 Dec 2011: Wouter
 	- sigHUP reloads config and reopens logfile for log rotation support.
