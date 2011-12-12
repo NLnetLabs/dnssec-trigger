@@ -35,7 +35,9 @@ macpackage_commands()
     rm -f $ORIG/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz
     rm -rf package-manager
     echo "create tarball"
-    tar czf $ORIG/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz .
+    # the disable avoids ._blabla files with resource forks that store
+    # extended attributes for the files.
+    COPYFILE_DISABLE=true tar czf $ORIG/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz .
 
     # create package manager dir structure
     echo "create package manager dir structure"
