@@ -196,11 +196,12 @@ launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
 # but not after a reboot.  If as user, then it would show up after reboot.
 # but maybe not now, because sudo -u user is not good enough, thus this:
 
+# causes AppleOSXLion to be bricked (worst case).
 # If possible, tell launchd to start the LaunchAgent. This will fail on 10.4.
 # \$F[0] is the pid
 # \$F[1] is the username
 # \$F[2] is the first word of the command
-ps -ww -A -opid,user,command | perl -nae 'if(\$F[2] =~ /\\bloginwindow\\b/) { system(qq(launchctl bsexec \$F[0] su \$F[1] -c "launchctl load -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist")) }'
+#ps -ww -A -opid,user,command | perl -nae 'if(\$F[2] =~ /\\bloginwindow\\b/) { system(qq(launchctl bsexec \$F[0] su \$F[1] -c "launchctl load -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist")) }'
 
 }
 
