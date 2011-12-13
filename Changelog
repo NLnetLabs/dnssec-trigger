@@ -1,3 +1,6 @@
+13 Dec 2011: Wouter
+	- release 0.8.
+
 12 Dec 2011: Wouter
 	- Fix apple brick by installer, because of tarfile inclusion of
 	  extended attributes that overwrote system dir extended attributes.
