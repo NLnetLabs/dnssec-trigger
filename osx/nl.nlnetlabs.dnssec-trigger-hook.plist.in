@@ -13,5 +13,7 @@
 	<array>
 		<string>/Library/Preferences/SystemConfiguration</string>
 	</array>
+	<key>ThrottleInterval</key>
+	<integer>1</integer>
 </dict>
 </plist>

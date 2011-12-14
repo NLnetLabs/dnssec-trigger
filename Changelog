@@ -1,3 +1,7 @@
+14 Dec 2011: Wouter
+	- Set hook throttleinterval to 1 second, this reduces the osx wakeup
+	  and bootup wrong probes because the hook was throttled for 10 seconds.
+
 13 Dec 2011: Wouter
 	- release 0.8.
 	- trunk is 0.9 under development.
