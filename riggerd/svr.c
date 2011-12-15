@@ -821,6 +821,11 @@ static void handle_stoppanels_cmd(struct sslconn* sc)
 		if(SSL_write(s->ssl, stopcmd, (int)strlen(stopcmd)) < 0)
 			log_crypto_err("cannot SSL_write panel stop");
 
+		if(!SSL_get_shutdown(s->ssl)) {
+			if(SSL_shutdown(s->ssl) == 0)
+				SSL_shutdown(s->ssl); /* again to wait */
+		}
+
 		/* it will be closed now */
 		fd_set_nonblock(SSL_get_fd(s->ssl));
 		comm_point_listen_for_rw(s->c, 1, 0);

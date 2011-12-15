@@ -1,5 +1,7 @@
 15 Dec 2011: Wouter
 	- detailprints in windows installer and uninstaller.
+	- stoppanels waits for the connection of the panel to close, this
+	  may remove re-install race conditions.
 
 14 Dec 2011: Wouter
 	- Set hook throttleinterval to 1 second, this reduces the osx wakeup
