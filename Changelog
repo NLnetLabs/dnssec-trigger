@@ -1,3 +1,6 @@
+15 Dec 2011: Wouter
+	- detailprints in windows installer and uninstaller.
+
 14 Dec 2011: Wouter
 	- Set hook throttleinterval to 1 second, this reduces the osx wakeup
 	  and bootup wrong probes because the hook was throttled for 10 seconds.

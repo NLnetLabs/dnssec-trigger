@@ -138,8 +138,11 @@ section "-hidden.postinstall"
 	# (if installed).
 	ReadRegStr $R1 HKLM "Software\Unbound" "InstallLocation"
 	StrCmp $R1 "" donestop 0
+	DetailPrint "Stop tray icons"
 	nsExec::ExecToLog '"$R1\dnssec-trigger-control.exe" stoppanels'
+	DetailPrint "Stop dnssec-trigger daemon"
 	nsExec::ExecToLog '"$R1\dnssec-triggerd.exe" -w stop'
+	DetailPrint "Stop unbound daemon"
 	nsExec::ExecToLog '"$R1\unbound.exe" -w stop'
 	Sleep 2000
 	!insertmacro RefreshSysTray
@@ -183,6 +186,7 @@ section "-hidden.postinstall"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DnssecTrigger" "URLInfoAbout" "http://nlnetlabs.nl"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DnssecTrigger" "Publisher" "NLnet Labs"
 
+	DetailPrint "Setup config files"
 	# setup unbound registry entries
 	WriteRegStr HKLM "Software\Unbound" "InstallLocation" "$INSTDIR"
 	WriteRegStr HKLM "Software\Unbound" "ConfigFile" "$INSTDIR\unbound.conf"
@@ -220,6 +224,7 @@ section "-hidden.postinstall"
 	FileClose $R1
 done_keys:
 
+	DetailPrint "Setup keys"
 	# generate keys
 	nsExec::ExecToLog '"$INSTDIR\dnssec-trigger-keygen.exe" -d "$INSTDIR"'
 	# generate unbound keys
@@ -232,15 +237,18 @@ done_keys:
 	!insertmacro MUI_STARTMENU_WRITE_END
 
 	# install unbound service entry
+	DetailPrint "Start unbound daemon"
 	nsExec::ExecToLog '"$INSTDIR\unbound.exe" -w install'
 	nsExec::ExecToLog '"$INSTDIR\unbound.exe" -w start'
 
 	# install service entry
+	DetailPrint "Start dnssec-trigger daemon"
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w install'
 	# start service
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w start'
 
 	# register tray icon 
+	DetailPrint "Start tray icon"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Run" "DnssecTrigger" '"$INSTDIR\dnssec-trigger-panel.exe"'
 	# start tray icon
 	Exec '"$INSTDIR\dnssec-trigger-panel.exe"'
@@ -264,13 +272,16 @@ section "un.DnssecTrigger"
 	# remove tray icon from startup list
 	DeleteRegValue HKLM "Software\Microsoft\Windows\CurrentVersion\Run" "DnssecTrigger"
 	# stop tray icon
+	DetailPrint "Remove tray icons"
 	nsExec::ExecToLog '"$INSTDIR\dnssec-trigger-control.exe" stoppanels'
 	# stop service
+	DetailPrint "Remove dnssec-trigger daemon"
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w stop'
 	# uninstall service entry
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w remove'
 
 	# stop unbound service
+	DetailPrint "Remove unbound daemon"
 	nsExec::ExecToLog '"$INSTDIR\unbound.exe" -w stop'
 	nsExec::ExecToLog '"$INSTDIR\unbound.exe" -w remove'
 
