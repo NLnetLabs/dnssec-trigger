@@ -352,7 +352,6 @@ static HANDLE notify_nets(void)
 		/* obtain GUID of interface names of the networks */
 		if(qset->lpBlob != NULL) {
 			DWORD off = 0;
-			int adapcount = 0;
 			do {
 				NLA_BLOB* p = (NLA_BLOB*)&(qset->lpBlob->
 					pBlobData[off]);
