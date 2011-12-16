@@ -142,8 +142,10 @@ section "-hidden.postinstall"
 	nsExec::ExecToLog '"$R1\dnssec-trigger-control.exe" stoppanels'
 	DetailPrint "Stop dnssec-trigger daemon"
 	nsExec::ExecToLog '"$R1\dnssec-triggerd.exe" -w stop'
+	nsExec::ExecToLog '"$R1\dnssec-triggerd.exe" -c dnssectrigger -w waitstop'
 	DetailPrint "Stop unbound daemon"
 	nsExec::ExecToLog '"$R1\unbound.exe" -w stop'
+	nsExec::ExecToLog '"$R1\dnssec-triggerd.exe" -c unbound -w waitstop'
 	Sleep 2000
 	!insertmacro RefreshSysTray
 	donestop:
@@ -277,12 +279,14 @@ section "un.DnssecTrigger"
 	# stop service
 	DetailPrint "Remove dnssec-trigger daemon"
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w stop'
+	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -c dnssectrigger -w waitstop'
 	# uninstall service entry
 	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -w remove'
 
 	# stop unbound service
 	DetailPrint "Remove unbound daemon"
 	nsExec::ExecToLog '"$INSTDIR\unbound.exe" -w stop'
+	nsExec::ExecToLog '"$INSTDIR\dnssec-triggerd.exe" -c unbound -w waitstop'
 	nsExec::ExecToLog '"$INSTDIR\unbound.exe" -w remove'
 
 	# remove DNS override entries from registry

@@ -68,6 +68,13 @@ void wsvc_rc_start(FILE* out);
  */
 void wsvc_rc_stop(FILE* out);
 
+/**
+ * Wait for a service to come to a full stop.
+ * @param out: debug output printed here (errors). or NULL.
+ * @param name: service name to wait for.
+ */
+void wsvc_rc_waitstop(FILE* out, const char* name);
+
 /** 
  * Convert windows GetLastError() value to a neat string.
  * @param str: destination buffer

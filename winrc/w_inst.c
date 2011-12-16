@@ -306,3 +306,45 @@ wsvc_rc_stop(FILE* out)
 	CloseServiceHandle(scm);
         if(out) fprintf(out, "%s service stopped\n", SERVICE_NAME);
 }
+
+void wsvc_rc_waitstop(FILE* out, const char* name)
+{
+	int count = 0;
+	SC_HANDLE scm;
+	if(!name) name = SERVICE_NAME;
+        if(out) fprintf(out, "waitstop %s service\n", name);
+	scm = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+	if(!scm) fatal_win(out, "could not OpenSCManager");
+
+	while(1) {
+		SC_HANDLE sv;
+		SERVICE_STATUS st;
+		sv = OpenService(scm, name, SERVICE_QUERY_STATUS);
+		if(!sv) {
+			CloseServiceHandle(scm);
+			fatal_win(out, "could not OpenService");
+		}
+		memset(&st, 0, sizeof(st));
+		if(!QueryServiceStatus(sv, &st)) {
+			CloseServiceHandle(sv);
+			CloseServiceHandle(scm);
+			fatal_win(out, "could not QueryServiceStatus");
+		}
+		CloseServiceHandle(sv);
+
+		/* check the status */
+		if(st.dwCurrentState == SERVICE_STOPPED)
+			break;
+
+		/* wait one second */
+		if(count++ > 120) {
+        		if(out) fprintf(out, "timed out\n");
+			break;
+		}
+        	if(out) fprintf(out, "...\n");
+		Sleep(1000);
+	}
+
+	CloseServiceHandle(scm);
+        if(out) fprintf(out, "%s service stopped\n", name);
+}
