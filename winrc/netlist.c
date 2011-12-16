@@ -342,13 +342,17 @@ static HANDLE notify_nets(void)
 			sizeof(netnames)-strlen(netnames), " * %s",
 			qset->lpszServiceInstanceName?
 			qset->lpszServiceInstanceName:"-");
-		verbose(VERB_ALGO, "service name %s",
+		if(qset->lpszServiceInstanceName)
+			verbose(VERB_ALGO, "service name %s",
 				qset->lpszServiceInstanceName);
-		verbose(VERB_ALGO, "comment %s", qset->lpszComment);
-		verbose(VERB_ALGO, "context %s", qset->lpszContext);
+		if(qset->lpszComment)
+			verbose(VERB_ALGO, "comment %s", qset->lpszComment);
+		if(qset->lpszContext)
+			verbose(VERB_ALGO, "context %s", qset->lpszContext);
 		/* obtain GUID of interface names of the networks */
 		if(qset->lpBlob != NULL) {
 			DWORD off = 0;
+			int adapcount = 0;
 			do {
 				NLA_BLOB* p = (NLA_BLOB*)&(qset->lpBlob->
 					pBlobData[off]);
@@ -362,6 +366,8 @@ static HANDLE notify_nets(void)
 						result, sizeof(result),
 						netnames, sizeof(netnames));
 				}
+				if(p->header.nextOffset <= off)
+					break; /* no endless loop */
 				off = p->header.nextOffset;
 			} while(off != 0);
 		}
