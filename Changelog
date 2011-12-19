@@ -1,3 +1,6 @@
+19 Dec 2011: Wouter
+	- wait some more during reinstall on windows, to help race condition.
+
 16 Dec 2011: Wouter
 	- attempt to fix endless loop on windows (reported by Alan Clegg).
 	- windows installer waits for services to come to a full stop.

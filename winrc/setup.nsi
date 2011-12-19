@@ -148,6 +148,7 @@ section "-hidden.postinstall"
 	nsExec::ExecToLog '"$R1\dnssec-triggerd.exe" -c unbound -w waitstop'
 	Sleep 2000
 	!insertmacro RefreshSysTray
+	Sleep 2000
 	donestop:
 
 	# copy files
