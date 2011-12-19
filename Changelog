@@ -1,6 +1,7 @@
 19 Dec 2011: Wouter
 	- wait some more during reinstall on windows, to help race condition.
 	- release 0.9
+	- trunk if 1.0 under development.
 
 16 Dec 2011: Wouter
 	- attempt to fix endless loop on windows (reported by Alan Clegg).
