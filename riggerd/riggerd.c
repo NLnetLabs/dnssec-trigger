@@ -176,6 +176,7 @@ store_pid(char* pidfile)
 static void
 unlink_pid(char* pidfile)
 {
+	truncate(pidfile, 0); /* in case we do not own it */
 	unlink(pidfile);
 }
 
