@@ -1,3 +1,6 @@
+10 Jan 2012: Wouter
+	- truncate pidfile portable to windows.
+
 6 Jan 2012: Wouter
 	- truncate pidfile (just like NSD fix, in case directory not owned).
 

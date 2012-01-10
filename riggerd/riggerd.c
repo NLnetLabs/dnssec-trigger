@@ -176,7 +176,11 @@ store_pid(char* pidfile)
 static void
 unlink_pid(char* pidfile)
 {
-	truncate(pidfile, 0); /* in case we do not own it */
+	int fd;
+	/* truncate pidfile */
+	fd = open(pidfile, O_WRONLY | O_TRUNC, 0644);
+	if(fd != -1)
+		close(fd);
 	unlink(pidfile);
 }
 
