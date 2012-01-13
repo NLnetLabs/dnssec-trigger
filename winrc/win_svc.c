@@ -271,7 +271,7 @@ lookup_reg_binary(const char* key, const char* name, size_t* retlen)
 		*retlen = len;
 		if(!result) reportev("out of memory");
 	}
-	return result;
+	return (uint8_t*)result;
 }
 
 

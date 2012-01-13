@@ -306,7 +306,7 @@ static void process_adapter(const char* guid, char* dest, size_t len,
 			size_t dlen = strlen(dest);
 			char t[128];
 			if(inet_ntop(AF_INET6, &bin[at], t, sizeof(t))==0) {
-				snprintf(t, sizeof(t), "");
+				t[0] = 0;
 			}
 			verbose(VERB_ALGO, "dhcp6dnsservers (byte %d/%d) %s",
 				(int)at, (int)binlen, t);
