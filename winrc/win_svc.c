@@ -267,7 +267,7 @@ lookup_reg_binary(const char* key, const char* name, size_t* retlen)
 		return NULL;
 	}
 	if(type == REG_BINARY) {
-		result = strdup((char*)buf);
+		result = memdup(buf, len);
 		*retlen = len;
 		if(!result) reportev("out of memory");
 	}
