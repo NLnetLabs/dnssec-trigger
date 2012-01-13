@@ -52,6 +52,7 @@
 #include "riggerd/svr.h"
 #include "riggerd/reshook.h"
 #include "riggerd/netevent.h"
+#include "riggerd/net_help.h"
 #include "riggerd/fptr_wlist.h"
 #include "riggerd/winsock_event.h"
 
