@@ -141,15 +141,27 @@ section "-hidden.postinstall"
 	ReadRegStr $R1 HKLM "Software\Unbound" "InstallLocation"
 	StrCmp $R1 "" donestop 0
 	DetailPrint "Stop tray icons"
-	#nsExec::ExecToLog '"$R1\dnssec-trigger-control.exe" stoppanels'
-	proc::KillProcess "dnssec-trigger-panel"
+	nsExec::ExecToLog '"$R1\dnssec-trigger-control.exe" stoppanels'
 	DetailPrint "Stop dnssec-trigger daemon"
 	nsExec::ExecToLog '"$R1\dnssec-triggerd.exe" -w stop'
 	nsExec::ExecToLog '"$R1\dnssec-triggerd.exe" -c dnssectrigger -w waitstop'
 	DetailPrint "Stop unbound daemon"
 	nsExec::ExecToLog '"$R1\unbound.exe" -w stop'
 	nsExec::ExecToLog '"$R1\dnssec-triggerd.exe" -c unbound -w waitstop'
-	Sleep 2000
+	Sleep 1000
+	DetailPrint "Terminate processes"
+	# killed 8 times, because there may be multiple users logged on.
+	proc::KillProcess "dnssec-trigger-panel"
+	proc::KillProcess "dnssec-trigger-panel"
+	proc::KillProcess "dnssec-trigger-panel"
+	proc::KillProcess "dnssec-trigger-panel"
+	proc::KillProcess "dnssec-trigger-panel"
+	proc::KillProcess "dnssec-trigger-panel"
+	proc::KillProcess "dnssec-trigger-panel"
+	proc::KillProcess "dnssec-trigger-panel"
+	proc::KillProcess "dnssec-triggerd"
+	proc::KillProcess "unbound"
+	Sleep 1000
 	!insertmacro RefreshSysTray
 	Sleep 2000
 	donestop:
