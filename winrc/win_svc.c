@@ -250,7 +250,7 @@ lookup_reg_binary(const char* key, const char* name, size_t* retlen)
 	BYTE buf[10240];
 	DWORD len = (DWORD)sizeof(buf);
 	LONG ret;
-	char* result = NULL;
+	uint8_t* result = NULL;
 	ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, key, 0, KEY_READ, &hk);
 	if(ret == ERROR_FILE_NOT_FOUND)
 		return NULL; /* key does not exist */
@@ -272,7 +272,7 @@ lookup_reg_binary(const char* key, const char* name, size_t* retlen)
 		*retlen = len;
 		if(!result) reportev("out of memory");
 	}
-	return (uint8_t*)result;
+	return result;
 }
 
 
