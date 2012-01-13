@@ -101,6 +101,11 @@ void probe_start(char* ips)
 	/* (if no resulting probes), check result now */
 	if(!svr->probes)
 		probe_cache_done();
+	else if(svr->forced_insecure) {
+		verbose(VERB_OPS, "probe started: but still forced insecure");
+		/* call it right away, so the user does not have to wait */
+		probe_setup_hotspot_signon(svr);
+	}
 }
 
 void probe_delete(struct probe_ip* p)
