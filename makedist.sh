@@ -349,6 +349,7 @@ if [ "$DOWIN" = "yes" ]; then
     cp $unbounddir/.libs/unbound-host.exe . || error_cleanup "cannot get unbound"
     cp $unbounddir/doc/example.conf unbound.conf || error_cleanup "cannot get unbound example.conf"
 
+    cp winrc/proc.dll .
     #cp ../example.conf example.conf
     #cp ../panel/pui.xml ../panel/status-icon.png ../panel/status-icon-alert.png .
     #cp ../dnssec-triggerd.exe ../dnssec-trigger-control.exe ../dnssec-trigger-panel.exe ../dnssec-trigger-keygen.exe .

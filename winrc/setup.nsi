@@ -25,6 +25,8 @@ VIAddVersionKey "FileVersion" "${QUADVERSION}"
 VIAddVersionKey "ProductVersion" "${QUADVERSION}"
 VIProductVersion "${QUADVERSION}"
 
+!addplugindir .
+
 ; typedef struct _RECT {
 ;   LONG left;
 ;   LONG top;
@@ -139,7 +141,8 @@ section "-hidden.postinstall"
 	ReadRegStr $R1 HKLM "Software\Unbound" "InstallLocation"
 	StrCmp $R1 "" donestop 0
 	DetailPrint "Stop tray icons"
-	nsExec::ExecToLog '"$R1\dnssec-trigger-control.exe" stoppanels'
+	#nsExec::ExecToLog '"$R1\dnssec-trigger-control.exe" stoppanels'
+	proc::KillProcess "dnssec-trigger-panel"
 	DetailPrint "Stop dnssec-trigger daemon"
 	nsExec::ExecToLog '"$R1\dnssec-triggerd.exe" -w stop'
 	nsExec::ExecToLog '"$R1\dnssec-triggerd.exe" -c dnssectrigger -w waitstop'
