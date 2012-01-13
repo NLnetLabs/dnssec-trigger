@@ -94,6 +94,16 @@ void wsvc_cron_cb(void* arg);
  */
 char* lookup_reg_str(const char* key, const char* name);
 
+/**
+ * Obtain registry binary data (if it exists).
+ * @param key: key string
+ * @param name: name of value to fetch.
+ * @param len: (returned value on success) length of the binary data.
+ * @return malloced binary data with the result or NULL if it did not
+ * exist on an error (logged) was encountered.
+ */
+uint8_t* lookup_reg_binary(const char* key, const char* name, size_t* len);
+
 /** log a windows GetLastError message */
 void log_win_err(const char* str, DWORD err);
 

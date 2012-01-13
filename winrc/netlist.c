@@ -270,6 +270,8 @@ static void process_adapter(const char* guid, char* dest, size_t len,
 {
 	char key[256];
 	char* res;
+	uint8_t* bin = NULL;
+	size_t binlen = 0;
 	if(!guid) return;
 	verbose(VERB_ALGO, "adapter %s", guid);
 	snprintf(netnames+strlen(netnames), netlen-strlen(netnames),
@@ -291,6 +293,33 @@ static void process_adapter(const char* guid, char* dest, size_t len,
 		}
 	}
 	free(res);
+
+	/* ipv6 */
+	snprintf(key, sizeof(key), "SYSTEM\\CurrentControlSet\\services"
+		"\\Tcpip6\\Parameters\\Interfaces\\%s", guid);
+	bin = lookup_reg_binary(key, "Dhcpv6DNSServers", &binlen);
+	if(bin) {
+		/* every 16 bytes is an IPv6 address (hopefully) */
+		size_t at = 0;
+		while(at < binlen && binlen - at >= 16) {
+			/* get the ipv6 server added */
+			size_t dlen = strlen(dest);
+			char t[128];
+			if(inet_ntop(AF_INET6, &bin[at], t, sizeof(t))==0) {
+				snprintf(t, sizeof(t), "");
+			}
+			verbose(VERB_ALGO, "dhcp6dnsservers (byte %d/%d) %s",
+				(int)at, (int)binlen, t);
+			/* add str + space + eos */
+			if(dlen + strlen(t) + 1 + 1 < len) {
+				/* it fits in the dest array */
+				dest[dlen] = ' ';
+				memmove(dest+dlen+1, t, strlen(t)+1);
+			}
+			at += 16;
+		}
+		free(bin);
+	}
 }
 
 /** start lookup and notify daemon of the current list */

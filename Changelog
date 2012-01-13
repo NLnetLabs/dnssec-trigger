@@ -2,6 +2,7 @@
 	- Use Processes.dll code (can be freely used, source provided) for
 	  kill process in windows NSIS installer.  Compiled to 6kb (not 50kb).
 	  Processes.dll was made by Andrei Ciubotaru.
+	- Attempt to add DHCPv6 support for windows.
 
 10 Jan 2012: Wouter
 	- truncate pidfile portable to windows.

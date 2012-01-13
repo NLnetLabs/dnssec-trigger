@@ -234,6 +234,48 @@ lookup_reg_int(const char* key, const char* name)
 }
 
 /**
+ * Obtain registry binary data (if it exists).
+ * @param key: key string
+ * @param name: name of value to fetch.
+ * @param len: (returned value on success) length of the binary data.
+ * @return malloced binary data with the result or NULL if it did not
+ * exist on an error (logged) was encountered.
+ */
+uint8_t*
+lookup_reg_binary(const char* key, const char* name, size_t* retlen)
+{
+	HKEY hk = NULL;
+	DWORD type = 0;
+	BYTE buf[10240];
+	DWORD len = (DWORD)sizeof(buf);
+	LONG ret;
+	char* result = NULL;
+	ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, key, 0, KEY_READ, &hk);
+	if(ret == ERROR_FILE_NOT_FOUND)
+		return NULL; /* key does not exist */
+	else if(ret != ERROR_SUCCESS) {
+		reportev("RegOpenKeyEx failed");
+		return NULL;
+	}
+	ret = RegQueryValueEx(hk, (LPCTSTR)name, 0, &type, buf, &len);
+	if(RegCloseKey(hk))
+		reportev("RegCloseKey");
+	if(ret == ERROR_FILE_NOT_FOUND)
+		return NULL; /* name does not exist */
+	else if(ret != ERROR_SUCCESS) {
+		reportev("RegQueryValueEx failed");
+		return NULL;
+	}
+	if(type == REG_BINARY) {
+		result = strdup((char*)buf);
+		*retlen = len;
+		if(!result) reportev("out of memory");
+	}
+	return result;
+}
+
+
+/**
  * Init service. Keeps calling status pending to tell service control
  * manager that this process is not hanging.
  * @param r: restart, true on restart
@@ -638,6 +680,10 @@ void win_set_resolv(char* ip)
 		"\\Parameters";
 	const char* ifs = "SYSTEM\\CurrentControlSet\\services\\Tcpip"
 		"\\Parameters\\Interfaces";
+	const char* key6 = "SYSTEM\\CurrentControlSet\\Services\\Tcpip6"
+		"\\Parameters";
+	const char* ifs6 = "SYSTEM\\CurrentControlSet\\services\\Tcpip6"
+		"\\Parameters\\Interfaces";
 	HKEY hk;
 	verbose(VERB_DETAIL, "set reg %s", ip);
 
@@ -663,6 +709,30 @@ void win_set_resolv(char* ip)
 
 	/* set all interfaces/guid/nameserver */
 	enum_guids(ifs, &enum_reg_set_nameserver, ip);
+
+	/* IPv6 */
+	/* needs administrator permissions */
+	if(RegCreateKeyEx(HKEY_LOCAL_MACHINE, (LPCTSTR)key6,
+		0, /* reserved, mustbezero */
+		NULL, /* class of key, ignored */
+		REG_OPTION_NON_VOLATILE, /* values saved on disk */
+		KEY_WRITE, /* we want write permission */
+		NULL, /* use default security descriptor */
+		&hk, /* result */
+		NULL)) /* not interested if key new or existing */
+	{
+		log_win_err("could not open registry key6", GetLastError());
+	} else {
+		/* set NameServer */
+		if(RegSetValueEx(hk, (LPCTSTR)"NameServer", 0, REG_SZ,
+			(BYTE*)ip, (DWORD)strlen(ip)+1)) {
+			log_win_err("could not set6 regkey NameServer", GetLastError());
+		}
+		RegCloseKey(hk);
+	}
+
+	/* set all interfaces/guid/nameserver */
+	enum_guids(ifs6, &enum_reg_set_nameserver, ip);
 }
 
 void win_clear_resolv(void)
@@ -670,6 +740,10 @@ void win_clear_resolv(void)
 	const char* key = "SYSTEM\\CurrentControlSet\\Services\\Tcpip"
 		"\\Parameters";
 	const char* ifs = "SYSTEM\\CurrentControlSet\\services\\Tcpip"
+		"\\Parameters\\Interfaces";
+	const char* key6 = "SYSTEM\\CurrentControlSet\\Services\\Tcpip6"
+		"\\Parameters";
+	const char* ifs6 = "SYSTEM\\CurrentControlSet\\services\\Tcpip6"
 		"\\Parameters\\Interfaces";
 	HKEY hk;
 	verbose(VERB_DETAIL, "clear reg");
@@ -691,6 +765,26 @@ void win_clear_resolv(void)
 		RegCloseKey(hk);
 	}
 	enum_guids(ifs, &enum_reg_set_nameserver, NULL);
+
+	/* IPv6 */
+	if(RegCreateKeyEx(HKEY_LOCAL_MACHINE, (LPCTSTR)key6,
+		0, /* reserved, mustbezero */
+		NULL, /* class of key, ignored */
+		REG_OPTION_NON_VOLATILE, /* values saved on disk */
+		KEY_WRITE, /* we want write permission */
+		NULL, /* use default security descriptor */
+		&hk, /* result */
+		NULL)) /* not interested if key new or existing */
+	{
+		log_win_err("could not create registry key", GetLastError());
+	} else {
+		if(RegSetValueEx(hk, (LPCTSTR)"NameServer", 0, REG_SZ,
+			(BYTE*)NULL, (DWORD)0)) {
+			log_win_err("could not zero regkey NameServer", GetLastError());
+		}
+		RegCloseKey(hk);
+	}
+	enum_guids(ifs6, &enum_reg_set_nameserver, NULL);
 }
 
 char* get_registry_unbound_control(void)
