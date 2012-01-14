@@ -1,3 +1,7 @@
+14 Jan 2012: Wouter
+	- show version number in add-removeprograms configpanel (windows).
+	- refresh systray after install to solve stray tray icon (for windows).
+
 13 Jan 2012: Wouter
 	- Use Processes.dll code (can be freely used, source provided) for
 	  kill process in windows NSIS installer.  Compiled to 6kb (not 50kb).
