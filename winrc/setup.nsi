@@ -161,9 +161,7 @@ section "-hidden.postinstall"
 	proc::KillProcess "dnssec-trigger-panel"
 	proc::KillProcess "dnssec-triggerd"
 	proc::KillProcess "unbound"
-	Sleep 1000
-	!insertmacro RefreshSysTray
-	Sleep 2000
+	Sleep 3000
 	donestop:
 
 	# copy files
