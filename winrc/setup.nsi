@@ -79,6 +79,45 @@ VIProductVersion "${QUADVERSION}"
 	EndLoopY:
 !macroend
 
+# delete tray icon for panel.
+;typedef struct _NOTIFYICONDATA {
+; DWORD cbSize;
+; HWND hWnd;
+; UINT uID;
+; UINT uFlags;
+; UINT uCallbackMessage;
+; HICON hIcon;
+; TCHAR szTip[64];
+;}
+!define stNOTIFYICONDATA '(&l4, i, i, i, i, i, &t64) i'
+!define NIF_MESSAGE 0x00000001
+!define NIF_ICON 0x00000002
+!define NIF_TIP 0x00000004
+!define NIM_ADD 0x00000000
+!define NIM_MODIFY 0x00000001
+!define NIM_DELETE 0x00000002
+!macro DeleteTrayPanel
+	LoopTray:
+		; $0: HWND of tray icon
+		FindWindow $0 "dnssec trigger tray icon" "" ""
+		#MessageBox MB_OK "panel found $0" ; 0 on failure
+		; this exits if no such tray icons exist
+		IntCmp $0 0 EndLoopTray
+
+		; $1: NOTIFYICON structure
+		System::Call "*${stNOTIFYICONDATA} .r1"
+		; fill in the structure (skip the tooltiptext, skip icon)
+		System::Call "*$1${stNOTIFYICONDATA} (., r0, 5000, NIF_ICON|NIF_MESSAGE|NIF_TIP, 0x401, 0)"
+
+		; tell tray to remove it
+		System::Call 'Shell32::Shell_NotifyIcon(i ${NIM_DELETE}, i r1) i.r2'
+		#MessageBox MB_OK "NIMDELETE $2" ; 1 on success, 0 on failure
+		System::Free $0
+		; exits if tray icon is already removed or somehow fails
+		IntCmp $2 0 EndLoopTray LoopTray LoopTray
+	EndLoopTray:
+!macroend
+
 # Global Variables
 Var StartMenuFolder
 
@@ -161,6 +200,8 @@ section "-hidden.postinstall"
 	proc::KillProcess "dnssec-trigger-panel"
 	proc::KillProcess "dnssec-triggerd"
 	proc::KillProcess "unbound"
+	# if somehow not gone, remove the tray icons forcefully.
+	!insertmacro DeleteTrayPanel
 	Sleep 3000
 	donestop:
 

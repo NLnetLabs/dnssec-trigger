@@ -2,6 +2,7 @@
 	- do not just refresh the systray, but entire desktop (for windows).
 	- fix dnssec-trigger-control error printout if SSL files fail.
 	- dnssec-trigger-control uses registry config location (for windows).
+	- install script removes leftover trayicons using direct windows API.
 
 14 Jan 2012: Wouter
 	- show version number in add-removeprograms configpanel (windows).
