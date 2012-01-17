@@ -1,3 +1,6 @@
+17 Jan 2012: Wouter
+	- do not just refresh the systray, but entire desktop (for windows).
+
 14 Jan 2012: Wouter
 	- show version number in add-removeprograms configpanel (windows).
 	- refresh systray after install to solve stray tray icon (for windows).
