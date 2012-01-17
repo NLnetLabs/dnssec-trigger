@@ -97,13 +97,13 @@ VIProductVersion "${QUADVERSION}"
 !define NIM_MODIFY 0x00000001
 !define NIM_DELETE 0x00000002
 !macro DeleteTrayPanel
-	LoopTray:
-		; $0: HWND of tray icon
-		FindWindow $0 "dnssec trigger tray icon" "" ""
-		#MessageBox MB_OK "panel found $0" ; 0 on failure
-		; this exits if no such tray icons exist
-		IntCmp $0 0 EndLoopTray
+	; $0: HWND of tray icon
+	FindWindow $0 "dnssec trigger tray icon" "" ""
+	#MessageBox MB_OK "panel found $0" ; 0 on failure
+	; this exits if no such tray icons exist
+	IntCmp $0 0 EndLoopTray
 
+	LoopTray:
 		; $1: NOTIFYICON structure
 		System::Call "*${stNOTIFYICONDATA} .r1"
 		; fill in the structure (skip the tooltiptext, skip icon)
@@ -113,8 +113,10 @@ VIProductVersion "${QUADVERSION}"
 		System::Call 'Shell32::Shell_NotifyIcon(i ${NIM_DELETE}, i r1) i.r2'
 		#MessageBox MB_OK "NIMDELETE $2" ; 1 on success, 0 on failure
 		System::Free $1
-		; exits if tray icon is already removed or somehow fails
-		IntCmp $2 0 EndLoopTray LoopTray LoopTray
+
+		; find next tray icon
+		FindWindow $0 "dnssec trigger tray icon" "" "" $0
+		IntCmp $0 0 EndLoopTray LoopTray LoopTray
 	EndLoopTray:
 !macroend
 
@@ -189,6 +191,9 @@ section "-hidden.postinstall"
 	nsExec::ExecToLog '"$R1\dnssec-triggerd.exe" -c unbound -w waitstop'
 	Sleep 1000
 	DetailPrint "Terminate processes"
+	# if somehow not gone, remove the tray icons forcefully.
+	# delete icons while HWNDs still exist.
+	!insertmacro DeleteTrayPanel
 	# killed 8 times, because there may be multiple users logged on.
 	proc::KillProcess "dnssec-trigger-panel"
 	proc::KillProcess "dnssec-trigger-panel"
@@ -200,8 +205,6 @@ section "-hidden.postinstall"
 	proc::KillProcess "dnssec-trigger-panel"
 	proc::KillProcess "dnssec-triggerd"
 	proc::KillProcess "unbound"
-	# if somehow not gone, remove the tray icons forcefully.
-	!insertmacro DeleteTrayPanel
 	Sleep 3000
 	donestop:
 
