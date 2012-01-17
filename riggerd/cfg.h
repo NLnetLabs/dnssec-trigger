@@ -146,4 +146,16 @@ int cfg_have_dnstcp(struct cfg* cfg);
 /** have ssl443 configured */
 int cfg_have_ssldns(struct cfg* cfg);
 
+#ifdef UB_ON_WINDOWS
+/**
+ * Obtain registry string (if it exists).
+ * @param key: key string
+ * @param name: name of value to fetch.
+ * @return malloced string with the result or NULL if it did not
+ * 	exist on an error (logged with log_err) was encountered.
+ */
+char* w_lookup_reg_str(const char* key, const char* name);
+#endif /* UB_ON_WINDOWS */
+
+
 #endif /* CFG_H */

@@ -171,8 +171,8 @@ go(const char* cfgfile, char* svr, int argc, char* argv[])
 	if(!(cfg = cfg_create(cfgfile)))
 		fatal_exit("could not get config file");
 	ctx = cfg_setup_ctx_client(cfg, err, sizeof(err));
-	if(!cfg) fatal_exit("%s", err);
-	
+	if(!ctx) fatal_exit("%s", err);
+
 	/* contact server */
 	fd = contact_server(svr, cfg->control_port,
 		argc>0&&strcmp(argv[0],"status")==0, err, sizeof(err));
@@ -227,6 +227,9 @@ int main(int argc, char* argv[])
 #ifdef USE_WINSOCK
 	if((r = WSAStartup(MAKEWORD(2,2), &wsa_data)) != 0)
 		fatal_exit("WSAStartup failed: %s", wsa_strerror(r));
+	/* use registry config file in preference to compiletime location */
+	if(!(cfgfile=w_lookup_reg_str("Software\\DnssecTrigger", "ConfigFile")))
+		cfgfile = CONFIGFILE;
 #endif
 
 	ERR_load_crypto_strings();

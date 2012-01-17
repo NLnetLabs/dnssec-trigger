@@ -425,47 +425,6 @@ static void panel_dialog(void)
 	SetForegroundWindow(insec_wnd);
 }
 
-/**
- * Obtain registry string (if it exists).
- * @param key: key string
- * @param name: name of value to fetch.
- * @return malloced string with the result or NULL if it did not
- * exist on an error (logged) was encountered.
- */
-static char*
-lookup_reg_str(const char* key, const char* name)
-{
-	HKEY hk = NULL;
-	DWORD type = 0;
-	BYTE buf[1024];
-	DWORD len = (DWORD)sizeof(buf);
-	LONG ret;
-	char* result = NULL;
-	ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, key, 0, KEY_READ, &hk);
-	if(ret == ERROR_FILE_NOT_FOUND)
-		return NULL; /* key does not exist */
-	else if(ret != ERROR_SUCCESS) {
-		log_err("RegOpenKeyEx failed");
-		return NULL;
-	}
-	ret = RegQueryValueEx(hk, (LPCTSTR)name, 0, &type, buf, &len);
-	if(RegCloseKey(hk))
-		log_err("RegCloseKey");
-	if(ret == ERROR_FILE_NOT_FOUND)
-		return NULL; /* name does not exist */
-	else if(ret != ERROR_SUCCESS) {
-		log_err("RegQueryValueEx failed");
-		return NULL;
-	}
-	if(type == REG_SZ || type == REG_MULTI_SZ || type == REG_EXPAND_SZ) {
-		buf[sizeof(buf)-1] = 0;
-		buf[sizeof(buf)-2] = 0; /* for multi_sz */
-		result = strdup((char*)buf);
-		if(!result) log_err("out of memory");
-	}
-	return result;
-}
-
 static void do_args(char* str, int* debug, const char** cfgfile)
 {
 	char* p = str;
@@ -656,9 +615,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR args,
 	(void)SSL_library_init();
 	
 	/* get args */
-	cfgfile = lookup_reg_str("Software\\DnssecTrigger", "ConfigFile");
+	cfgfile = w_lookup_reg_str("Software\\DnssecTrigger", "ConfigFile");
 	if(!cfgfile) cfgfile = CONFIGFILE;
-	uidir = lookup_reg_str("Software\\DnssecTrigger", "InstallLocation");
+	uidir = w_lookup_reg_str("Software\\DnssecTrigger", "InstallLocation");
 	if(!uidir) uidir = UIDIR;
 	do_args(args, &debug, &cfgfile);
 
