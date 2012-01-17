@@ -314,8 +314,6 @@ done_keys:
 	Exec '"$INSTDIR\dnssec-trigger-panel.exe"'
 	# make sure 'old' tray icons disappear.
 	!insertmacro RefreshSysTray
-	# this refreshes the desktop (and all windows)
-	System::Call 'Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)'
 sectionEnd
 
 # set section descriptions
