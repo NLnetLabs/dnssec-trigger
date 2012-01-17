@@ -107,12 +107,12 @@ VIProductVersion "${QUADVERSION}"
 		; $1: NOTIFYICON structure
 		System::Call "*${stNOTIFYICONDATA} .r1"
 		; fill in the structure (skip the tooltiptext, skip icon)
-		System::Call "*$1${stNOTIFYICONDATA} (., r0, 5000, NIF_ICON|NIF_MESSAGE|NIF_TIP, 0x401, 0)"
+		System::Call "*$1${stNOTIFYICONDATA} (., r0, 5000, ${NIF_ICON}|${NIF_MESSAGE}|${NIF_TIP}, 0x401, 0)"
 
 		; tell tray to remove it
 		System::Call 'Shell32::Shell_NotifyIcon(i ${NIM_DELETE}, i r1) i.r2'
 		#MessageBox MB_OK "NIMDELETE $2" ; 1 on success, 0 on failure
-		System::Free $0
+		System::Free $1
 		; exits if tray icon is already removed or somehow fails
 		IntCmp $2 0 EndLoopTray LoopTray LoopTray
 	EndLoopTray:
