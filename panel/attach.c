@@ -345,7 +345,7 @@ void fetch_proberesults(char* buf, size_t len, const char* lf)
 
 	buf[0] = 0; /* safe start */
 	buf[len-1] = 0; /* no buffer overflow */
-	n=snprintf(pos, left, "results from probe ");
+	n=snprintf(pos, left, "%s%sresults from probe ", PACKAGE_STRING, lf);
 	pos += n; left -= n;
 
 	feed->lock();
