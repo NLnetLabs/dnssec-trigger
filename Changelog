@@ -1,3 +1,6 @@
+23 Jan 2012: Wouter
+	- updated acx.nlnetlabs.m4 for gcc 4.6 compat for portability tests.
+
 19 Jan 2012: Wouter
 	- show package version in probe results dialog.
 

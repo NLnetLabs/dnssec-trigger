@@ -3772,6 +3772,8 @@ int test() {
 	a = getopt(2, opts, "a");
 	a = isascii(32);
 	str = gai_strerror(0);
+	if(str && t && tv.tv_usec && msg.msg_control)
+		a = 0;
 	return a;
 }
 ' > conftest.c
@@ -3861,6 +3863,8 @@ int test() {
 	a = getopt(2, opts, "a");
 	a = isascii(32);
 	str = gai_strerror(0);
+	if(str && t && tv.tv_usec && msg.msg_control)
+		a = 0;
 	return a;
 }
 ' > conftest.c
@@ -4197,6 +4201,8 @@ int test() {
 	const char* str = NULL;
         t = ctime_r(&time, buf);
 	str = gai_strerror(0);
+	if(t && str)
+		a = 0;
         return a;
 }
 ' > conftest.c
@@ -4277,6 +4283,8 @@ int test() {
         srandom(32);
         a = getopt(2, opts, "a");
         a = isascii(32);
+	if(tv.tv_usec)
+		a = 0;
         return a;
 }
 ' > conftest.c
