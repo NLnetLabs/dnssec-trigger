@@ -1,3 +1,6 @@
+25 Jan 2012: Wouter
+	- version set to 0.10: dnssec-trigger is experimental.
+
 23 Jan 2012: Wouter
 	- updated acx.nlnetlabs.m4 for gcc 4.6 compat for portability tests.
 
