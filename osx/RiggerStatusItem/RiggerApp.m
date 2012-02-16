@@ -168,6 +168,7 @@ void append_txt(NSTextView* pane, char* str)
 	
 	[resultpane setEditable:NO];
 	[resultpane setSelectable:YES];
+	[resultwindow setLevel:NSScreenSaverWindowLevel + 1];
 	[resultwindow orderFront:sender];
 }
 
@@ -205,6 +206,7 @@ void append_txt(NSTextView* pane, char* str)
 	    [unsafewindow orderOut:sender];
     [hotsignwindow center];
     [hotsignwindow deminiaturize:sender];
+    [hotsignwindow setLevel:NSScreenSaverWindowLevel + 1];
     [hotsignwindow orderFront:sender];
 }
 
@@ -240,8 +242,9 @@ void append_txt(NSTextView* pane, char* str)
 	if([hotsignwindow isVisible])
 		return; /* wait for hotspot signon question to finish */
 	[unsafewindow center];
-	[unsafewindow deminiaturize:self];
-	[unsafewindow orderFront:self];
+	[unsafewindow deminiaturize:nil];
+        [unsafewindow setLevel:NSScreenSaverWindowLevel + 1];
+	[unsafewindow orderFront:nil];
 }
 
 -(void)PanelAlertDanger
