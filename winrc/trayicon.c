@@ -552,7 +552,7 @@ static void panel_alert(void)
 	/* handle it */
 	process_state(&a, &unsafe_asked, &panel_danger, &panel_safe,
 		&panel_dialog);
-	if(!a->now_dark) unsafe_should = 0;
+	if(!a.now_dark) unsafe_should = 0;
 }
 
 static void feed_alert(struct alert_arg* a)
