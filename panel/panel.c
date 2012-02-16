@@ -66,8 +66,11 @@ static GdkPixbuf* alert_icon;
 static GtkMenu* statusmenu;
 /** if we have asked about disconnect or insecure */
 static int unsafe_asked = 0;
+/** if we should ask unsafe */
+static int unsafe_should = 0;
 
 static void feed_alert(struct alert_arg* a);
+void present_unsafe_dialog(void);
 
 /** print usage text */
 static void
@@ -257,6 +260,7 @@ on_hotsign_dialog_delete_event(GtkWidget* ATTR_UNUSED(widget),
 	GdkEvent* ATTR_UNUSED(event), gpointer ATTR_UNUSED(user_data))
 {
 	gtk_widget_hide(GTK_WIDGET(hotsign_dialog));
+	if(unsafe_should) present_unsafe_dialog();
 	return TRUE; /* stop other handlers, do not destroy the window */
 }
 
@@ -267,6 +271,8 @@ on_hotsign_ok_button_clicked(GtkButton* ATTR_UNUSED(button),
 {
 	attach_send_hotspot_signon();
 	gtk_widget_hide(GTK_WIDGET(hotsign_dialog));
+	unsafe_asked = 1;
+	unsafe_should = 0;
 }
 
 G_MODULE_EXPORT
@@ -275,12 +281,16 @@ on_hotsign_cancel_button_clicked(GtkButton* ATTR_UNUSED(button),
 	gpointer ATTR_UNUSED(user_data)) 
 {
 	gtk_widget_hide(GTK_WIDGET(hotsign_dialog));
+	if(unsafe_should) present_unsafe_dialog();
 }
 
 G_MODULE_EXPORT
 void on_hotspotsignon_activate(GtkMenuItem* ATTR_UNUSED(menuitem),
 	gpointer ATTR_UNUSED(user_data))
 {
+	if(gtk_widget_get_visible(GTK_WIDGET(unsafe_dialog))) {
+		gtk_widget_hide(GTK_WIDGET(unsafe_dialog));
+	}
 	gtk_widget_show(GTK_WIDGET(hotsign_dialog));
 }
 
@@ -330,6 +340,7 @@ on_unsafe_dialog_delete_event(GtkWidget* ATTR_UNUSED(widget),
 {
 	gtk_widget_hide(GTK_WIDGET(unsafe_dialog));
 	unsafe_asked = 1;
+	unsafe_should = 0;
 	attach_send_insecure(0);
 	return TRUE; /* stop other handlers, do not destroy dialog */
 }
@@ -340,6 +351,7 @@ void on_disconnect_button_clicked(GtkButton *ATTR_UNUSED(button), gpointer
 {
 	gtk_widget_hide(GTK_WIDGET(unsafe_dialog));
 	unsafe_asked = 1;
+	unsafe_should = 0;
 	attach_send_insecure(0);
 }
 
@@ -349,11 +361,15 @@ void on_insecure_button_clicked(GtkButton *ATTR_UNUSED(button), gpointer
 {
 	gtk_widget_hide(GTK_WIDGET(unsafe_dialog));
 	unsafe_asked = 1;
+	unsafe_should = 0;
 	attach_send_insecure(1);
 }
 
 void present_unsafe_dialog(void)
 {
+	unsafe_should = 1;
+	if(gtk_widget_get_visible(GTK_WIDGET(hotsign_dialog)))
+		return; /* wait for hotspot signon question to finish */
 	gtk_window_set_urgency_hint(GTK_WINDOW(unsafe_dialog), TRUE);
 	gtk_widget_show(GTK_WIDGET(unsafe_dialog));
 	gtk_window_deiconify(GTK_WINDOW(unsafe_dialog));
@@ -389,6 +405,7 @@ void panel_alert_state(struct alert_arg* a)
 #endif
 	process_state(a, &unsafe_asked, &panel_alert_danger, &panel_alert_safe,
 		&present_unsafe_dialog);
+	if(!a->now_dark) unsafe_should = 0;
 }
 
 #ifdef USE_WINSOCK

@@ -94,8 +94,11 @@ static HWND hotsign_cancel;
 
 /** if we have asked about disconnect or insecure */
 static int unsafe_asked = 0;
+/** if we should ask unsafe */
+static int unsafe_should = 0;
 
 static void panel_alert(void);
+static void panel_dialog(void);
 
 static HFONT font;
 static HFONT font_bold;
@@ -250,6 +253,7 @@ LRESULT CALLBACK InsecWndProc(HWND hwnd, UINT message, WPARAM wParam,
 			break;
 		case SC_CLOSE:
 			unsafe_asked = 1;
+			unsafe_should = 0;
 			attach_send_insecure(0);
 			ShowWindow(insec_wnd, SW_HIDE);
 			return 0;
@@ -260,16 +264,19 @@ LRESULT CALLBACK InsecWndProc(HWND hwnd, UINT message, WPARAM wParam,
 		/* buttons pressed */
 		if((HWND)lParam == insec_discon) {
 			unsafe_asked = 1;
+			unsafe_should = 0;
 			attach_send_insecure(0);
 			ShowWindow(insec_wnd, SW_HIDE);
 		} else if((HWND)lParam == insec_unsafe) {
 			unsafe_asked = 1;
+			unsafe_should = 0;
 			attach_send_insecure(1);
 			ShowWindow(insec_wnd, SW_HIDE);
 		}
 		break;
 	case WM_CLOSE:
 		unsafe_asked = 1;
+		unsafe_should = 0;
 		attach_send_insecure(0);
 		ShowWindow(insec_wnd, SW_HIDE);
 		return 0;
@@ -291,6 +298,7 @@ LRESULT CALLBACK HotsignWndProc(HWND hwnd, UINT message, WPARAM wParam,
 			break;
 		case SC_CLOSE:
 			ShowWindow(hotsign_wnd, SW_HIDE);
+			if(unsafe_should) panel_dialog();
 			return 0;
 			break;
 		}
@@ -299,13 +307,17 @@ LRESULT CALLBACK HotsignWndProc(HWND hwnd, UINT message, WPARAM wParam,
 		/* buttons pressed */
 		if((HWND)lParam == hotsign_cancel) {
 			ShowWindow(hotsign_wnd, SW_HIDE);
+			if(unsafe_should) panel_dialog();
 		} else if((HWND)lParam == hotsign_ok) {
 			attach_send_hotspot_signon();
 			ShowWindow(hotsign_wnd, SW_HIDE);
+			unsafe_asked = 1;
+			unsafe_should = 0;
 		}
 		break;
 	case WM_CLOSE:
 		ShowWindow(hotsign_wnd, SW_HIDE);
+		if(unsafe_should) panel_dialog();
 		return 0;
 		break;
 	case WM_DESTROY:
@@ -387,6 +399,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			} else if(wParam == ID_TRAY_MENU_PROBERESULTS) {
 				panel_proberesults();
 			} else if(wParam == ID_TRAY_MENU_HOTSPOTSIGNON) {
+				if(IsWindowVisible(insec_wnd)) {
+					ShowWindow(insec_wnd, SW_HIDE);
+				}
 				ShowWindow(hotsign_wnd, SW_SHOW);
 				SetForegroundWindow(hotsign_wnd);
 			}
@@ -421,6 +436,9 @@ static void panel_safe(void)
 
 static void panel_dialog(void)
 {
+	unsafe_should = 1;
+	if(IsWindowVisible(hotsign_wnd))
+		return; /* wait for hotspot signon question to finish */
 	ShowWindow(insec_wnd, SW_SHOW);
 	SetForegroundWindow(insec_wnd);
 }
@@ -534,6 +552,7 @@ static void panel_alert(void)
 	/* handle it */
 	process_state(&a, &unsafe_asked, &panel_danger, &panel_safe,
 		&panel_dialog);
+	if(!a->now_dark) unsafe_should = 0;
 }
 
 static void feed_alert(struct alert_arg* a)

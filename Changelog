@@ -1,3 +1,6 @@
+16 Feb 2012: Wouter
+	- Do not show the insecure and hotspot windows at the same time.
+
 25 Jan 2012: Wouter
 	- version set to 0.10: dnssec-trigger is experimental.
 

@@ -23,6 +23,8 @@ struct cfg;
 	
 	/** if we have asked about disconnect or insecure */
 	int unsafe_asked;
+	/** if we should ask unsafe */
+	int unsafe_should;
 	/** configuration */
 	struct cfg* cfg;
 }

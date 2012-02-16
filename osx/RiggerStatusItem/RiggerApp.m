@@ -87,6 +87,7 @@ awakeFromNib
 	/* Init */
 	mainapp = self;
 	unsafe_asked = 0;
+	unsafe_should = 0;
 	memset(&alertinfo, 0, sizeof(alertinfo));
 	alert_lock = [NSLock alloc];
 	log_ident_set("dnssec-trigger-panel-osx");
@@ -181,6 +182,7 @@ void append_txt(NSTextView* pane, char* str)
 	if(verb) NSLog(@"Unsafe:Insecure");
 	[unsafewindow orderOut:sender];
 	unsafe_asked = 1;
+	unsafe_should = 0;
 	attach_send_insecure(1);
 }
 
@@ -189,15 +191,18 @@ void append_txt(NSTextView* pane, char* str)
 	if(verb) NSLog(@"Unsafe:Disconnect");
 	[unsafewindow orderOut:sender];
 	unsafe_asked = 1;
+	unsafe_should = 0;
 	attach_send_insecure(0);
 }
 
 -(IBAction)HotspotSignon:(id)sender
 {
     if(verb) NSLog(@"menu-hotspotsignon");
-	/* this is to help us bring a window to the front
-	 * from the hidden app */
-	[NSApp activateIgnoringOtherApps:YES];
+    /* this is to help us bring a window to the front
+     * from the hidden app */
+    [NSApp activateIgnoringOtherApps:YES];
+    if([unsafewindow isVisible])
+	    [unsafewindow orderOut:sender];
     [hotsignwindow center];
     [hotsignwindow deminiaturize:sender];
     [hotsignwindow orderFront:sender];
@@ -208,12 +213,15 @@ void append_txt(NSTextView* pane, char* str)
     if(verb) NSLog(@"hotsign ok");
     attach_send_hotspot_signon();
     [hotsignwindow orderOut:sender];
+    unsafe_asked = 1;
+    unsafe_should = 0;
 }
 
 -(IBAction)HotsignCancel:(id)sender
 {
     if(verb) NSLog(@"hotsign cancel");
     [hotsignwindow orderOut:sender];
+    if(unsafe_should) [mainapp PresentUnsafeDialog];
 }
 
 -(BOOL)windowShouldClose:(NSWindow*)sender
@@ -221,12 +229,16 @@ void append_txt(NSTextView* pane, char* str)
 	if(verb) NSLog(@"unsafeclose handler");
 	/* like pressing disconnect */
 	unsafe_asked = 1;
+	unsafe_should = 0;
 	attach_send_insecure(0);
 	return YES;
 }
 
 -(void)PresentUnsafeDialog
 {
+	unsafe_should = 1;
+	if([hotsignwindow isVisible])
+		return; /* wait for hotspot signon question to finish */
 	[unsafewindow center];
 	[unsafewindow deminiaturize:self];
 	[unsafewindow orderFront:self];
@@ -271,6 +283,7 @@ static void do_ask(void)
 	[riggeritem setToolTip:tt];
 
 	process_state(&a, &unsafe_asked, &do_danger, &do_safe, &do_ask);
+	if(!a.now_dark) unsafe_should = 0;
 }
 
 @end
