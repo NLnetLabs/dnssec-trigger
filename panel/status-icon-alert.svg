@@ -14,7 +14,7 @@
    height="256"
    id="svg2"
    version="1.1"
-   inkscape:version="0.47 r22583"
+   inkscape:version="0.48.2 r9819"
    sodipodi:docname="status-icon-alert.svg"
    inkscape:export-filename="/home/wouter/nlnetlabs/dnssec-trigger/trunk/panel/status-icon-alert.png"
    inkscape:export-xdpi="22.5"
@@ -345,14 +345,14 @@
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
      inkscape:zoom="1"
-     inkscape:cx="123.78133"
+     inkscape:cx="-52.71867"
      inkscape:cy="122.58937"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
      inkscape:window-width="1680"
      inkscape:window-height="1002"
-     inkscape:window-x="-4"
+     inkscape:window-x="-3"
      inkscape:window-y="-3"
      inkscape:window-maximized="1"
      inkscape:snap-global="true">
@@ -423,21 +423,21 @@
          transform="matrix(0.43301268,-0.24999999,0.30000001,0.51961525,126.06663,747.22374)" />
     </g>
     <rect
-       style="fill:#ff0000;fill-opacity:1;stroke:#f70000;stroke-width:9.63327503;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:9.73075008;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
        id="rect3686"
-       width="16"
+       width="40.399998"
        height="116"
-       x="114"
+       x="102"
        y="840.36218" />
     <path
        sodipodi:type="arc"
-       style="fill:#ff0000;fill-opacity:1;stroke:#f70000;stroke-width:16;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:8.16496563;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
        id="path3688"
        sodipodi:cx="128"
        sodipodi:cy="208"
        sodipodi:rx="16"
        sodipodi:ry="16"
-       d="m 144,208 c 0,8.83656 -7.16344,16 -16,16 -8.83656,0 -16,-7.16344 -16,-16 0,-8.83656 7.16344,-16 16,-16 8.83656,0 16,7.16344 16,16 z"
-       transform="matrix(0.74977702,-0.01828725,0.01828725,0.74977702,22.228373,847.04191)" />
+       d="m 144,208 a 16,16 0 1 1 -32,0 16,16 0 1 1 32,0 z"
+       transform="matrix(1.3495986,-0.03253682,0.03291706,1.3340094,-57.591789,720.39709)" />
   </g>
 </svg>
