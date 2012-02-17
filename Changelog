@@ -1,3 +1,6 @@
+17 Feb 2012: Wouter
+	- and osx status icon file changed.
+
 16 Feb 2012: Wouter
 	- Do not show the insecure and hotspot windows at the same time.
 	- Fix for OSX to show the popups on top of the other windows.
