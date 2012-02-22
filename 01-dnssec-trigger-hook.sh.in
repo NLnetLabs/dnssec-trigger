@@ -18,5 +18,5 @@ fi
 ips=`echo $ips`
 
 logger "dnssec-trigger-hook(networkmanager) $ifname $action DNS $ips"
-dnssec-trigger-control submit "$ips"
+0sbindir0/dnssec-trigger-control submit "$ips"
 exit 0
