@@ -1,6 +1,7 @@
 22 Feb 2012: Wouter
 	- Fix Fedora bug with no DNS servers in resolv.conf with absolute path
 	  in networkmanager hook script.
+	- The .desktop entry name without 'panel'.
 
 17 Feb 2012: Wouter
 	- and osx status icon file changed.
