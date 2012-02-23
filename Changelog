@@ -1,3 +1,6 @@
+23 Feb 2012: Wouter
+	- fedora package files updated.
+
 22 Feb 2012: Wouter
 	- Fix Fedora bug with no DNS servers in resolv.conf with absolute path
 	  in networkmanager hook script.
