@@ -278,6 +278,10 @@ keyword(struct cfg* cfg, char* p)
 		ssl_arg(&cfg->ssl443_ip4, &cfg->ssl443_ip4_last,
 			&cfg->num_ssl443_ip4, &cfg->ssl443_ip6,
 			&cfg->ssl443_ip6_last, &cfg->num_ssl443_ip6, p+7);
+	} else if(strncmp(p, "url:", 4) == 0) {
+		strlist_append(&cfg->http_urls, &cfg->http_urls_last,
+			get_arg(p+4));
+		cfg->num_http_urls++;
 	} else {
 		return 0;
 	}
@@ -352,6 +356,7 @@ void cfg_delete(struct cfg* cfg)
 	strlist_delete(cfg->tcp443_ip6);
 	ssllist_delete(cfg->ssl443_ip4);
 	ssllist_delete(cfg->ssl443_ip6);
+	strlist_delete(cfg->http_urls);
 	free(cfg->pidfile);
 	free(cfg->logfile);
 	free(cfg->chroot);

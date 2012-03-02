@@ -121,7 +121,7 @@ else
 KEYGEN_SRC=
 endif
 KEYGEN_OBJ=$(addprefix $(BUILD),$(KEYGEN_SRC:.c=.o)) $(COMPAT_OBJ)
-RIGGERD_SRC=riggerd/riggerd.c riggerd/log.c riggerd/netevent.c riggerd/rbtree.c riggerd/mini_event.c riggerd/net_help.c riggerd/winsock_event.c riggerd/fptr_wlist.c riggerd/cfg.c riggerd/svr.c riggerd/probe.c riggerd/ubhook.c riggerd/reshook.c
+RIGGERD_SRC=riggerd/riggerd.c riggerd/log.c riggerd/netevent.c riggerd/rbtree.c riggerd/mini_event.c riggerd/net_help.c riggerd/winsock_event.c riggerd/fptr_wlist.c riggerd/cfg.c riggerd/svr.c riggerd/probe.c riggerd/ubhook.c riggerd/reshook.c riggerd/http.c
 ifeq "$(hooks)" "windows"
 RIGGERD_SRC+=winrc/netlist.c winrc/win_svc.c winrc/w_inst.c
 endif
@@ -262,7 +262,7 @@ netconfig-hook:	dnssec-trigger-netconfig-hook
 
 dnssec-trigger-netconfig-hook:	$(srcdir)/dnssec-trigger-netconfig-hook.sh.in Makefile
 	rm -f $@
-	sed -e 's?0SHELL0?$(SHELL)?' < $(srcdir)/dnssec-trigger-netconfig-hook.sh.in > $@
+	sed -e 's?0SHELL0?$(SHELL)?' -e 's?0sbindir0?$(sbindir)?' < $(srcdir)/dnssec-trigger-netconfig-hook.sh.in > $@
 	chmod +x $@
 
 dnssec-triggerd$(EXEEXT):	$(RIGGERD_OBJ)

@@ -47,6 +47,7 @@
 #include "net_help.h"
 #include "ubhook.h"
 #include "reshook.h"
+#include "http.h"
 #include <ldns/ldns.h>
 
 /* create probes for the ip addresses in the string */
@@ -106,6 +107,15 @@ void probe_start(char* ips)
 		/* call it right away, so the user does not have to wait */
 		probe_setup_hotspot_signon(svr);
 	}
+
+	if(svr->http) {
+		http_general_delete(svr->http);
+		svr->http = NULL;
+	}
+	if(!svr->http && svr->cfg->num_http_urls != 0) {
+		svr->http = http_general_start(svr);
+		if(!svr->http) log_err("out of memory");
+	}
 }
 
 void probe_delete(struct probe_ip* p)
@@ -117,6 +127,8 @@ void probe_delete(struct probe_ip* p)
 	outq_delete(p->ds_c);
 	outq_delete(p->dnskey_c);
 	outq_delete(p->nsec3_c);
+	outq_delete(p->host_c);
+	http_get_delete(p->http);
 	free(p);
 }
 
@@ -239,6 +251,11 @@ static struct ssllist* get_random_ssl443_ip6(struct cfg* cfg)
 		((unsigned)ldns_get_random())%((unsigned)cfg->num_ssl443_ip6));
 }
 
+int probe_is_cache(struct probe_ip* p)
+{
+	return !p->to_auth && !p->ssldns && !p->dnstcp && !p->to_http;
+}
+
 /** check SSL certificate on probe (that is otherwise DNSSEC OK) */
 static const char*
 check_ssl(struct outq* outq)
@@ -303,6 +320,9 @@ outq_done(struct outq* outq, const char* reason)
 		outq_delete(p->nsec3_c);
 		p->nsec3_c = NULL;
 		in = "NSEC3";
+	} else if(p->host_c == outq) {
+		http_host_outq_done(p, reason);
+		return;
 	} else if(p->ds_c == outq) {
 		outq_delete(p->ds_c);
 		p->ds_c = NULL;
@@ -383,7 +403,12 @@ outq_check_packet(struct outq* outq, uint8_t* wire, size_t len)
 	ldns_pkt *p = NULL;
 	ldns_status s;
 	if(verbosity >= VERB_ALGO) {
-		verbose(VERB_ALGO, "from %s %s %s received",
+		if(outq->probe->to_http) {
+		    verbose(VERB_ALGO, "from %s %s received",
+			outq->probe->name, outq->probe->http_ip6?
+			"HTTPip6":"HTTPip4");
+		} else
+		    verbose(VERB_ALGO, "from %s %s %s received",
 			outq->probe->name,
 			outq->qtype==PROBE_NSEC3_QTYPE?"NSEC3":(
 			outq->qtype==LDNS_RR_TYPE_DNSKEY?"DNSKEY":"DS"),
@@ -432,6 +457,12 @@ outq_check_packet(struct outq* outq, uint8_t* wire, size_t len)
 		outq_done(outq, reason);
 		LDNS_FREE(r);
 		ldns_pkt_free(p);
+		return;
+	}
+	/* if this all OK, and addr, then use http addr process */
+	if(outq == outq->probe->host_c) {
+		/* this routine frees pkt */
+		http_host_outq_result(outq->probe, p);
 		return;
 	}
 
@@ -550,17 +581,26 @@ int outq_handle_udp(struct comm_point* c, void* my_arg, int error,
 static int
 create_probe_query(struct outq* outq, ldns_buffer* buffer)
 {
+	uint16_t flags = 0;
 	ldns_pkt* pkt = NULL;
-	ldns_status status = ldns_pkt_query_new_frm_str(&pkt, outq->qname,
-		outq->qtype, LDNS_RR_CLASS_IN,
-		(uint16_t)(outq->recurse?LDNS_RD|LDNS_CD:0));
+	ldns_status status;
+	if(outq->recurse)
+		flags |= LDNS_RD;
+	if(outq->edns)
+		flags |= LDNS_CD;
+	status = ldns_pkt_query_new_frm_str(&pkt, outq->qname, outq->qtype,
+		LDNS_RR_CLASS_IN, flags);
 	if(status != LDNS_STATUS_OK) {
 		log_err("could not pkt_query_new %s",
 			ldns_get_errorstr_by_id(status));
 		return 0;
 	}
-	ldns_pkt_set_edns_do(pkt, 1);
-	ldns_pkt_set_edns_udp_size(pkt, 4096);
+	if(outq->edns) {
+		ldns_pkt_set_edns_do(pkt, 1);
+		ldns_pkt_set_edns_udp_size(pkt, 4096);
+	} else {
+		ldns_pkt_set_edns_do(pkt, 0);
+	}
 	ldns_pkt_set_id(pkt, outq->qid);
 	ldns_buffer_clear(buffer);
 	status = ldns_pkt2buffer_wire(buffer, pkt);
@@ -575,9 +615,9 @@ create_probe_query(struct outq* outq, ldns_buffer* buffer)
 	return 1;
 }
 
-static struct outq*
+struct outq*
 outq_create(const char* ip, int tp, const char* domain, int recurse,
-	struct probe_ip* p, int tcp, int onssl, int port)
+	struct probe_ip* p, int tcp, int onssl, int port, int edns)
 {
 	int fd;
 	struct outq* outq = (struct outq*)calloc(1, sizeof(*outq));
@@ -593,6 +633,7 @@ outq_create(const char* ip, int tp, const char* domain, int recurse,
 	outq->recurse = recurse;
 	outq->on_ssl = onssl;
 	outq->port = port;
+	outq->edns = edns;
 
 	if(!ipstrtoaddr(ip, port, &outq->addr, &outq->addrlen)) {
 		log_err("could not parse ip %s", ip);
@@ -885,9 +926,9 @@ static void probe_spawn(const char* ip, int recurse, int dnstcp,
 
 	/* send the probe queries and wait for reply */
 	p->dnskey_c = outq_create(p->name, LDNS_RR_TYPE_DNSKEY, ".",
-		recurse, p, dnstcp, ssldns!=0, port);
+		recurse, p, dnstcp, ssldns!=0, port, 1);
 	p->ds_c = outq_create(p->name, LDNS_RR_TYPE_DS, dest, recurse, p,
-		dnstcp, ssldns!=0, port);
+		dnstcp, ssldns!=0, port, 1);
 	if(!p->ds_c || !p->dnskey_c) {
 		log_err("could not send queries for probe");
 		probe_delete(p);
@@ -898,7 +939,7 @@ static void probe_spawn(const char* ip, int recurse, int dnstcp,
 		const char* nd = get_random_nsec3_dest();
 		verbose(VERB_ALGO, "nsec3 query %s", nd);
 		p->nsec3_c = outq_create(p->name, PROBE_NSEC3_QTYPE, nd,
-			recurse, p, dnstcp, ssldns!=0, port);
+			recurse, p, dnstcp, ssldns!=0, port, 1);
 		if(!p->nsec3_c) {
 			log_err("could not send nsec3 query for probe");
 			probe_delete(p);
@@ -1268,7 +1309,11 @@ probe_all_done(void)
 	if(verbosity >= VERB_DETAIL) {
 		struct probe_ip* p;
 		for(p=svr->probes; p; p=p->next) {
-			if(p->dnstcp)
+			if(p->to_http)
+			    verbose(VERB_DETAIL, "%s %s: %s %s",
+			    	p->host_c?"addrlookup":"http", p->name, 
+				p->works?"OK":"error", p->reason?p->reason:"");
+			else if(p->dnstcp)
 			    verbose(VERB_DETAIL, "%s%d %s: %s %s", 
 			    	p->ssldns?"ssl":"tcp", p->port, p->name,
 				p->works?"OK":"error", p->reason?p->reason:"");

@@ -42,6 +42,7 @@
 #include "svr.h"
 #include "cfg.h"
 #include "log.h"
+#include "http.h"
 #include "probe.h"
 #include "netevent.h"
 #include "net_help.h"
@@ -136,6 +137,7 @@ void svr_delete(struct svr* svr)
 	ldns_buffer_free(svr->udp_buffer);
 	comm_timer_delete(svr->retry_timer);
 	comm_timer_delete(svr->tcp_timer);
+	http_general_delete(svr->http);
 	comm_base_delete(svr->base);
 	free(svr);
 }
@@ -642,7 +644,7 @@ static void cmd_reprobe(void)
 	struct probe_ip* p;
 	buf[0]=0; /* safe, robust */
 	for(p = global_svr->probes; p; p = p->next) {
-		if(!p->to_auth && !p->dnstcp && !p->ssldns) {
+		if(probe_is_cache(p)) {
 			int len;
 			if(left < strlen(p->name)+3)
 				break; /* no space for more */
@@ -705,13 +707,26 @@ send_results_to_con(struct svr* svr, struct sslconn* s)
 		localtime(&svr->probetime)))
 		ldns_buffer_printf(s->buffer, "at %s\n", at);
 	for(p=svr->probes; p; p=p->next) {
-		if(!p->to_auth && !p->dnstcp && !p->ssldns)
+		if(probe_is_cache(p))
 			numcache++;
 		if(!p->finished) {
 			unfinished++;
 			continue;
 		}
-		if(p->dnstcp)
+		if(p->to_http) {
+			if(p->host_c) {
+		    	ldns_buffer_printf(s->buffer, "%s %s %s from %s: %s %s\n",
+		    		"addr", p->host_c->qname,
+				p->http_ip6?"AAAA":"A", p->name,
+				p->works?"OK":"error", p->reason?p->reason:"");
+			} else if(p->http) {
+		    	ldns_buffer_printf(s->buffer, "%s %s from %s: %s %s\n",
+		    		"http", p->http->url, p->name,
+				p->works?"OK":"error", p->reason?p->reason:"");
+			} else ldns_buffer_printf(s->buffer, "http %s: %s %s\n",
+				p->name,
+				p->works?"OK":"error", p->reason?p->reason:"");
+		} else if(p->dnstcp)
 		    ldns_buffer_printf(s->buffer, "%s%d %s: %s %s\n",
 		        p->ssldns?"ssl":"tcp", p->port, p->name,
 			p->works?"OK":"error", p->reason?p->reason:"");

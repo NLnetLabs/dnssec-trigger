@@ -89,6 +89,10 @@ struct cfg {
 	struct ssllist* ssl443_ip6, *ssl443_ip6_last;
 	int num_ssl443_ip6;
 
+	/** list of http probe urls */
+	struct strlist* http_urls, *http_urls_last;
+	int num_http_urls;
+
 	/** port number for the control port */
 	int control_port;
 	/** private key file for server */

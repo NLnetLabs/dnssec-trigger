@@ -48,6 +48,7 @@
 #include "svr.h"
 #include "probe.h"
 #include "mini_event.h"
+#include "http.h"
 #ifdef USE_WINSOCK
 #include "winrc/netlist.h"
 #include "winrc/win_svc.h"
@@ -65,6 +66,7 @@ int
 fptr_whitelist_comm_point_raw(comm_point_callback_t *fptr)
 {
 	if(fptr == &handle_ssl_accept) return 1;
+	else if(fptr == &http_get_callback) return 1;
 	else if(fptr == &control_callback) return 1;
 	return 0;
 }
@@ -74,6 +76,7 @@ fptr_whitelist_comm_timer(void (*fptr)(void*))
 {
 	if(fptr == &outq_timeout) return 1;
 	else if(fptr == &svr_retry_callback) return 1;
+	else if(fptr == &http_get_timeout_handler) return 1;
 	else if(fptr == &svr_tcp_callback) return 1;
 #ifdef USE_WINSOCK
 	else if(fptr == &wsvc_cron_cb) return 1;

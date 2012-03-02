@@ -43,6 +43,8 @@
 #define PROBE_H
 struct comm_point;
 struct comm_reply;
+struct http_get;
+struct http_fetch;
 struct outq;
 struct svr;
 
@@ -59,6 +61,10 @@ struct probe_ip {
 	int dnstcp;
 	/* for ssl? */
 	struct ssllist* ssldns;
+	/* is this a http probe */
+	int to_http;
+	/* is http on ipv6 (or v4)? */
+	int http_ip6;
 	/* destination port */
 	int port;
 
@@ -71,6 +77,11 @@ struct probe_ip {
 	struct outq* dnskey_c;
 	/* nodata query probes NSEC3, or NULL if done or not used */
 	struct outq* nsec3_c;
+
+	/* A,AAAA query to resolve http hostname, or NULL if done or not used*/
+	struct outq* host_c;
+	/* http query in progress */
+	struct http_get* http;
 
 	/* if probe has finished */
 	int finished;
@@ -94,6 +105,7 @@ struct outq {
 	int on_tcp; /* if we are using TCP */
 	int on_ssl; /* if we are using SSL */
 	int port; /* port number (mostly 53) */
+	int edns; /* if edns yes */
 	struct comm_point* c;
 	struct comm_timer* timer;
 	struct probe_ip* probe; /* reference only to owner */
@@ -131,5 +143,13 @@ void probe_ssl_test(void);
 void probe_setup_cache(struct svr* svr, struct probe_ip* p);
 void probe_setup_hotspot_signon(struct svr* svr);
 void probe_setup_dnstcp(struct svr* svr);
+
+/** true if probe is a cache IP, a DNS server from the DHCP hook */
+int probe_is_cache(struct probe_ip* p);
+
+/** Create new outgoing query */
+struct outq* outq_create(const char* ip, int tp, const char* domain,
+	int recurse, struct probe_ip* p, int tcp, int onssl, int port,
+	int edns);
 
 #endif /* PROBE_H */

@@ -50,6 +50,7 @@ struct listen_list;
 struct comm_point;
 struct ldns_struct_buffer;
 struct probe_ip;
+struct http_general;
 
 /**
  * The server
@@ -104,6 +105,9 @@ struct svr {
 	struct comm_timer* tcp_timer;
 	/** tcp timer was used last time? */
 	int tcp_timer_used;
+
+	/** http lookup structure; or NULL if no urlprobe configured or done */
+	struct http_general* http;
 
 	/** result of probes */
 	enum res_state { 
