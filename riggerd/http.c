@@ -351,7 +351,7 @@ void http_probe_start_http_get(struct http_probe* hp)
 
 	/* remove from rr_list */
 	if(i < count) {
-		ldns_rr_list_set_rr(hp->addr,
+		(void)ldns_rr_list_set_rr(hp->addr,
 			ldns_rr_list_rr(hp->addr, count-1), i);
 		ldns_rr_list_set_rr_count(hp->addr, count-1);
 	}
@@ -439,7 +439,7 @@ struct http_general* http_general_start(struct svr* svr)
 	hg->svr = svr;
 	if(svr->cfg->num_http_urls >= HTTP_NUM_URLS_MAX_PROBE)
 		hg->url_num = HTTP_NUM_URLS_MAX_PROBE;
-	else	hg->url_num = svr->cfg->num_http_urls;
+	else	hg->url_num = (size_t)svr->cfg->num_http_urls;
 	hg->urls = (char**)calloc(hg->url_num, sizeof(char*));
 	if(!hg->urls) {
 		free(hg);
@@ -925,7 +925,7 @@ static int hg_handle_reply_header(struct http_get* hg)
 		}
 		return 0;
 	}
-	headlen = endstr-(char*)ldns_buffer_begin(hg->buf);
+	headlen = (size_t)(endstr-(char*)ldns_buffer_begin(hg->buf));
 	log_info("http done, parse reply header");
 	/* done reading, parse it */
 	log_assert(strncmp(ldns_buffer_at(hg->buf, headlen), "\r\n\r\n", 4)==0);
@@ -1032,7 +1032,7 @@ static int hg_handle_chunk_header(struct http_get* hg)
 		}
 		return 0;
 	}
-	headlen = endstr-(char*)ldns_buffer_begin(hg->buf);
+	headlen = (size_t)(endstr-(char*)ldns_buffer_begin(hg->buf));
 	/* done reading, parse it */
 	log_assert(strncmp(ldns_buffer_at(hg->buf, headlen), "\r\n", 2)==0);
 	/* extract lines, parse with the given function */

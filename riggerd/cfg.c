@@ -168,14 +168,14 @@ static int read_hash(char* arg, struct ssllist* e)
 		e->has_hash = 0;
 		return 1;
 	}
-	if(strlen(arg) != len*3-1) { /* sha256, 32bytes of xx:xx:xx:xx */
+	if((int)strlen(arg) != len*3-1) {/* sha256, 32bytes of xx:xx:xx:xx */
 		return 0;
 	}
 	e->has_hash = 1;
-	e->hashlen = len;
+	e->hashlen = (unsigned int)len;
 	for(i=0; i<len; i++) {
 		char *n = NULL;
-		e->hash[i] = strtol(at, &n, 16);
+		e->hash[i] = (unsigned char)strtol(at, &n, 16);
 		if(n != at+2) {
 			return 0;
 		}
