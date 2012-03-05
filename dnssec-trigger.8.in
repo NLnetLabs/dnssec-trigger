@@ -141,6 +141,19 @@ config file to find the port number and key locations.
 The files used for SSL secured communication with dnssec\-triggerd.  These
 files can be created with dnssec\-trigger\-control\-setup (run as root).
 .TP
+.B url: \fR"http://example.com OK"
+This command adds an url to probe via HTTP (port 80). The first word, before
+the space is the url to resolve.  The remainder is the string that is expected
+as page contents (that may be prefixed or suffixed with whitespace).  The
+url is resolved, a HTTP 1.1 query is sent.  The reply must be type 2xx and
+contain the page contents.  If this is not true, dnssec-trigger knows that
+there is a 'hot spot' of some sort interfering with traffic.  If you do not
+configure any urls, then no probes are done.  If you configure multiple urls
+then it probes a random selection of 3 urls, all of their IP addresses in turn,
+with IP4 and IP6 simultaneously.  At most 5 of the DHCP DNS servers are used
+to resolve (in parallel).  If an answer is gotten and it fails the probe stop,
+the probing continues if there is no connection or response 404.
+.TP
 .B tcp80: \fR<ip>
 Add an IP4 or IP6 address to the list of fallback open DNSSEC resolvers that
 are used on TCP port 80.
