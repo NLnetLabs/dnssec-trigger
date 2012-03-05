@@ -256,6 +256,54 @@ int probe_is_cache(struct probe_ip* p)
 	return !p->to_auth && !p->ssldns && !p->dnstcp && !p->to_http;
 }
 
+/** check if hash of x is the given hash, error or NULL on success. */
+static char*
+match_hash(struct hashlist* he, X509* x)
+{
+	unsigned char hash[EVP_MAX_MD_SIZE];
+	unsigned int len = (unsigned int)sizeof(hash);
+	/* always sha256 now */
+	if(!X509_digest(x, EVP_sha256(), hash, &len)) {
+		log_err("out of memory");
+		return "out of memory in X509_digest";
+	}
+	if(verbosity >= 3) {
+		char buf[1024];
+		char* at = buf;
+		size_t blen = sizeof(buf);
+		unsigned int i;
+		for(i=0; i<len; i++) {
+			int a = snprintf(at, blen, "%2.2X%s",
+			    (unsigned int)hash[i], (i==len-1)?"":":");
+			at += a; 
+			blen -= a;
+		}
+		log_info("the ssl fingerprint of the server is %s", buf);
+	}
+
+	if(len != he->hashlen) {
+		/* should not happen, since we test sha256 length of
+		 * the cfg hash we read in */
+		return "SSL certificate hash length is wrong";
+	}
+	if(memcmp(hash, he->hash, len) != 0) {
+		return "SSL certificate on internet does not match stored hash (ssl intercepted?)";
+	}
+	return 0;
+}
+
+/** check list of hashes, error string or NULL on success */
+static char*
+match_hashes(struct hashlist* list, X509* x)
+{
+	struct hashlist* h;
+	char* reason = "Internal error: no hashlist but comparison";
+	for(h=list; h; h=h->next)
+		if( (reason=match_hash(h, x)) == NULL)
+			return NULL;
+	return reason;
+}
+
 /** check SSL certificate on probe (that is otherwise DNSSEC OK) */
 static const char*
 check_ssl(struct outq* outq)
@@ -266,40 +314,15 @@ check_ssl(struct outq* outq)
 	 * a stored hash, you can compute this hash with the command
 	 * openssl x509 -sha256 -fingerprint -in server.pem */
 	X509* x = SSL_get_peer_certificate(outq->c->ssl);
-	if(!outq->probe->ssldns->has_hash) {
+	if(!outq->probe->ssldns->hashes) {
 		/* no stored hash */
 		X509_free(x);
 	} else if(x) {
-		unsigned char hash[EVP_MAX_MD_SIZE];
-		unsigned int len = (unsigned int)sizeof(hash);
-		if(!X509_digest(x, EVP_sha256(), hash, &len)) {
-			log_err("out of memory");
-			X509_free(x);
-			return "out of memory in X509_digest";
-		}
+		char* reason = match_hashes(outq->probe->ssldns->hashes, x);
 		X509_free(x);
-		if(verbosity >= 3) {
-			char buf[1024];
-			char* at = buf;
-			size_t blen = sizeof(buf);
-			unsigned int i;
-			for(i=0; i<len; i++) {
-				int a = snprintf(at, blen, "%2.2X%s",
-				    (unsigned int)hash[i], (i==len-1)?"":":");
-				at += a; 
-				blen -= a;
-			}
-			log_info("the ssl fingerprint of server %s is %s",
-				outq->probe->name, buf);
-		}
-		if(len != outq->probe->ssldns->hashlen) {
-			/* should not happen, since we test sha256 length of
-			 * the cfg hash we read in */
-			return "SSL certificate hash length is wrong";
-		}
-		if(memcmp(hash, outq->probe->ssldns->hash, len) != 0) {
-			return "SSL certificate on internet does not match stored hash (ssl intercepted?)";
-		}
+		if(reason) 
+			return reason;
+		
 	} else {
 		return "No SSL certificate on internet but have stored hash (ssl intercepted?)";
 	}

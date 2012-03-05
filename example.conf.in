@@ -56,8 +56,8 @@ url: "http://ster.nlnetlabs.nl/hotspot.txt OK"
 url: "http://fedoraproject.org/static/hotspot.txt OK"
 
 # fallback open DNSSEC resolvers that run on TCP port 80 and TCP port 443.
-# the ssl443 adds an ssl server IP, if you specify a hash it is checked, put
-# the following on one line: ssl443:<space><IP><space><HASHoutput>
+# the ssl443 adds an ssl server IP, you may also specify one or more hashes
+# the following on one line: ssl443:<space><IP>{<space><HASHoutput>}
 # hash is output of openssl x509 -sha256 -fingerprint -in server.pem
 # You can add more with extra config lines.
 

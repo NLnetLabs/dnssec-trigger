@@ -114,6 +114,30 @@ ssllist_append(struct ssllist** first, struct ssllist** last, struct ssllist* e)
 	*last = e;
 }
 
+/** prepend to hashlist */
+void
+hashlist_prepend(struct hashlist** first, unsigned char* hash, unsigned int len)
+{
+	struct hashlist* e = (struct hashlist*)calloc(1, sizeof(*e));
+	if(!e) fatal_exit("out of memory");
+	memmove(e->hash, hash, len);
+	e->hashlen = len;
+	e->next = *first;
+	*first = e;
+}
+
+/** free hashlist */
+void
+hashlist_delete(struct hashlist* e)
+{
+	struct hashlist* p = e, *np;
+	while(p) {
+		np = p->next;
+		free(p);
+		p = np;
+	}
+}
+
 /** free ssllist */
 void
 ssllist_delete(struct ssllist* e)
@@ -121,6 +145,7 @@ ssllist_delete(struct ssllist* e)
 	struct ssllist* p = e, *np;
 	while(p) {
 		np = p->next;
+		hashlist_delete(p->hashes);
 		free(p->str);
 		free(p);
 		p = np;
@@ -204,26 +229,46 @@ static int read_hash(char* arg, struct ssllist* e)
 {
 	int i;
 	const int len = 32;
+	unsigned char hash[64];
 	char* at = arg;
-	if(!arg || arg[0] == 0) {
-		e->has_hash = 0;
-		return 1;
-	}
+	log_assert(arg && arg[0]);
 	if((int)strlen(arg) != len*3-1) {/* sha256, 32bytes of xx:xx:xx:xx */
 		return 0;
 	}
-	e->has_hash = 1;
-	e->hashlen = (unsigned int)len;
+	log_assert(len <= (int)sizeof(hash));
 	for(i=0; i<len; i++) {
 		char *n = NULL;
-		e->hash[i] = (unsigned char)strtol(at, &n, 16);
+		hash[i] = (unsigned char)strtol(at, &n, 16);
 		if(n != at+2) {
 			return 0;
 		}
 		/* skip two hex digits */
 		at += 2;
 		/* skip ':' (unless at EOS) */
-		if(*at) at ++;
+		if(*at && i!=len-1) at ++;
+	}
+	hashlist_prepend(&e->hashes, hash, len);
+	return 1;
+}
+
+/** add a number of hashes */
+static int
+add_hashes(char* str, struct ssllist* e)
+{
+	char* arg1, *arg2;
+	/* skip whitespace */
+	while(isspace(*str))
+		str++;
+	while(str && *str) {
+		get_arg2(str, &arg1, &arg2);
+		/* there must be a hash here */
+		log_info("%s adds hash %s", e->str, arg1);
+		if(!read_hash(arg1, e))
+			return 0;
+		str = arg2;
+		/* skip whitespace */
+		while(str && isspace(*str))
+			str++;
 	}
 	return 1;
 }
@@ -246,13 +291,13 @@ static void ssl_arg(struct ssllist** first4, struct ssllist** last4, int* num4,
 		free(e);
 		return;
 	}
-	if(!read_hash(arg2, e)) {
+	e->str = strdup(arg1);
+	if(!e->str) fatal_exit("out of memory");
+	if(!add_hashes(arg2, e)) {
 		log_err("cannot parse hash: '%s', ssl ignored", arg2);
 		free(e);
 		return;
 	}
-	e->str = strdup(arg1);
-	if(!e->str) fatal_exit("out of memory");
 	if(strchr(arg1, ':')) {
 		ssllist_append(first6, last6, e);
 		(*num6) ++;

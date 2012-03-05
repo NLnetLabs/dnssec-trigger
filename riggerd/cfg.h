@@ -118,13 +118,18 @@ struct strlist2 {
 	char* str2;
 };
 
+/** list of hashes */
+struct hashlist {
+	struct hashlist* next;
+	unsigned char hash[64]; /* hash (SHA256) */
+	unsigned int hashlen; /* number of bytes used in hash */
+};
+
 /** list of ssl servers */
 struct ssllist {
 	struct ssllist* next; /* must be first for compatibility with strlist */
 	char* str; /* ip address */
-	int has_hash;
-	unsigned char hash[64]; /* hash (if any) */
-	unsigned int hashlen;
+	struct hashlist* hashes; /* zero or more hashes to check */
 };
 
 /** create config and read in */
@@ -151,6 +156,9 @@ void ssllist_append(struct ssllist** first, struct ssllist** last,
 void ssllist_delete(struct ssllist* first);
 /** get nth element of ssllist */
 struct ssllist* ssllist_get_num(struct ssllist* list, unsigned n);
+
+/** free hashlist */
+void hashlist_delete(struct hashlist* first);
 
 /** append to strlist2 */
 void strlist2_append(struct strlist2** first, struct strlist2** last,
