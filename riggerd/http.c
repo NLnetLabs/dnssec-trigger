@@ -892,12 +892,27 @@ reply_header_parse(struct http_get* hg, char* line, void* arg)
 	size_t* datalen = (size_t*)arg;
 	verbose(VERB_ALGO, "http reply header: %s", line);
 	if(strncasecmp(line, "HTTP/1.1 ", 9) == 0) {
-		/* check returncode */
-		if(line[9] != '2') {
+		/* check returncode; we understand the following from
+		 * rcodes:
+		 * 2xx : success, look at content (perhaps changed by hotspot)
+		 * 3xx : redirect of some form - probably the hotspot.
+		 * other: failure
+		 */
+		if(line[9] == '3') {
+			/* redirect type codes, this means it fails 
+			 * compeletely*/
+			char err[512];
+			snprintf(err, sizeof(err), "http redirect %s", line+9);
+			/* we connected to the server, this looks like a
+			 * hotspot that redirects */
+			http_get_done(hg, err, 1);
+			return 0;
+		} else if(line[9] != '2') {
 			char err[512];
 			snprintf(err, sizeof(err), "http error %s", line+9);
-			/* TODO check for 404 error, treat differently? */
-			http_get_done(hg, err, 1);
+			/* we 'connected' but it seems the page is not
+			 * there anymore.  Perhaps try another url */
+			http_get_done(hg, err, 0);
 			return 0;
 		}
 	} else if(strncasecmp(line, "Content-Length: ", 16) == 0) {
