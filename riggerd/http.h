@@ -58,6 +58,8 @@ struct http_general {
 
 	/* array of urls to attempt to transfer from */
 	char** urls;
+	/* array of checkcodes to check - the content of those urls */
+	char** codes;
 	/* number of urls in array */
 	size_t url_num;
 

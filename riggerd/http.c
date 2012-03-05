@@ -403,15 +403,17 @@ static int already_used(struct http_general* hg, char* s)
 }
 
 /* pick url from list not picking twice */
-static char* pick_url(struct http_general* hg, size_t x)
+static char* pick_url(struct http_general* hg, size_t x, char** code)
 {
 	size_t now = 0;
-	struct strlist* p;
+	struct strlist2* p;
 	for(p=hg->svr->cfg->http_urls; p; p=p->next) {
-		if(already_used(hg, p->str))
+		if(already_used(hg, p->str1))
 			continue;
-		if(now++ == x)
-			return p->str;
+		if(now++ == x) {
+			*code = p->str2;
+			return p->str1;
+		}
 	}
 	return NULL;
 }
@@ -424,9 +426,10 @@ static void fill_urls(struct http_general* hg)
 		/* random number from remaining number of choices */
 		if((int)hg->url_num == hg->svr->cfg->num_http_urls &&
 			i == hg->url_num)
-			hg->urls[i] = pick_url(hg, 0);
+			hg->urls[i] = pick_url(hg, 0, &hg->codes[i]);
 		else hg->urls[i] = pick_url(hg,
-			ldns_get_random()%(hg->svr->cfg->num_http_urls - i));
+			ldns_get_random()%(hg->svr->cfg->num_http_urls - i),
+			&hg->codes[i]);
 	}
 	for(i=0; i<hg->url_num; i++)
 		log_info("hg url[%d]=%s", (int)i, hg->urls[i]);
@@ -441,7 +444,10 @@ struct http_general* http_general_start(struct svr* svr)
 		hg->url_num = HTTP_NUM_URLS_MAX_PROBE;
 	else	hg->url_num = (size_t)svr->cfg->num_http_urls;
 	hg->urls = (char**)calloc(hg->url_num, sizeof(char*));
-	if(!hg->urls) {
+	hg->codes = (char**)calloc(hg->url_num, sizeof(char*));
+	if(!hg->urls || !hg->codes) {
+		free(hg->urls);
+		free(hg->codes);
 		free(hg);
 		return NULL;
 	}
@@ -543,12 +549,12 @@ void http_host_outq_result(struct probe_ip* p, ldns_pkt* pkt)
 
 /** check if the data is correct, ignore whitespace */
 static int
-hg_check_data(ldns_buffer* data)
+hg_check_data(ldns_buffer* data, char* result)
 {
 	char* s = (char*)ldns_buffer_begin(data);
 	while(isspace(*s))
 		s++;
-	if(strncmp(s, "OK", 2) != 0)
+	if(strncmp(s, result, strlen(result)) != 0)
 		return 0;
 	s += 2;
 	while(isspace(*s))
@@ -575,7 +581,8 @@ http_get_done(struct http_get* hg, char* reason, int connects)
 		hp->connects = 1;
 	if(!reason) {
 		/* check the data */
-		if(!hg_check_data(hg->data))
+		if(!hg_check_data(hg->data,
+			global_svr->http->codes[hp->url_idx]))
 			reason = "wrong page content";
 		else 	verbose(VERB_ALGO, "correct page content from %s",
 				p->name);

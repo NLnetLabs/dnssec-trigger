@@ -45,13 +45,15 @@
 
 # webservers that are probed to see if internet access is possible.
 # They serve a simple static page over HTTP port 80.
+# after a space is the content expected on the page, (the page can contain
+# whitespace before and after this code).
 
 # provided by NLnetLabs
 # It is provided on a best effort basis, with no service guarantee.
-url: "http://ster.nlnetlabs.nl/hotspot.txt"
+url: "http://ster.nlnetlabs.nl/hotspot.txt OK"
 
 # provided by FedoraProject
-url: "http://fedoraproject.org/static/hotspot.txt"
+url: "http://fedoraproject.org/static/hotspot.txt OK"
 
 # fallback open DNSSEC resolvers that run on TCP port 80 and TCP port 443.
 # the ssl443 adds an ssl server IP, if you specify a hash it is checked, put

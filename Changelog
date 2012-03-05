@@ -1,5 +1,6 @@
 5 March 2012: Wouter
 	- distinguish 2xx, 3xx and other (404) http rcodes.
+	- config file contains the expected content of the urls.
 
 2 March 2012: Wouter
 	- http check is performed, nonblocking.  Lookup of addres(es), A, AAAA

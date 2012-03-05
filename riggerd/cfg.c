@@ -59,6 +59,23 @@ strlist_append(struct strlist** first, struct strlist** last, char* str)
 	*last = e;
 }
 
+/** append to strlist2 */
+void
+strlist2_append(struct strlist2** first, struct strlist2** last,
+	char* s, char* t)
+{
+	struct strlist2* e = (struct strlist2*)malloc(sizeof(*e));
+	if(!e) fatal_exit("out of memory");
+	e->next = NULL;
+	e->str1 = strdup(s);
+	e->str2 = strdup(t);
+	if(!e->str1 || !e->str2) fatal_exit("out of memory");
+	if(*last)
+		(*last)->next = e;
+	else	*first = e;
+	*last = e;
+}
+
 /** free strlist */
 void
 strlist_delete(struct strlist* e)
@@ -67,6 +84,20 @@ strlist_delete(struct strlist* e)
 	while(p) {
 		np = p->next;
 		free(p->str);
+		free(p);
+		p = np;
+	}
+}
+
+/** free strlist2 */
+void
+strlist2_delete(struct strlist2* e)
+{
+	struct strlist2* p = e, *np;
+	while(p) {
+		np = p->next;
+		free(p->str1);
+		free(p->str2);
 		free(p);
 		p = np;
 	}
@@ -136,6 +167,16 @@ static void str_arg(char** dest, char* line)
 		fatal_exit("out of memory");
 	free(*dest);
 	*dest = s;
+}
+
+/** strdup the two arguments on the line */
+static void str2_arg(struct strlist2** first, struct strlist2** last,
+	int* num, char* line)
+{
+	char* s, *t;
+	get_arg2(line, &s, &t);
+	strlist2_append(first, last, s, t);
+	(*num)++;
 }
 
 /** append the argument on the line */
@@ -279,9 +320,8 @@ keyword(struct cfg* cfg, char* p)
 			&cfg->num_ssl443_ip4, &cfg->ssl443_ip6,
 			&cfg->ssl443_ip6_last, &cfg->num_ssl443_ip6, p+7);
 	} else if(strncmp(p, "url:", 4) == 0) {
-		strlist_append(&cfg->http_urls, &cfg->http_urls_last,
-			get_arg(p+4));
-		cfg->num_http_urls++;
+		str2_arg(&cfg->http_urls, &cfg->http_urls_last, 
+			&cfg->num_http_urls, get_arg(p+4));
 	} else {
 		return 0;
 	}
@@ -356,7 +396,7 @@ void cfg_delete(struct cfg* cfg)
 	strlist_delete(cfg->tcp443_ip6);
 	ssllist_delete(cfg->ssl443_ip4);
 	ssllist_delete(cfg->ssl443_ip6);
-	strlist_delete(cfg->http_urls);
+	strlist2_delete(cfg->http_urls);
 	free(cfg->pidfile);
 	free(cfg->logfile);
 	free(cfg->chroot);

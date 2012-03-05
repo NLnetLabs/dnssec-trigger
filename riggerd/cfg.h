@@ -90,7 +90,7 @@ struct cfg {
 	int num_ssl443_ip6;
 
 	/** list of http probe urls */
-	struct strlist* http_urls, *http_urls_last;
+	struct strlist2* http_urls, *http_urls_last;
 	int num_http_urls;
 
 	/** port number for the control port */
@@ -109,6 +109,13 @@ struct cfg {
 struct strlist {
 	struct strlist* next;
 	char* str;
+};
+
+/** simple list of two strings */
+struct strlist2 {
+	struct strlist2* next;
+	char* str1;
+	char* str2;
 };
 
 /** list of ssl servers */
@@ -144,6 +151,12 @@ void ssllist_append(struct ssllist** first, struct ssllist** last,
 void ssllist_delete(struct ssllist* first);
 /** get nth element of ssllist */
 struct ssllist* ssllist_get_num(struct ssllist* list, unsigned n);
+
+/** append to strlist2 */
+void strlist2_append(struct strlist2** first, struct strlist2** last,
+	char* s, char* t);
+/** free strlist2 */
+void strlist2_delete(struct strlist2* first);
 
 /** have tcp80 or tcp443 configured */
 int cfg_have_dnstcp(struct cfg* cfg);
