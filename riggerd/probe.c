@@ -69,6 +69,10 @@ void probe_start(char* ips)
 {
 	char* next;
 	struct svr* svr = global_svr;
+	if(svr->http) {
+		http_general_delete(svr->http);
+		svr->http = NULL;
+	}
 	if(svr->probes) {
 		/* clear existing probe list */
 		probe_list_delete(svr->probes);
@@ -106,15 +110,12 @@ void probe_start(char* ips)
 		verbose(VERB_OPS, "probe started: but still forced insecure");
 		/* call it right away, so the user does not have to wait */
 		probe_setup_hotspot_signon(svr);
-	}
-
-	if(svr->http) {
-		http_general_delete(svr->http);
-		svr->http = NULL;
-	}
-	if(!svr->http && svr->cfg->num_http_urls != 0) {
-		svr->http = http_general_start(svr);
-		if(!svr->http) log_err("out of memory");
+	} else {
+		/* there are cache DNS, and not forced insecure: check HTTP */
+		if(!svr->http && svr->cfg->num_http_urls != 0) {
+			svr->http = http_general_start(svr);
+			if(!svr->http) log_err("out of memory");
+		}
 	}
 }
 
