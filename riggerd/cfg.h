@@ -159,6 +159,9 @@ struct ssllist* ssllist_get_num(struct ssllist* list, unsigned n);
 
 /** free hashlist */
 void hashlist_delete(struct hashlist* first);
+/** prepend to hashlist */
+void hashlist_prepend(struct hashlist** first, unsigned char* hash,
+	unsigned int len);
 
 /** append to strlist2 */
 void strlist2_append(struct strlist2** first, struct strlist2** last,
