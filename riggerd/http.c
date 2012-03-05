@@ -900,7 +900,7 @@ reply_header_parse(struct http_get* hg, char* line, void* arg)
 		 */
 		if(line[9] == '3') {
 			/* redirect type codes, this means it fails 
-			 * compeletely*/
+			 * completely*/
 			char err[512];
 			snprintf(err, sizeof(err), "http redirect %s", line+9);
 			/* we connected to the server, this looks like a
@@ -911,7 +911,11 @@ reply_header_parse(struct http_get* hg, char* line, void* arg)
 			char err[512];
 			snprintf(err, sizeof(err), "http error %s", line+9);
 			/* we 'connected' but it seems the page is not
-			 * there anymore.  Perhaps try another url */
+			 * there anymore.  Try another url and pretend we
+			 * could not connect to get it to try another url. */
+			/* because we pass noconnect, it will also try other
+			 * ip addresses for the server.  perhaps another server
+			 * does not give 404? */
 			http_get_done(hg, err, 0);
 			return 0;
 		}
