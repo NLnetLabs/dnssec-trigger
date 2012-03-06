@@ -538,8 +538,8 @@ void http_host_outq_done(struct probe_ip* p, const char* reason)
 		if(hp->num_failed_addr_qs >= hp->num_addr_qs) {
 			/* if so, go to next url */
 			/* attempt to go to the next url or fail if no next url */
-			http_probe_remove_addr_lookups(hp);
 			if(hp->url_idx+1 < global_svr->http->url_num) {
+				http_probe_remove_addr_lookups(hp);
 				http_probe_go_next_url(global_svr->http, hp);
 			} else {
 				http_probe_done(global_svr->http, hp,
