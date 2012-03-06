@@ -262,7 +262,6 @@ add_hashes(char* str, struct ssllist* e)
 	while(str && *str) {
 		get_arg2(str, &arg1, &arg2);
 		/* there must be a hash here */
-		log_info("%s adds hash %s", e->str, arg1);
 		if(!read_hash(arg1, e))
 			return 0;
 		str = arg2;

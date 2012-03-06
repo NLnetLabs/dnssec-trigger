@@ -1,3 +1,7 @@
+6 March 2012: Wouter
+	- Fix memleak in new config url content.
+	- Fix probe count when http is done.
+
 5 March 2012: Wouter
 	- distinguish 2xx, 3xx and other (404) http rcodes.
 	- config file contains the expected content of the urls.

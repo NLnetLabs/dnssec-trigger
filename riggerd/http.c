@@ -169,10 +169,11 @@ void http_probe_remove_addr_lookups(struct http_probe* hp)
 		if(p->to_http && right_ip6(hp, p) && p->host_c) {
 			/* snip off */
 			(*pp) = p->next;
-			probe_delete(p);
-			p = (*pp);
 			if(p->works)
 				svr->num_probes_done --;
+			svr->num_probes --;
+			probe_delete(p);
+			p = (*pp);
 			continue;
 		}
 		/* go to next item */
@@ -193,10 +194,11 @@ void http_probe_remove_http_lookups(struct http_probe* hp)
 		if(p->to_http && right_ip6(hp, p) && p->http) {
 			/* snip off */
 			(*pp) = p->next;
-			probe_delete(p);
-			p = (*pp);
 			if(p->works)
 				svr->num_probes_done --;
+			svr->num_probes --;
+			probe_delete(p);
+			p = (*pp);
 			continue;
 		}
 		/* go to next item */
@@ -473,6 +475,7 @@ void http_general_delete(struct http_general* hg)
 {
 	if(!hg) return;
 	free(hg->urls);
+	free(hg->codes);
 	http_probe_delete(hg->v4);
 	http_probe_delete(hg->v6);
 	free(hg);
@@ -481,6 +484,8 @@ void http_general_delete(struct http_general* hg)
 void http_general_done(const char* reason)
 {
 	log_info("http_general done %s", reason?reason:"success");
+	if(global_svr->num_probes_done < global_svr->num_probes)
+		return; /* wait for other probes at the cache stage */
 	probe_cache_done();
 }
 
