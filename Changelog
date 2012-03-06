@@ -3,6 +3,7 @@
 	- Fix probe count when http is done.
 	- probe logic that keeps track of http_insecure mode.
 	- retry every 10 seconds for 5 minutes in http_insecure mode.
+	- fix test_tcp, test_ssl, unsafe commands.
 
 5 March 2012: Wouter
 	- distinguish 2xx, 3xx and other (404) http rcodes.

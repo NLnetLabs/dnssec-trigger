@@ -1017,8 +1017,12 @@ static void probe_spawn_ssldns(void)
 
 void probe_unsafe_test(void)
 {
+	int nurl = global_svr->cfg->num_http_urls;
 	verbose(VERB_OPS, "test unsafe probe combination started");
+	/* pretend there is no http probing */
+	global_svr->cfg->num_http_urls = 0;
 	probe_start("127.0.0.3");
+	global_svr->cfg->num_http_urls = nurl;
 	/* pretend we got a reply from the cache (so not disconnected) */
 	if(global_svr->probes)
 		global_svr->probes->got_packet = 1;
@@ -1033,8 +1037,12 @@ void probe_unsafe_test(void)
 
 void probe_tcp_test(void)
 {
+	int nurl = global_svr->cfg->num_http_urls;
 	verbose(VERB_OPS, "test tcp probe combination started");
+	/* pretend there is no http probing */
+	global_svr->cfg->num_http_urls = 0;
 	probe_start("127.0.0.3");
+	global_svr->cfg->num_http_urls = nurl;
 	global_svr->probe_direct = 1;
 	probe_spawn("127.0.0.4", 0, 0, 0, DNS_PORT);
 	global_svr->tcp_timer_used = 1; /* avoid retry after 20 sec */
@@ -1042,8 +1050,12 @@ void probe_tcp_test(void)
 
 void probe_ssl_test(void)
 {
+	int nurl = global_svr->cfg->num_http_urls;
 	verbose(VERB_OPS, "test ssl probe combination started");
+	/* pretend there is no http probing */
+	global_svr->cfg->num_http_urls = 0;
 	probe_start("127.0.0.3");
+	global_svr->cfg->num_http_urls = nurl;
 	global_svr->probe_direct = 1;
 	probe_spawn("127.0.0.4", 0, 0, 0, DNS_PORT);
 	global_svr->probe_dnstcp = 1;
