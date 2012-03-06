@@ -291,6 +291,7 @@ static void send_ssl_cmd(const char* cmd)
 
 void attach_send_insecure(int val)
 {
+	if(verbosity > 2) printf("insecure command %s\n", val?"yes":"no");
 	if(val) send_ssl_cmd("insecure yes\n");
 	else	send_ssl_cmd("insecure no\n");
 }
