@@ -636,7 +636,7 @@ static void persist_cmd_insecure(int val)
 	svr_send_results(svr);
 }
 
-static void cmd_reprobe(void)
+void cmd_reprobe(void)
 {
 	char buf[10240];
 	char* now = buf;
@@ -678,6 +678,7 @@ static void sslconn_persist_command(struct sslconn* sc)
 		persist_cmd_insecure(0);
 	} else if(strcmp(str, "reprobe") == 0) {
 		global_svr->forced_insecure = 0;
+		global_svr->http_insecure = 0;
 		cmd_reprobe();
 	} else if(strcmp(str, "hotspot_signon") == 0) {
 		handle_hotspot_signon_cmd(global_svr);
@@ -719,12 +720,9 @@ send_results_to_con(struct svr* svr, struct sslconn* s)
 		    		"addr", p->host_c->qname,
 				p->http_ip6?"AAAA":"A", p->name,
 				p->works?"OK":"error", p->reason?p->reason:"");
-			} else if(p->http) {
-		    	ldns_buffer_printf(s->buffer, "%s %s from %s: %s %s\n",
-		    		"http", p->http->url, p->name,
-				p->works?"OK":"error", p->reason?p->reason:"");
-			} else ldns_buffer_printf(s->buffer, "http %s: %s %s\n",
-				p->name,
+			} else
+		    	    ldns_buffer_printf(s->buffer, "%s %s (%s): %s %s\n",
+		    		"http", p->http_desc, p->name,
 				p->works?"OK":"error", p->reason?p->reason:"");
 		} else if(p->dnstcp)
 		    ldns_buffer_printf(s->buffer, "%s%d %s: %s %s\n",
@@ -740,14 +738,16 @@ send_results_to_con(struct svr* svr, struct sslconn* s)
 	else if(!numcache)
 		ldns_buffer_printf(s->buffer, "no cache: no DNS servers have been supplied via DHCP\n");
 
-	ldns_buffer_printf(s->buffer, "state: %s %s\n",
+	ldns_buffer_printf(s->buffer, "state: %s %s%s%s\n",
 		svr->res_state==res_cache?"cache":(
 		svr->res_state==res_tcp?"tcp":(
 		svr->res_state==res_ssl?"ssl":(
 		svr->res_state==res_auth?"auth":(
 		svr->res_state==res_disconn?"disconnected":"nodnssec")))),
-		svr->forced_insecure?"forced_insecure":(
-		svr->insecure_state?"insecure":"secure"));
+		svr->insecure_state?"insecure_mode":"secure",
+		svr->forced_insecure?" forced_insecure":"",
+		svr->http_insecure?" http_insecure":""
+		);
 	ldns_buffer_printf(s->buffer, "\n");
 	ldns_buffer_flip(s->buffer);
 	comm_point_listen_for_rw(s->c, 1, 1);
@@ -814,6 +814,12 @@ static void handle_test_ssl_cmd(struct sslconn* sc)
 	sslconn_shutdown(sc);
 }
 
+static void handle_test_http_cmd(struct sslconn* sc)
+{
+	probe_http_test();
+	sslconn_shutdown(sc);
+}
+
 static void handle_stoppanels_cmd(struct sslconn* sc)
 {
 	/* write stop to all connected panels */
@@ -869,6 +875,7 @@ static void sslconn_command(struct sslconn* sc)
 		sslconn_shutdown(sc);
 	} else if(strncmp(str, "reprobe", 7) == 0) {
 		global_svr->forced_insecure = 0;
+		global_svr->http_insecure = 0;
 		cmd_reprobe();
 		sslconn_shutdown(sc);
 	} else if(strncmp(str, "hotspot_signon", 14) == 0) {
@@ -886,6 +893,8 @@ static void sslconn_command(struct sslconn* sc)
 		handle_test_tcp_cmd(sc);
 	} else if(strncmp(str, "test_ssl", 8) == 0) {
 		handle_test_ssl_cmd(sc);
+	} else if(strncmp(str, "test_http", 8) == 0) {
+		handle_test_http_cmd(sc);
 	} else if(strncmp(str, "stoppanels", 10) == 0) {
 		handle_stoppanels_cmd(sc);
 	} else if(strncmp(str, "stop", 4) == 0) {

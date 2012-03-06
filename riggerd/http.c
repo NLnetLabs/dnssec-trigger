@@ -334,6 +334,14 @@ http_probe_create_get(struct http_probe* hp, ldns_rr* addr, char** reason)
 		free(p);
 		return 0;
 	}
+	p->http_desc = strdup(hp->hostname);
+	if(!p->http_desc) {
+		*reason = "malloc failure";
+		http_get_delete(p->http);
+		free(p->name); 
+		free(p);
+		return 0;
+	}
 
 	/* put it in the svr list */
 	p->next = global_svr->probes;
@@ -483,9 +491,24 @@ void http_general_delete(struct http_general* hg)
 
 void http_general_done(const char* reason)
 {
+	struct svr* svr = global_svr;
 	log_info("http_general done %s", reason?reason:"success");
-	if(global_svr->num_probes_done < global_svr->num_probes)
+	if(!reason) {
+		svr->http->saw_http_work = 1;
+	}
+
+	if(svr->num_probes_done < svr->num_probes) {
+		/* if we are probing the cache, and now http works,
+		 * and some cache was already seen to work.
+		 * (and we are not probing TCP, SSL, Authority),
+		 * (and we are not in forced_insecure mode).
+		 * Then we can already use the working cache server now. */
+		if(!reason && !svr->probe_dnstcp && !svr->probe_direct &&
+			svr->saw_first_working && !svr->forced_insecure) {
+			probe_setup_cache(svr, NULL);
+		}
 		return; /* wait for other probes at the cache stage */
+	}
 	probe_cache_done();
 }
 
@@ -605,7 +628,7 @@ http_get_done(struct http_get* hg, char* reason, int connects)
 	}
 	http_get_delete(hg);
 	p->http = NULL;
-	
+
 	http_probe_done_addr(global_svr->http, hp, reason, hp->connects);
 }
 

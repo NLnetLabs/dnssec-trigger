@@ -75,7 +75,9 @@ usage()
 	printf("  hotspot_signon	force status into insecure\n");
 	printf("		do a reprobe command after signon\n");
 	printf("  unsafe	test option that pretends that dnssec fails\n");
-	printf("  test_tcp	test option that pretends that cache and auth fail\n");
+	printf("  test_tcp	test option that enables tcp mode\n");
+	printf("  test_ssl	test option that enables ssl mode\n");
+	printf("  test_http	test option that pretends that http fails\n");
 	printf("  results	continuous feed of probe results\n");
 	printf("  cmdtray	command channel for gui panel\n");
 	printf("  stoppanels	connected panels quit (for installers)\n");

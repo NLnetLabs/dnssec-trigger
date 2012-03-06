@@ -127,6 +127,8 @@ struct svr {
 	int insecure_state;
 	/* forced insecure (for hotspot signon) */
 	int forced_insecure;
+	/* http insecure (http probe failed, hotspot signon needed perhaps */
+	int http_insecure;
 };
 
 /** retry timer start (sec.) */
@@ -187,6 +189,9 @@ void svr_retry_timer_stop(void);
 void svr_tcp_timer_enable(void);
 /** stop tcp retry timer timeouts */
 void svr_tcp_timer_stop(void);
+
+/** perform a reprobe */
+void cmd_reprobe(void);
 
 int handle_ssl_accept(struct comm_point* c, void* arg, int error,
         struct comm_reply* reply_info);

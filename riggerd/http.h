@@ -67,6 +67,9 @@ struct http_general {
 	struct http_probe* v4;
 	/* the ipv6 http probe */
 	struct http_probe* v6;
+
+	/* http works */
+	int saw_http_work;
 };
 
 /**

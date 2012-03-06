@@ -61,6 +61,7 @@ struct alert_arg {
 	int now_tcp;
 	int now_ssl;
 	int now_forced_insecure;
+	int now_http_insecure;
 };
 
 /** structure for reading from the daemon */

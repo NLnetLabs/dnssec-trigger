@@ -115,6 +115,7 @@ void probe_start(char* ips)
 		if(!svr->http && svr->cfg->num_http_urls != 0) {
 			svr->http = http_general_start(svr);
 			if(!svr->http) log_err("out of memory");
+			svr->http->saw_http_work = 0;
 		}
 	}
 }
@@ -124,6 +125,7 @@ void probe_delete(struct probe_ip* p)
 	if(!p) return;
 	free(p->name);
 	free(p->reason);
+	free(p->http_desc);
 	SSL_CTX_free(p->sslctx);
 	outq_delete(p->ds_c);
 	outq_delete(p->dnskey_c);
@@ -1049,6 +1051,29 @@ void probe_ssl_test(void)
 	global_svr->tcp_timer_used = 1; /* avoid retry after 20 sec */
 }
 
+void probe_http_test(void)
+{
+	struct cfg* cfg = global_svr->cfg;
+	struct strlist2* old_http_urls = cfg->http_urls;
+	struct strlist2* old_http_urls_last = cfg->http_urls_last;
+	int old_num_http_urls = cfg->num_http_urls;
+	struct strlist2 fake;
+	verbose(VERB_OPS, "test http probe url started");
+	fake.next = NULL;
+	/* lookup of existing URL but we give wrong contents */
+	fake.str1 = "http://open.nlnetlabs.nl/index.html";
+	fake.str2 = "NoSuchString12345";
+	cfg->http_urls = &fake;
+	cfg->http_urls_last = &fake;
+	cfg->num_http_urls = 1;
+
+	cmd_reprobe();
+
+	cfg->http_urls = old_http_urls;
+	cfg->http_urls_last = old_http_urls_last;
+	cfg->num_http_urls = old_num_http_urls;
+}
+
 /* stop unfininished probes and remove them */
 static void stop_unfinished_probes(void)
 {
@@ -1137,7 +1162,12 @@ probe_done(struct probe_ip* p)
 		if(!svr->probe_dnstcp && !svr->probe_direct &&
 			!svr->saw_first_working) {
 			svr->saw_first_working = 1;
-			if(!svr->forced_insecure) {
+			/* if works, not forced_insecure and http works (or
+			 * did not get probed because not configured) then
+			 * we can already use this cache-DNS now before all
+			 * probes are done */
+			if(!svr->forced_insecure && (!svr->http ||
+				svr->http->saw_http_work)) {
 				probe_setup_cache(svr, p);
 			}
 		} else if(svr->probe_direct && !svr->probe_dnstcp &&
@@ -1175,6 +1205,7 @@ void probe_setup_cache(struct svr* svr, struct probe_ip* p)
 	hook_resolv_localhost(svr->cfg);
 	svr_retry_timer_stop();
 	svr->tcp_timer_used = 0;
+	svr->http_insecure = 0;
 }
 
 /** setup for auth (direct to authorities) */
@@ -1188,6 +1219,7 @@ void probe_setup_auth(struct svr* svr)
 	hook_resolv_localhost(svr->cfg);
 	svr_retry_timer_stop();
 	svr->tcp_timer_used = 0;
+	svr->http_insecure = 0;
 }
 
 /** setup for dnstcp (uses tcp to open resolver) */
@@ -1216,6 +1248,7 @@ void probe_setup_dnstcp(struct svr* svr)
 	hook_resolv_localhost(svr->cfg);
 	svr_retry_timer_stop();
 	svr_tcp_timer_enable();
+	svr->http_insecure = 0;
 }
 
 /** setup to be disconnected */
@@ -1230,6 +1263,7 @@ void probe_setup_disconnected(struct svr* svr)
 	hook_resolv_localhost(svr->cfg);
 	svr_retry_timer_next();
 	svr->tcp_timer_used = 0;
+	svr->http_insecure = 0;
 }
 
 /** setup for dark (no dnssec) */
@@ -1251,6 +1285,7 @@ void probe_setup_dark(struct svr* svr)
 	}
 	svr_retry_timer_next();
 	svr->tcp_timer_used = 0;
+	svr->http_insecure = 0;
 }
 
 /** setup forced insecure (for hotspot signon) */
@@ -1264,12 +1299,39 @@ void probe_setup_hotspot_signon(struct svr* svr)
 	hook_resolv_iplist(svr->cfg, svr->probes);
 	svr_retry_timer_stop();
 	svr_tcp_timer_stop();
+	svr->http_insecure = 0;
+}
+
+/** setup http insecure (for hotspot signon) */
+void probe_setup_http_insecure(struct svr* svr)
+{
+	svr->res_state = res_dark;
+	svr->http_insecure = 1;
+	/* effectuate it */
+	hook_unbound_dark(svr->cfg);
+	/* see what the user wants */
+	if(svr->insecure_state) {
+		/* set resolv.conf to DHCP IP list */
+		hook_resolv_iplist(svr->cfg, svr->probes);
+	} else { /* set resolv.conf to 127.0.0.1 now,
+		* the user may select insecure later */
+		hook_resolv_localhost(svr->cfg);
+	}
+	/* set timer to catch user as things work again */
+	svr_retry_timer_next();
+	svr->tcp_timer_used = 0;
 }
 
 void
 probe_cache_done(void)
 {
 	struct svr* svr = global_svr;
+	if(!svr->probe_direct && svr->http && !svr->http->saw_http_work) {
+		/* cache probe completed, but http fails to work, stop probes */
+		/* do not probe direct authority servers, because HTTP fails*/
+		probe_all_done();
+		return;
+	}
 	if(!svr->probe_direct && !svr->saw_first_working) {
 		/* no working server, probe the direct DNS */
 		/* we wait until the other probes fail to not put
@@ -1374,6 +1436,10 @@ probe_all_done(void)
 			verbose(VERB_OPS, "probe done: DNSSEC fails");
 			probe_setup_dark(svr);
 		}
+	} else if(svr->http && !svr->http->saw_http_work) {
+		/* http probed (so have DHCPDNS), but fails */
+		verbose(VERB_OPS, "probe done: http fails");
+		probe_setup_http_insecure(svr);
 	} else {
 		verbose(VERB_OPS, "probe done: DNSSEC to cache");
 		probe_setup_cache(svr, NULL);

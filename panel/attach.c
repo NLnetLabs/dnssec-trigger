@@ -232,6 +232,7 @@ static void read_from_feed(void)
 
 static void process_results(void)
 {
+	char* s = feed->results_last->str;
 	struct alert_arg a;
 	memset(&a, 0, sizeof(a));
 
@@ -239,13 +240,15 @@ static void process_results(void)
 	feed->lock();
 	if(!feed->connected) return;
 	if(!feed->results_last) return;
-	a.now_insecure = (strstr(feed->results_last->str, "insecure")!=NULL);
-	a.now_dark = (strstr(feed->results_last->str, "nodnssec")!=NULL);
-	a.now_cache = (strstr(feed->results_last->str, "cache")!=NULL);
-	a.now_auth = (strstr(feed->results_last->str, "auth")!=NULL);
-	a.now_tcp = (strstr(feed->results_last->str, "tcp")!=NULL);
-	a.now_ssl = (strstr(feed->results_last->str, "ssl")!=NULL);
-	a.now_disconn = (strstr(feed->results_last->str, "disconnected")!=NULL);
+	a.now_insecure = (strstr(s, "insecure_mode")!=NULL);
+	a.now_http_insecure = (strstr(s, "http_insecure")!=NULL);
+	a.now_forced_insecure = (strstr(s, "forced_insecure")!=NULL);
+	a.now_dark = (strstr(s, "nodnssec")!=NULL);
+	a.now_cache = (strstr(s, "cache")!=NULL);
+	a.now_auth = (strstr(s, "auth")!=NULL);
+	a.now_tcp = (strstr(s, "tcp")!=NULL);
+	a.now_ssl = (strstr(s, "ssl")!=NULL);
+	a.now_disconn = (strstr(s, "disconnected")!=NULL);
 	a.last_insecure = feed->insecure_mode;
 	feed->insecure_mode = a.now_insecure;
 	feed->unlock();
@@ -305,6 +308,8 @@ void attach_send_hotspot_signon(void)
 const char* state_tooltip(struct alert_arg* a)
 {
 	if(a->now_forced_insecure)
+		return "DNS DANGER (forced hotspot signon)";
+	else if(a->now_http_insecure && a->now_insecure)
 		return "DNS DANGER (hotspot signon)";
 	else if(a->now_insecure)
 		return "DNS DANGER";
@@ -324,15 +329,33 @@ const char* state_tooltip(struct alert_arg* a)
 void process_state(struct alert_arg* a, int* unsafe_asked,
         void (*danger)(void), void(*safe)(void), void(*dialog)(void))
 {
-	if(!a->now_dark)
+	/* TODO */
+	int* unhttp_asked = unsafe_asked;
+	/* if we are no longe unsafe, set asked to false to ask again
+	 * next time */
+	if(!a->now_dark) {
 		*unsafe_asked = 0;
+		*unhttp_asked = 0;
+	}
+	if(!a->now_http_insecure)
+		*unhttp_asked = 0;
+	if(!a->now_insecure)
+		*unsafe_asked = 0;
+
+	/* see what must be done */
 	if(!a->last_insecure && a->now_insecure) {
 		danger();
 	} else if(a->last_insecure && !a->now_insecure) {
 		safe();
 	}
 	if(!a->now_insecure && a->now_dark && !*unsafe_asked
-		&& !a->now_forced_insecure) {
+		&& !a->now_forced_insecure && !a->now_http_insecure) {
+		dialog();
+	}
+	if(!a->now_insecure && a->now_dark && a->now_http_insecure &&
+		!a->now_forced_insecure && !*unhttp_asked) {
+		//unhttp_ask();
+		/* TODO */
 		dialog();
 	}
 }
@@ -392,6 +415,18 @@ void fetch_proberesults(char* buf, size_t len, const char* lf)
 				n=snprintf(pos, left, 
 		"DNS queries are sent to INSECURE servers, because of%s"
 		"Hotspot Signon. Select Reprobe (from menu) after signon.%s"
+		"Please, be careful out there.%s", lf, lf, lf);
+			else if(strstr(p->str, "http_insecure") &&
+				strstr(p->str, "insecure_mode")==NULL)
+				n=snprintf(pos, left, 
+		"DNS queries are stopped until user confirmation.%s"
+		"There is no web access, asking if user wants to do%s"
+		"hotspot signon in insecure mode.%s", lf, lf, lf);
+			else if(strstr(p->str, "http_insecure") &&
+				strstr(p->str, "insecure_mode"))
+				n=snprintf(pos, left, 
+		"DNS queries are sent to INSECURE servers. There is%s"
+		"no web access, perhaps you must do hotspot signon.%s"
 		"Please, be careful out there.%s", lf, lf, lf);
 			else if(strstr(p->str, "nodnssec") && !strstr(p->str,
 				"insecure"))

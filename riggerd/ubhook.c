@@ -143,7 +143,7 @@ void hook_unbound_cache_list(struct cfg* cfg, struct probe_ip* list)
 		return;
 	buf[0]=0; /* safe, robust */
 	while(list) {
-		if(list->works && list->finished) {
+		if(probe_is_cache(list) && list->works && list->finished) {
 			int len;
 			if(left < strlen(list->name)+3)
 				break; /* no space for more */
