@@ -247,7 +247,7 @@ static int read_hash(char* arg, struct ssllist* e)
 		/* skip ':' (unless at EOS) */
 		if(*at && i!=len-1) at ++;
 	}
-	hashlist_prepend(&e->hashes, hash, len);
+	hashlist_prepend(&e->hashes, hash, (unsigned int)len);
 	return 1;
 }
 
