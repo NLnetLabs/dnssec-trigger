@@ -100,6 +100,8 @@ struct svr {
 	int retry_timer_enabled;
 	/** what is the current time for exponential backoff of timer, sec. */
 	int retry_timer_timeout;
+	/** count of 10-second retries */
+	int retry_timer_count;
 
 	/** tcp retry timer */
 	struct comm_timer* tcp_timer;
@@ -135,6 +137,8 @@ struct svr {
 #define RETRY_TIMER_START 10
 /** retry timer max value (sec.) */
 #define RETRY_TIMER_MAX 86400
+/** retrey timer max count (number of 'START' retries for http insecure) */
+#define RETRY_TIMER_COUNT_MAX 30
 /** timer for tcp state to try again once (sec.) */
 #define SVR_TCP_RETRY 20
 
@@ -182,7 +186,7 @@ void svr_retry_callback(void* arg);
 void svr_tcp_callback(void* arg);
 
 /** start or enable next timeout on the retry timer */
-void svr_retry_timer_next(void);
+void svr_retry_timer_next(int http_mode);
 /** stop retry timeouts */
 void svr_retry_timer_stop(void);
 /** set tcp retry timer */

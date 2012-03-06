@@ -1261,7 +1261,7 @@ void probe_setup_disconnected(struct svr* svr)
 	/* set resolver.conf to 127.0.0.1 (get rid of old
 	 * settings that may be in there) */
 	hook_resolv_localhost(svr->cfg);
-	svr_retry_timer_next();
+	svr_retry_timer_next(0);
 	svr->tcp_timer_used = 0;
 	svr->http_insecure = 0;
 }
@@ -1283,7 +1283,7 @@ void probe_setup_dark(struct svr* svr)
 		* the user may select insecure later */
 		hook_resolv_localhost(svr->cfg);
 	}
-	svr_retry_timer_next();
+	svr_retry_timer_next(0);
 	svr->tcp_timer_used = 0;
 	svr->http_insecure = 0;
 }
@@ -1318,7 +1318,7 @@ void probe_setup_http_insecure(struct svr* svr)
 		hook_resolv_localhost(svr->cfg);
 	}
 	/* set timer to catch user as things work again */
-	svr_retry_timer_next();
+	svr_retry_timer_next(1);
 	svr->tcp_timer_used = 0;
 }
 

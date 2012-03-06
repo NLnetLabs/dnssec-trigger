@@ -934,29 +934,38 @@ void svr_retry_callback(void* arg)
 static void svr_retry_setit(struct svr* svr)
 {
 	struct timeval tv;
-	verbose(VERB_ALGO, "retry in %d seconds", svr->retry_timer_timeout);
+	if(svr->retry_timer_count < RETRY_TIMER_COUNT_MAX)
+		verbose(VERB_ALGO, "retry in %d seconds (try nr %d)", svr->retry_timer_timeout, svr->retry_timer_count);
+	else	verbose(VERB_ALGO, "retry in %d seconds", svr->retry_timer_timeout);
 	tv.tv_sec = svr->retry_timer_timeout;
 	tv.tv_usec = 0;
 	comm_timer_set(svr->retry_timer, &tv);
 }
 
-static void svr_retry_start(struct svr* svr)
+static void svr_retry_start(struct svr* svr, int http_mode)
 {
 	svr->retry_timer_timeout = RETRY_TIMER_START;
+	if(http_mode)
+		svr->retry_timer_count = 1;
+	else	svr->retry_timer_count = RETRY_TIMER_COUNT_MAX;
 	svr->retry_timer_enabled = 1;
 	svr_retry_setit(svr);
 }
 
-void svr_retry_timer_next(void)
+void svr_retry_timer_next(int http_mode)
 {
 	struct svr* svr = global_svr;
 	if(!svr->retry_timer_enabled) {
-		svr_retry_start(svr);
+		svr_retry_start(svr, http_mode);
 		return;
 	}
-	svr->retry_timer_timeout *= 2;
-	if(svr->retry_timer_timeout > RETRY_TIMER_MAX)
-		svr->retry_timer_timeout = RETRY_TIMER_MAX;
+	if(svr->retry_timer_count < RETRY_TIMER_COUNT_MAX) {
+		svr->retry_timer_count++;
+	} else {
+		svr->retry_timer_timeout *= 2;
+		if(svr->retry_timer_timeout > RETRY_TIMER_MAX)
+			svr->retry_timer_timeout = RETRY_TIMER_MAX;
+	}
 	svr_retry_setit(svr);
 }
 
