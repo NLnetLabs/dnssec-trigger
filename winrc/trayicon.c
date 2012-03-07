@@ -55,6 +55,7 @@ static NOTIFYICONDATA notifydata;
 static TCHAR trayclassname[] = TEXT("dnssec trigger tray icon");
 static TCHAR insecclassname[] = TEXT("Network DNSSEC Failure");
 static TCHAR hotsignclassname[] = TEXT("Hotspot Signon");
+static TCHAR nowebclassname[] = TEXT("No Web Access");
 #define ID_TRAY_APP_ICON 5000
 #define WM_TRAYICON (WM_USER + 1)
 #define WM_PANELALERT (WM_USER + 2)
@@ -92,13 +93,23 @@ static HWND hotsign_ok;
 /* hotsign 'Cancel' button */
 static HWND hotsign_cancel;
 
+/* the noweb dialog */
+static HWND noweb_wnd;
+/* the 'Skip' button */
+static HWND noweb_skip;
+/* the 'Login' button */
+static HWND noweb_login;
+
 /** if we have asked about disconnect or insecure */
 static int unsafe_asked = 0;
 /** if we should ask unsafe */
 static int unsafe_should = 0;
+/** if we have asked about noweb */
+static int noweb_asked = 0;
 
 static void panel_alert(void);
 static void panel_dialog(void);
+static void noweb_dialog(void);
 
 static HFONT font;
 static HFONT font_bold;
@@ -194,6 +205,37 @@ init_hotsignwnd(HINSTANCE hInstance)
 	SendMessage(hotsign_cancel, WM_SETFONT, (WPARAM)font_bold, TRUE);
 	SendMessage(hotsign_ok, WM_SETFONT, (WPARAM)font_bold, TRUE);
 	ShowWindow(hotsign_wnd, SW_HIDE);
+}
+
+static void
+init_nowebwnd(HINSTANCE hInstance)
+{
+	HWND statictext;
+	/* no web access dialog:
+	 * static text with explanation.
+	 * Skip and Login buttons */
+	noweb_wnd = CreateWindowEx(0, nowebclassname,
+		TEXT("No Web Access"),
+		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX |
+		WS_MAXIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT,
+		495, 150, NULL, NULL, hInstance, NULL);
+	statictext = CreateWindow(TEXT("STATIC"), TEXT(
+"There is no web access on this network. Do you have to login for that?\r\n"
+"\r\n"
+"While you login you are insecure, for backwards compatibility, until\r\n"
+"dnssec-trigger can detect web access.\r\n"
+	), WS_CHILD | WS_VISIBLE | SS_LEFT,
+		10, 10, 470, 70, noweb_wnd, NULL, hInstance, NULL);
+	noweb_skip = CreateWindow(TEXT("BUTTON"), TEXT("Skip"),
+		WS_CHILD | WS_VISIBLE,
+		180, 90, 100, 25, noweb_wnd, NULL, hInstance, NULL);
+	noweb_login = CreateWindow(TEXT("BUTTON"), TEXT("Log in"),
+		WS_CHILD | WS_VISIBLE,
+		300, 90, 100, 25, noweb_wnd, NULL, hInstance, NULL);
+	SendMessage(statictext, WM_SETFONT, (WPARAM)font, TRUE);
+	SendMessage(noweb_skip, WM_SETFONT, (WPARAM)font_bold, TRUE);
+	SendMessage(noweb_login, WM_SETFONT, (WPARAM)font_bold, TRUE);
+	ShowWindow(noweb_wnd, SW_HIDE);
 }
 
 static void
@@ -327,6 +369,47 @@ LRESULT CALLBACK HotsignWndProc(HWND hwnd, UINT message, WPARAM wParam,
 	return DefWindowProc(hwnd, message, wParam, lParam);
 }
 
+LRESULT CALLBACK NowebWndProc(HWND hwnd, UINT message, WPARAM wParam,
+	LPARAM lParam)
+{
+	switch(message) {
+	case WM_SYSCOMMAND:
+		switch(wParam & 0xfff0) { /* removes reserved lower 4 bits */
+		case SC_MINIMIZE:
+			break;
+		case SC_CLOSE:
+			ShowWindow(noweb_wnd, SW_HIDE);
+			attach_send_skip_http();
+			noweb_asked = 1;
+			return 0;
+			break;
+		}
+		break;
+	case WM_COMMAND:
+		/* buttons pressed */
+		if((HWND)lParam == noweb_skip) {
+			ShowWindow(noweb_wnd, SW_HIDE);
+			attach_send_skip_http();
+			noweb_asked = 1;
+		} else if((HWND)lParam == noweb_login) {
+			ShowWindow(noweb_wnd, SW_HIDE);
+			attach_send_insecure(1);
+			noweb_asked = 1;
+		}
+		break;
+	case WM_CLOSE:
+		ShowWindow(noweb_wnd, SW_HIDE);
+		attach_send_skip_http();
+		noweb_asked = 1;
+		return 0;
+		break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	}
+	return DefWindowProc(hwnd, message, wParam, lParam);
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	if(message==WM_TASKBARCREATED) {
@@ -443,6 +526,12 @@ static void panel_dialog(void)
 	SetForegroundWindow(insec_wnd);
 }
 
+static void noweb_dialog(void)
+{
+	ShowWindow(noweb_wnd, SW_SHOW);
+	SetForegroundWindow(noweb_wnd);
+}
+
 static void do_args(char* str, int* debug, const char** cfgfile)
 {
 	char* p = str;
@@ -550,8 +639,8 @@ static void panel_alert(void)
 		log_err("cannot Shell_NotifyIcon modify");
 	}
 	/* handle it */
-	process_state(&a, &unsafe_asked, &panel_danger, &panel_safe,
-		&panel_dialog);
+	process_state(&a, &unsafe_asked, &noweb_asked, &panel_danger,
+		&panel_safe, &panel_dialog, &noweb_dialog);
 	if(!a.now_dark) unsafe_should = 0;
 }
 
@@ -703,11 +792,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR args,
 	if(!RegisterClassEx(&wnd)) {
 		FatalAppExit(0, TEXT("Cannot RegisterClassEx"));
 	}
+	wnd.lpszClassName = nowebclassname;
+	wnd.hIcon = status_icon_alert_big;
+	wnd.hIconSm = status_icon_alert;
+	wnd.lpfnWndProc = NowebWndProc;
+	if(!RegisterClassEx(&wnd)) {
+		FatalAppExit(0, TEXT("Cannot RegisterClassEx"));
+	}
 
 	init_font();
 	init_mainwnd(hInstance);
 	init_insecwnd(hInstance);
 	init_hotsignwnd(hInstance);
+	init_nowebwnd(hInstance);
 	ShowWindow(mainwnd, SW_HIDE);
 	init_icon();
 	spawn_feed(cfg);
