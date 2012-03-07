@@ -47,6 +47,9 @@
 #include "riggerd/probe.h"
 #include "riggerd/cfg.h"
 #include "riggerd/net_help.h"
+#ifdef USE_WINSOCK
+#include "winsock_event.h"
+#else
 
 /** start http get with a random dest address from the set */
 void http_probe_start_http_get(struct http_probe* hp);
