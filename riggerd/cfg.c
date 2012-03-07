@@ -67,6 +67,9 @@ strlist2_append(struct strlist2** first, struct strlist2** last,
 	struct strlist2* e = (struct strlist2*)malloc(sizeof(*e));
 	if(!e) fatal_exit("out of memory");
 	e->next = NULL;
+	if(!s || !t)
+		fatal_exit("parse error in url statement: %s %s",
+			s?s:"", t?t:"");
 	e->str1 = strdup(s);
 	e->str2 = strdup(t);
 	if(!e->str1 || !e->str2) fatal_exit("out of memory");

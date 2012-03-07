@@ -1,3 +1,6 @@
+7 March 2012: Wouter
+	- print syntax error for url config items.
+
 6 March 2012: Wouter
 	- Fix memleak in new config url content.
 	- Fix probe count when http is done.
