@@ -216,6 +216,12 @@ Probe the last probe again.  It also cancels forced insecure state from
 hotspot signon, causing probes for dnssec to resume.  This command acts
 as the menu item with the same name.
 .TP
+.B skip_http
+Skip the http probe step.  Setup DNSSEC, as possible, without taking the
+result of the http probe into account.  Once http works again, it'll stop
+skipping the http results.  Useful, if you want to have DNSSEC on a network
+where web access is not possible.
+.TP
 .B hotspot_signon
 This command acts as the menu item with the same name.  Use it to force
 insecure mode, where you can then interact with (weird) hotspot set ups.
