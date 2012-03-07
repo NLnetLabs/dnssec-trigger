@@ -131,6 +131,8 @@ struct svr {
 	int forced_insecure;
 	/* http insecure (http probe failed, hotspot signon needed perhaps */
 	int http_insecure;
+	/* skip http probe part (ignore failure until it works again) */
+	int skip_http;
 };
 
 /** retry timer start (sec.) */

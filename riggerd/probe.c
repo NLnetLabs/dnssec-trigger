@@ -1078,6 +1078,7 @@ void probe_http_test(void)
 	cfg->http_urls = &fake;
 	cfg->http_urls_last = &fake;
 	cfg->num_http_urls = 1;
+	global_svr->skip_http = 0;
 
 	cmd_reprobe();
 
@@ -1179,7 +1180,7 @@ probe_done(struct probe_ip* p)
 			 * we can already use this cache-DNS now before all
 			 * probes are done */
 			if(!svr->forced_insecure && (!svr->http ||
-				svr->http->saw_http_work)) {
+				svr->skip_http || svr->http->saw_http_work)) {
 				probe_setup_cache(svr, p);
 			}
 		} else if(svr->probe_direct && !svr->probe_dnstcp &&
@@ -1338,9 +1339,11 @@ void
 probe_cache_done(void)
 {
 	struct svr* svr = global_svr;
-	if(!svr->probe_direct && svr->http && !svr->http->saw_http_work) {
+	if(!svr->probe_direct && svr->http && !svr->http->saw_http_work
+		&& !svr->skip_http) {
 		/* cache probe completed, but http fails to work, stop probes */
 		/* do not probe direct authority servers, because HTTP fails*/
+		/* unless we skip http probe, then go on to probe authority */
 		probe_all_done();
 		return;
 	}
@@ -1421,6 +1424,10 @@ probe_all_done(void)
 				p->works?"OK":"error", p->reason?p->reason:"");
 		}
 	}
+	/* reset skip http once it works */
+	if(svr->skip_http && svr->http && svr->http->saw_http_work)
+		svr->skip_http = 0;
+
 	if(svr->forced_insecure) {
 		verbose(VERB_OPS, "probe done: but still forced insecure");
 		/* call it again, in case DHCP changes while hotspot-signon */
@@ -1448,7 +1455,7 @@ probe_all_done(void)
 			verbose(VERB_OPS, "probe done: DNSSEC fails");
 			probe_setup_dark(svr);
 		}
-	} else if(svr->http && !svr->http->saw_http_work) {
+	} else if(svr->http && !svr->http->saw_http_work && !svr->skip_http) {
 		/* http probed (so have DHCPDNS), but fails */
 		verbose(VERB_OPS, "probe done: http fails");
 		probe_setup_http_insecure(svr);

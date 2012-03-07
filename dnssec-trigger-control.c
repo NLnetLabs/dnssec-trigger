@@ -72,6 +72,7 @@ usage()
 	printf("		separated by spaces, these are then probed.\n");
 	printf("  status	shows the latest probe results\n");
 	printf("  reprobe	probe again\n");
+	printf("  skip_http	skip http probe, there is no hotspot login\n");
 	printf("  hotspot_signon	force status into insecure\n");
 	printf("		do a reprobe command after signon\n");
 	printf("  unsafe	test option that pretends that dnssec fails\n");

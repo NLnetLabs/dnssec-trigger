@@ -664,6 +664,13 @@ static void handle_hotspot_signon_cmd(struct svr* svr)
 	svr_send_results(svr);
 }
 
+static void handle_skip_http_cmd(void)
+{
+	verbose(VERB_OPS, "state skip_http and reprobe");
+	global_svr->skip_http = 1;
+	cmd_reprobe();
+}
+
 static void sslconn_persist_command(struct sslconn* sc)
 {
 	char* str = (char*)ldns_buffer_begin(sc->buffer);
@@ -680,6 +687,8 @@ static void sslconn_persist_command(struct sslconn* sc)
 		global_svr->forced_insecure = 0;
 		global_svr->http_insecure = 0;
 		cmd_reprobe();
+	} else if(strcmp(str, "skip_http") == 0) {
+		handle_skip_http_cmd();
 	} else if(strcmp(str, "hotspot_signon") == 0) {
 		handle_hotspot_signon_cmd(global_svr);
 	} else {
@@ -877,6 +886,9 @@ static void sslconn_command(struct sslconn* sc)
 		global_svr->forced_insecure = 0;
 		global_svr->http_insecure = 0;
 		cmd_reprobe();
+		sslconn_shutdown(sc);
+	} else if(strncmp(str, "skip_http", 9) == 0) {
+		handle_skip_http_cmd();
 		sslconn_shutdown(sc);
 	} else if(strncmp(str, "hotspot_signon", 14) == 0) {
 		handle_hotspot_signon_cmd(global_svr);
