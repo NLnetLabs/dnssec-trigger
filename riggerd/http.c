@@ -781,7 +781,8 @@ static int hg_write_buf(struct http_get* hg, ldns_buffer* buf)
 		if(error == WSAEINPROGRESS)
 			return 0;
 		else if(error == WSAEWOULDBLOCK) {
-			winsock_tcp_wouldblock(&c->ev->ev, EV_WRITE);
+			winsock_tcp_wouldblock(comm_point_internal(hg->cp),
+				EV_WRITE);
 			return 0;
 		} else if(error != 0) {
 			str = wsa_strerror(error);
@@ -806,7 +807,8 @@ static int hg_write_buf(struct http_get* hg, ldns_buffer* buf)
 		if(WSAGetLastError() == WSAEINPROGRESS)
 			return 0;
 		if(WSAGetLastError() == WSAEWOULDBLOCK) {
-			winsock_tcp_wouldblock(&hg->cp->ev->ev, EV_WRITE);
+			winsock_tcp_wouldblock(comm_point_internal(hg->cp),
+				EV_WRITE);
 			return 0;
 		}
 		str = wsa_strerror(WSAGetLastError());
@@ -842,7 +844,8 @@ static int hg_read_buf(struct http_get* hg, ldns_buffer* buf)
 		if(WSAGetLastError() == WSAEINPROGRESS)
 			return 0;
 		if(WSAGetLastError() == WSAEWOULDBLOCK) {
-			winsock_tcp_wouldblock(&hg->cp->ev->ev, EV_READ);
+			winsock_tcp_wouldblock(comm_point_internal(hg->cp),
+				EV_READ);
 			return 0;
 		}
 		/* WSAECONNRESET could happen */
