@@ -61,6 +61,7 @@ static AppIndicator* app_ind;
 static GtkWidget* result_window;
 static GtkWidget* unsafe_dialog;
 static GtkWidget* hotsign_dialog;
+static GtkWidget* noweb_dialog;
 static GdkPixbuf* normal_icon;
 static GdkPixbuf* alert_icon;
 static GtkMenu* statusmenu;
@@ -68,9 +69,12 @@ static GtkMenu* statusmenu;
 static int unsafe_asked = 0;
 /** if we should ask unsafe */
 static int unsafe_should = 0;
+/** if we have asked about noweb */
+static int noweb_asked = 0;
 
 static void feed_alert(struct alert_arg* a);
 void present_unsafe_dialog(void);
+void present_noweb_dialog(void);
 
 /** print usage text */
 static void
@@ -219,7 +223,6 @@ on_result_dialog_delete_event(GtkWidget* ATTR_UNUSED(widget),
 	GdkEvent* ATTR_UNUSED(event), gpointer ATTR_UNUSED(user_data))
 {
 	gtk_widget_hide(GTK_WIDGET(result_window));
-	attach_send_insecure(0);
 	return TRUE; /* stop other handlers, do not destroy the window */
 }
 
@@ -371,9 +374,10 @@ void present_unsafe_dialog(void)
 	if(gtk_widget_get_visible(GTK_WIDGET(hotsign_dialog)))
 		return; /* wait for hotspot signon question to finish */
 	gtk_window_set_urgency_hint(GTK_WINDOW(unsafe_dialog), TRUE);
+	gtk_window_set_keep_above(GTK_WINDOW(unsafe_dialog), TRUE);
 	gtk_widget_show(GTK_WIDGET(unsafe_dialog));
 	gtk_window_deiconify(GTK_WINDOW(unsafe_dialog));
-	gdk_window_raise(GDK_WINDOW(unsafe_dialog));
+	gdk_window_raise(gtk_widget_get_window(unsafe_dialog));
 	gtk_window_present(GTK_WINDOW(unsafe_dialog));
 }
 
@@ -404,9 +408,49 @@ void panel_alert_state(struct alert_arg* a)
 #else
 	/* no tooltip for appindicator */
 #endif
-	process_state(a, &unsafe_asked, &panel_alert_danger, &panel_alert_safe,
-		&present_unsafe_dialog);
+	process_state(a, &unsafe_asked, &noweb_asked, &panel_alert_danger,
+		&panel_alert_safe, &present_unsafe_dialog,
+		&present_noweb_dialog);
 	if(!a->now_dark) unsafe_should = 0;
+}
+
+void present_noweb_dialog(void)
+{
+	gtk_window_set_urgency_hint(GTK_WINDOW(noweb_dialog), TRUE);
+	gtk_window_set_keep_above(GTK_WINDOW(noweb_dialog), TRUE);
+	gtk_widget_show(GTK_WIDGET(noweb_dialog));
+	gtk_window_deiconify(GTK_WINDOW(noweb_dialog));
+	gdk_window_raise(gtk_widget_get_window(noweb_dialog));
+	gtk_window_present(GTK_WINDOW(noweb_dialog));
+}
+
+G_MODULE_EXPORT
+gboolean
+on_noweb_dialog_delete_event(GtkWidget* ATTR_UNUSED(widget),
+	GdkEvent* ATTR_UNUSED(event), gpointer ATTR_UNUSED(user_data))
+{
+	gtk_widget_hide(GTK_WIDGET(noweb_dialog));
+	noweb_asked = 1;
+	attach_send_skip_http();
+	return TRUE; /* stop other handlers, do not destroy the window */
+}
+
+G_MODULE_EXPORT
+void on_skip_button_clicked(GtkButton *ATTR_UNUSED(button), gpointer
+	ATTR_UNUSED(user_data))
+{
+	gtk_widget_hide(GTK_WIDGET(noweb_dialog));
+	noweb_asked = 1;
+	attach_send_skip_http();
+}
+
+G_MODULE_EXPORT
+void on_login_button_clicked(GtkButton *ATTR_UNUSED(button), gpointer
+	ATTR_UNUSED(user_data))
+{
+	gtk_widget_hide(GTK_WIDGET(noweb_dialog));
+	noweb_asked = 1;
+	attach_send_insecure(1);
 }
 
 #ifdef USE_WINSOCK
@@ -533,6 +577,8 @@ init_gui(int debug)
 		"result_textview"));
 	unsafe_dialog = GTK_WIDGET(gtk_builder_get_object(builder,
 		"unsafe_dialog"));
+	noweb_dialog = GTK_WIDGET(gtk_builder_get_object(builder,
+		"noweb_dialog"));
 	hotsign_dialog = GTK_WIDGET(gtk_builder_get_object(builder,
 		"hotsign_dialog"));
 	statusmenu = GTK_MENU(gtk_builder_get_object(builder, "statusmenu"));
@@ -541,6 +587,7 @@ init_gui(int debug)
 	gtk_widget_hide(GTK_WIDGET(result_window));
 	g_object_ref(G_OBJECT(result_window));
 	g_object_ref(G_OBJECT(unsafe_dialog));
+	g_object_ref(G_OBJECT(noweb_dialog));
 	g_object_ref(G_OBJECT(hotsign_dialog));
 
 	/* no more need for the builder */
@@ -554,6 +601,7 @@ init_gui(int debug)
 	/* loaded the icons, also good for our windows */
 	gtk_window_set_icon(GTK_WINDOW(result_window), normal_icon);
 	gtk_window_set_icon(GTK_WINDOW(unsafe_dialog), alert_icon);
+	gtk_window_set_icon(GTK_WINDOW(noweb_dialog), alert_icon);
 	gtk_window_set_icon(GTK_WINDOW(hotsign_dialog), alert_icon);
 }
 
@@ -562,6 +610,7 @@ static void
 stop_gui(void)
 {
 	gtk_widget_hide(GTK_WIDGET(unsafe_dialog));
+	gtk_widget_hide(GTK_WIDGET(noweb_dialog));
 	gtk_widget_hide(GTK_WIDGET(hotsign_dialog));
 	gtk_widget_hide(GTK_WIDGET(result_window));
 	gtk_widget_hide(GTK_WIDGET(statusmenu));

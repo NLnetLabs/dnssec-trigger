@@ -2,6 +2,7 @@
 	- print syntax error for url config items.
 	- skip_http control command.
 	- raise dialog to top on GTK.
+	- GTK gui for hot spot sign on.
 
 6 March 2012: Wouter
 	- Fix memleak in new config url content.

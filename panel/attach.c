@@ -306,6 +306,11 @@ void attach_send_hotspot_signon(void)
 	send_ssl_cmd("hotspot_signon\n");
 }
 
+void attach_send_skip_http(void)
+{
+	send_ssl_cmd("skip_http\n");
+}
+
 const char* state_tooltip(struct alert_arg* a)
 {
 	if(a->now_forced_insecure)
@@ -327,19 +332,18 @@ const char* state_tooltip(struct alert_arg* a)
 	return "DNSSEC via authorities";
 }
 
-void process_state(struct alert_arg* a, int* unsafe_asked,
-        void (*danger)(void), void(*safe)(void), void(*dialog)(void))
+void process_state(struct alert_arg* a, int* unsafe_asked, int* noweb_asked,
+        void (*danger)(void), void(*safe)(void), void(*dialog)(void),
+	void (*noweb)(void))
 {
-	/* TODO */
-	int* unhttp_asked = unsafe_asked;
 	/* if we are no longe unsafe, set asked to false to ask again
 	 * next time */
 	if(!a->now_dark) {
 		*unsafe_asked = 0;
-		*unhttp_asked = 0;
+		*noweb_asked = 0;
 	}
 	if(!a->now_http_insecure)
-		*unhttp_asked = 0;
+		*noweb_asked = 0;
 	if(!a->now_insecure)
 		*unsafe_asked = 0;
 
@@ -354,10 +358,8 @@ void process_state(struct alert_arg* a, int* unsafe_asked,
 		dialog();
 	}
 	if(!a->now_insecure && a->now_dark && a->now_http_insecure &&
-		!a->now_forced_insecure && !*unhttp_asked) {
-		//unhttp_ask();
-		/* TODO */
-		dialog();
+		!a->now_forced_insecure && !*noweb_asked) {
+		noweb();
 	}
 }
 

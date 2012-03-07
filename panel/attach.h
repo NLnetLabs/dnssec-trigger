@@ -116,6 +116,7 @@ void attach_stop(void);
 void attach_send_insecure(int val);
 void attach_send_reprobe(void);
 void attach_send_hotspot_signon(void);
+void attach_send_skip_http(void);
 
 /** get tooltip text from alert state (fixed string) */
 const char* state_tooltip(struct alert_arg* a);
@@ -123,12 +124,15 @@ const char* state_tooltip(struct alert_arg* a);
  * process state for new alert (at GUI side)
  * @param a: the alert state info.
  * @param unsafe_asked: 1 if user chose something in the unsafe dialog.
+ * @param noweb_asked: 1 if user chose something in the noweb dialog.
  * @param danger: routine to show danger icon
  * @param safe: routine to show safe icon.
  * @param dialog: routine to show the insecure-question dialog.
+ * @param noweb: routine to whot the noweb-login dialog.
  */
-void process_state(struct alert_arg* a, int* unsafe_asked,
-	void (*danger)(void), void(*safe)(void), void(*dialog)(void));
+void process_state(struct alert_arg* a, int* unsafe_asked, int* noweb_asked,
+	void (*danger)(void), void(*safe)(void), void(*dialog)(void),
+	void (*noweb)(void));
 
 /**
  * Fetch proberesults text.
