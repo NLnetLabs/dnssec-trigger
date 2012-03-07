@@ -644,6 +644,9 @@ void comm_point_raw_handle_callback(int fd, short event, void* arg);
  * @param ssl: openssl SSL, fd must be set so it has a bio.
  */
 void comm_point_tcp_win_bio_cb(struct comm_point* c, void* ssl);
+
+/** get internal event structure for commpoint */
+struct event* comm_point_internal(struct comm_point* c);
 #endif
 
 #endif /* NET_EVENT_H */
