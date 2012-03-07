@@ -373,6 +373,7 @@ void present_unsafe_dialog(void)
 	gtk_window_set_urgency_hint(GTK_WINDOW(unsafe_dialog), TRUE);
 	gtk_widget_show(GTK_WIDGET(unsafe_dialog));
 	gtk_window_deiconify(GTK_WINDOW(unsafe_dialog));
+	gdk_window_raise(GDK_WINDOW(unsafe_dialog));
 	gtk_window_present(GTK_WINDOW(unsafe_dialog));
 }
 
