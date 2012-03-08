@@ -217,7 +217,7 @@ void append_txt(NSTextView* pane, char* str)
     [hotsignwindow center];
     [hotsignwindow deminiaturize:sender];
     [hotsignwindow setLevel:NSScreenSaverWindowLevel + 1];
-    [hotsignwindow orderFront:nil];
+    [hotsignwindow orderFront:sender];
 }
 
 -(IBAction)HotsignOK:(id)sender
