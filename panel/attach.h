@@ -142,4 +142,10 @@ void process_state(struct alert_arg* a, int* unsafe_asked, int* noweb_asked,
  */
 void fetch_proberesults(char* buf, size_t len, const char* lf);
 
+/**
+ * forkexec login command given cfg, where forkexec exists (unix)
+ * Takes cfg item from feed global. logs errors to syslog.
+ */
+void run_login(void);
+
 #endif /* ATTACH_H */

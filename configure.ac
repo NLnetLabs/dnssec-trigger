@@ -382,6 +382,46 @@ if test "$gui" = "gtk"; then
 	fi
 fi
 
+login_command="auto"
+login_location="auto"
+AC_SUBST(login_command)
+AC_SUBST(login_location)
+AC_ARG_WITH([login-command], AC_HELP_STRING([--with-login-command],
+[Set the command to start login, a web browser, default 'auto']),, withval="")
+if test -n "$withval" -a "$withval" != "yes"; then
+	login_command="$withval"
+fi
+AC_ARG_WITH([login-location], AC_HELP_STRING([--with-login-location],
+[Set the url location to login, default 'auto']),, withval="")
+if test -n "$withval" -a "$withval" != "yes"; then
+	login_location="$withval"
+fi
+if test "$login_location" = "auto"; then
+	login_location="http://www.nlnetlabs.nl/projects/dnssec-trigger"
+fi
+AC_MSG_CHECKING([for web browser])
+if test "$login_command" = "auto"; then
+  if test "$USE_WINSOCK" = 1; then
+	login_command="open"
+  else
+    if test `uname` = "Darwin"; then
+	login_command="open"
+    else
+	clist="xdg-open sensible-browser gnome-open x-www-browser firefox konqueror chrome google-chrome"
+	login_command=""
+	for i in $clist; do
+		if test -x "`which $i 2>&1`"; then
+			login_command="$i"
+			break;
+		fi
+	done
+    fi
+  fi
+fi
+AC_MSG_RESULT([$login_command])
+AC_DEFINE_UNQUOTED([LOGIN_COMMAND], ["$login_command"], [web browser to open login url])
+AC_DEFINE_UNQUOTED([LOGIN_LOCATION], ["$login_location"], [login url to open at hot spots])
+
 AC_ARG_WITH([keydir], AC_HELP_STRING([--with-keydir=path],
 [Set the directory where ssl key files are kept, read by daemon and other tools, default prefix/etc]),, withval="")
 keydir=`eval echo "$sysconfdir"`

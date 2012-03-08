@@ -73,6 +73,11 @@ struct cfg {
 	/** noaction option does no actions to resolv.conf or unbound */
 	int noaction;
 
+	/** web browser to open login windows */
+	char* login_command;
+	/** url to open for login windows */
+	char* login_location;
+
 	/** list of port 80 open resolvers on ip4 and ip6 */
 	struct strlist* tcp80_ip4, *tcp80_ip4_last;
 	int num_tcp80_ip4;

@@ -30,6 +30,13 @@
 # the search path from DHCP is not picked up, it could be used to misdirect.
 # search: ""
 
+# the command to run to open login pages on hot spots, a web browser.
+# empty string runs no command.
+# login-command: "0login_command0"
+
+# the url to open to get hot spot login, it gets overridden by the hotspot.
+# login-location: "0login_location0"
+
 # do not perform actions (unbound-control or resolv.conf), for a dry-run.
 # noaction: no
 

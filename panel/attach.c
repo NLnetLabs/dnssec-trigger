@@ -448,3 +448,27 @@ void fetch_proberesults(char* buf, size_t len, const char* lf)
 	}
 	feed->unlock();
 }
+
+void run_login(void)
+{
+	struct cfg* cfg = feed->cfg;
+#ifndef USE_WINSOCK
+	pid_t p;
+#endif
+	if(!cfg->login_command || !cfg->login_command[0])
+		return; /* disabled */
+#ifndef USE_WINSOCK
+	p = fork();
+	if(p == -1) {
+		log_err("could not fork: %s", strerror(errno));
+		return;
+	}
+	if(p) return; /* parent returns */
+	if(execlp(cfg->login_command, cfg->login_command, cfg->login_location,
+		NULL) == -1) {
+		log_err("could not exec: %s", strerror(errno));
+	}
+	/* not reachable */
+	exit(1);
+#endif /* USE_WINSOCK */
+}

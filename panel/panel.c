@@ -451,6 +451,8 @@ void on_login_button_clicked(GtkButton *ATTR_UNUSED(button), gpointer
 	gtk_widget_hide(GTK_WIDGET(noweb_dialog));
 	noweb_asked = 1;
 	attach_send_insecure(1);
+	sleep(1); /* time for DNS settings to percolate */
+	run_login();
 }
 
 #ifdef USE_WINSOCK

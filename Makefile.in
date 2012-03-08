@@ -51,6 +51,8 @@ configfile=@configfile@
 keydir=@keydir@
 uidir=@uidir@
 pidfile=@pidfile@
+login_command=@login_command@
+login_location=@login_location@
 unbound_control_path=@unbound_control_path@
 
 # override $U variable which is used by autotools for deansification (for
@@ -161,7 +163,7 @@ test:
 
 example.conf:	$(srcdir)/example.conf.in Makefile
 	rm -f $@
-	sed -e 's?0VERSION0?$(VERSION)?' -e 's?0keydir0?$(keydir)?' -e 's?0pidfile0?$(pidfile)?' -e 's?0unbound_control_path0?$(unbound_control_path)?' < $(srcdir)/example.conf.in > $@
+	sed -e 's?0VERSION0?$(VERSION)?' -e 's?0keydir0?$(keydir)?' -e 's?0pidfile0?$(pidfile)?' -e 's?0unbound_control_path0?$(unbound_control_path)?' -e 's?0login_command0?$(login_command)?' -e 's?0login_location0?$(login_location)?' < $(srcdir)/example.conf.in > $@
 
 dnssec-trigger.8:	$(srcdir)/dnssec-trigger.8.in Makefile
 	rm -f $@

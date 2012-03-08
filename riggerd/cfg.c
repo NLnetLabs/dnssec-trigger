@@ -342,6 +342,10 @@ keyword(struct cfg* cfg, char* p)
 		str_arg(&cfg->rescf_domain, p+7);
 	} else if(strncmp(p, "search:", 7) == 0) {
 		str_arg(&cfg->rescf_search, p+7);
+	} else if(strncmp(p, "login-command:", 14) == 0) {
+		str_arg(&cfg->login_command, p+14);
+	} else if(strncmp(p, "login-location:", 15) == 0) {
+		str_arg(&cfg->login_location, p+15);
 	} else if(strncmp(p, "noaction:", 9) == 0) {
 		bool_arg(&cfg->noaction, p+9);
 	} else if(strncmp(p, "port:", 5) == 0) {
@@ -417,12 +421,15 @@ struct cfg* cfg_create(const char* cfgfile)
 	cfg->control_key_file=strdup(KEYDIR"/dnssec_trigger_control.key");
 	cfg->control_cert_file=strdup(KEYDIR"/dnssec_trigger_control.pem");
 	cfg->unbound_control = strdup(UNBOUND_CONTROL);
+	cfg->login_command = strdup(LOGIN_COMMAND);
+	cfg->login_location = strdup(LOGIN_LOCATION);
 	cfg->pidfile = strdup(PIDFILE);
 	cfg->resolvconf = strdup("/etc/resolv.conf");
 
 	if(!cfg->unbound_control || !cfg->pidfile || !cfg->server_key_file ||
 		!cfg->server_cert_file || !cfg->control_key_file ||
-		!cfg->control_cert_file || !cfg->resolvconf) {
+		!cfg->control_cert_file || !cfg->resolvconf ||
+		!cfg->login_command || !cfg->login_location) {
 		cfg_delete(cfg);
 		return NULL;
 	}
@@ -444,6 +451,8 @@ void cfg_delete(struct cfg* cfg)
 	ssllist_delete(cfg->ssl443_ip4);
 	ssllist_delete(cfg->ssl443_ip6);
 	strlist2_delete(cfg->http_urls);
+	free(cfg->login_command);
+	free(cfg->login_location);
 	free(cfg->pidfile);
 	free(cfg->logfile);
 	free(cfg->chroot);

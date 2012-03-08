@@ -610,6 +610,8 @@ pidfile
 configfile
 uidir
 keydir
+login_location
+login_command
 xdg_autostart_dir
 APP_INDICATOR
 GTK_LIBS
@@ -688,6 +690,8 @@ with_netconfig_dispatch
 with_gui
 enable_appindicator
 with_xdg_autostart
+with_login_command
+with_login_location
 with_keydir
 with_uidir
 with_configfile
@@ -1346,6 +1350,9 @@ Optional Packages:
                           can be 'cocoa' (on OSX), 'windows' or 'gtk'
   --with-xdg-autostart    Set the GNOME autostart dir, default tests
                           prefix/etc/xdg/autostart and /etc/xdg/autostart
+  --with-login-command    Set the command to start login, a web browser,
+                          default 'auto'
+  --with-login-location   Set the url location to login, default 'auto'
   --with-keydir=path      Set the directory where ssl key files are kept, read
                           by daemon and other tools, default prefix/etc
   --with-uidir=path       Set the directory where ui files (icon,xml) are
@@ -7085,6 +7092,68 @@ $as_echo_n "checking for autostart dir... " >&6; }
 $as_echo "$xdg_autostart_dir" >&6; }
 	fi
 fi
+
+login_command="auto"
+login_location="auto"
+
+
+
+# Check whether --with-login-command was given.
+if test "${with_login_command+set}" = set; then :
+  withval=$with_login_command;
+else
+  withval=""
+fi
+
+if test -n "$withval" -a "$withval" != "yes"; then
+	login_command="$withval"
+fi
+
+# Check whether --with-login-location was given.
+if test "${with_login_location+set}" = set; then :
+  withval=$with_login_location;
+else
+  withval=""
+fi
+
+if test -n "$withval" -a "$withval" != "yes"; then
+	login_location="$withval"
+fi
+if test "$login_location" = "auto"; then
+	login_location="http://www.nlnetlabs.nl/projects/dnssec-trigger"
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for web browser" >&5
+$as_echo_n "checking for web browser... " >&6; }
+if test "$login_command" = "auto"; then
+  if test "$USE_WINSOCK" = 1; then
+	login_command="open"
+  else
+    if test `uname` = "Darwin"; then
+	login_command="open"
+    else
+	clist="xdg-open sensible-browser gnome-open x-www-browser firefox konqueror chrome google-chrome"
+	login_command=""
+	for i in $clist; do
+		if test -x "`which $i 2>&1`"; then
+			login_command="$i"
+			break;
+		fi
+	done
+    fi
+  fi
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $login_command" >&5
+$as_echo "$login_command" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define LOGIN_COMMAND "$login_command"
+_ACEOF
+
+
+cat >>confdefs.h <<_ACEOF
+#define LOGIN_LOCATION "$login_location"
+_ACEOF
+
 
 
 # Check whether --with-keydir was given.

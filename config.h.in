@@ -222,6 +222,12 @@
 /* directory with scripts for dnssec-trigger */
 #undef LIBEXEC_DIR
 
+/* web browser to open login url */
+#undef LOGIN_COMMAND
+
+/* login url to open at hot spots */
+#undef LOGIN_LOCATION
+
 /* Define to the maximum message length to pass to syslog. */
 #undef MAXSYSLOGMSGLEN
 
