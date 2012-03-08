@@ -114,10 +114,6 @@ awakeFromNib
 	if(!cfg)
 		fatal_exit("cannot read config file %s", cfgfile);
 
-        [unsafewindow setIsVisible:NO];
-        [nowebwindow setIsVisible:NO];
-        [hotsignwindow setIsVisible:NO];
-        [resultwindow setIsVisible:NO];
 	/* spawn the feed thread */
 	attach_create();
 	feed_lock = [NSLock alloc];
@@ -218,12 +214,10 @@ void append_txt(NSTextView* pane, char* str)
     /* this is to help us bring a window to the front
      * from the hidden app */
     [NSApp activateIgnoringOtherApps:YES];
-    if([unsafewindow isVisible])
-	    [unsafewindow orderOut:sender];
     [hotsignwindow center];
     [hotsignwindow deminiaturize:sender];
     [hotsignwindow setLevel:NSScreenSaverWindowLevel + 1];
-    [hotsignwindow orderFront:sender];
+    [hotsignwindow orderFront:nil];
 }
 
 -(IBAction)HotsignOK:(id)sender
