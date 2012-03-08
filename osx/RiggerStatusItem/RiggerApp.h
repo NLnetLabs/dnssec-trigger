@@ -9,6 +9,12 @@
 #import <Cocoa/Cocoa.h>
 struct cfg;
 
+/* class that helps catch window close on the noweb window */
+@interface NowebDelegate : NSObject {
+}
+-(BOOL)windowShouldClose:(NSWindow*)sender;
+@end
+
 @interface RiggerApp : NSObject {
 	/* outlets connect to the interface */
 	IBOutlet NSMenu* riggermenu;
@@ -19,12 +25,16 @@ struct cfg;
 	IBOutlet NSTextView* resultpane;
 	IBOutlet NSWindow* unsafewindow;
 	IBOutlet NSTextField* unsafepane;
-    IBOutlet NSWindow* hotsignwindow;
+	IBOutlet NSWindow* hotsignwindow;
+	IBOutlet NSWindow* nowebwindow;
 	
+@public
 	/** if we have asked about disconnect or insecure */
 	int unsafe_asked;
 	/** if we should ask unsafe */
 	int unsafe_should;
+	/** if we have asked about noweb access */
+	int noweb_asked;
 	/** configuration */
 	struct cfg* cfg;
 }
@@ -38,11 +48,14 @@ struct cfg;
 -(IBAction)HotspotSignon:(id)sender;
 -(IBAction)HotsignOK:(id)sender;
 -(IBAction)HotsignCancel:(id)sender;
+-(IBAction)NowebLogin:(id)sender;
+-(IBAction)NowebSkip:(id)sender;
 -(BOOL)windowShouldClose:(NSWindow*)sender;
 -(void)SpawnFeed:(id)param;
 -(void)PanelAlert;
 -(void)PresentUnsafeDialog;
 -(void)PanelAlertDanger;
 -(void)PanelAlertSafe;
+-(void)PresentNowebDialog;
 
 @end

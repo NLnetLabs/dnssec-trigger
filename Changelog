@@ -1,3 +1,6 @@
+8 March 2012: Wouter
+	- OSX GUI for no web access dialog.
+
 7 March 2012: Wouter
 	- print syntax error for url config items.
 	- skip_http control command.

@@ -56,6 +56,17 @@ static void feed_alert(struct alert_arg* a)
 							  withObject:nil waitUntilDone:NO];
 }
 
+@implementation NowebDelegate
+-(BOOL)windowShouldClose:(NSWindow*)sender
+{
+	if(verb) NSLog(@"nowebclose handler");
+	/* like pressing skip */
+	mainapp->noweb_asked = 1;
+	attach_send_skip_http();
+	return YES;
+}
+@end /* of NowebDelegate */
+
 @implementation RiggerApp
 
 -(void)
@@ -88,6 +99,7 @@ awakeFromNib
 	mainapp = self;
 	unsafe_asked = 0;
 	unsafe_should = 0;
+	noweb_asked = 0;
 	memset(&alertinfo, 0, sizeof(alertinfo));
 	alert_lock = [NSLock alloc];
 	log_ident_set("dnssec-trigger-panel-osx");
@@ -226,6 +238,30 @@ void append_txt(NSTextView* pane, char* str)
     if(unsafe_should) [mainapp PresentUnsafeDialog];
 }
 
+-(IBAction)NowebLogin:(id)sender
+{
+	if(verb) NSLog(@"noweb login");
+    	[nowebwindow orderOut:sender];
+	noweb_asked = 1;
+	attach_send_insecure(1);
+}
+
+-(IBAction)NowebSkip:(id)sender
+{
+	if(verb) NSLog(@"noweb skip");
+    	[nowebwindow orderOut:sender];
+	noweb_asked = 1;
+	attach_send_skip_http();
+}
+
+-(void)PresentNowebDialog
+{
+	[nowebwindow center];
+	[nowebwindow deminiaturize:nil];
+        [nowebwindow setLevel:NSScreenSaverWindowLevel + 1];
+	[nowebwindow orderFront:nil];
+}
+
 -(BOOL)windowShouldClose:(NSWindow*)sender
 {
 	if(verb) NSLog(@"unsafeclose handler");
@@ -269,6 +305,10 @@ static void do_ask(void)
 {
 	[mainapp PresentUnsafeDialog];
 }
+static void do_noweb(void)
+{
+	[mainapp PresentNowebDialog];
+}
 
 -(void)PanelAlert
 {
@@ -285,7 +325,8 @@ static void do_ask(void)
 	tt = [NSString stringWithUTF8String:ctt];
 	[riggeritem setToolTip:tt];
 
-	process_state(&a, &unsafe_asked, &do_danger, &do_safe, &do_ask);
+	process_state(&a, &unsafe_asked, &noweb_asked, &do_danger, &do_safe, &do_ask,
+		&do_noweb);
 	if(!a.now_dark) unsafe_should = 0;
 }
 
