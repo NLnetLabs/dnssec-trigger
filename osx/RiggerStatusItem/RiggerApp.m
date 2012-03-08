@@ -243,6 +243,8 @@ void append_txt(NSTextView* pane, char* str)
     	[nowebwindow orderOut:sender];
 	noweb_asked = 1;
 	attach_send_insecure(1);
+	sleep(1); /* for dns settings to get updated */
+	run_login();
 }
 
 -(IBAction)NowebSkip:(id)sender
