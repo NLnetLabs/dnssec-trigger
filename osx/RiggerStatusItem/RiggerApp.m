@@ -215,7 +215,8 @@ void append_txt(NSTextView* pane, char* str)
      * from the hidden app */
     [NSApp activateIgnoringOtherApps:YES];
     [hotsignwindow center];
-    [hotsignwindow deminiaturize:sender];
+    if([hotsignwindow isMiniaturized]) /* without this if(), random win popsup often */
+    	[hotsignwindow deminiaturize:sender];
     [hotsignwindow setLevel:NSScreenSaverWindowLevel + 1];
     [hotsignwindow orderFront:sender];
 }
@@ -255,7 +256,8 @@ void append_txt(NSTextView* pane, char* str)
 -(void)PresentNowebDialog
 {
 	[nowebwindow center];
-	[nowebwindow deminiaturize:nil];
+    	if([nowebwindow isMiniaturized]) /* without this if(), random win popsup often */
+		[nowebwindow deminiaturize:nil];
         [nowebwindow setLevel:NSScreenSaverWindowLevel + 1];
 	[nowebwindow orderFront:nil];
 }
@@ -276,7 +278,8 @@ void append_txt(NSTextView* pane, char* str)
 	if([hotsignwindow isVisible])
 		return; /* wait for hotspot signon question to finish */
 	[unsafewindow center];
-	[unsafewindow deminiaturize:nil];
+    	if([unsafewindow isMiniaturized]) /* without this if(), random win popsup often */
+		[unsafewindow deminiaturize:nil];
         [unsafewindow setLevel:NSScreenSaverWindowLevel + 1];
 	[unsafewindow orderFront:nil];
 }
