@@ -218,7 +218,7 @@ init_nowebwnd(HINSTANCE hInstance)
 		TEXT("No Web Access"),
 		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX |
 		WS_MAXIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT,
-		495, 150, NULL, NULL, hInstance, NULL);
+		455, 180, NULL, NULL, hInstance, NULL);
 	statictext = CreateWindow(TEXT("STATIC"), TEXT(
 "There is no web access on this network. Do you have to login for that?\r\n"
 "\r\n"
@@ -227,13 +227,13 @@ init_nowebwnd(HINSTANCE hInstance)
 "\r\n"
 "Skip this if you do not have to log in on this network.\r\n"
 	), WS_CHILD | WS_VISIBLE | SS_LEFT,
-		10, 10, 470, 70, noweb_wnd, NULL, hInstance, NULL);
+		10, 10, 430, 100, noweb_wnd, NULL, hInstance, NULL);
 	noweb_skip = CreateWindow(TEXT("BUTTON"), TEXT("Skip"),
 		WS_CHILD | WS_VISIBLE,
-		180, 90, 100, 25, noweb_wnd, NULL, hInstance, NULL);
+		180, 120, 100, 25, noweb_wnd, NULL, hInstance, NULL);
 	noweb_login = CreateWindow(TEXT("BUTTON"), TEXT("Log in"),
 		WS_CHILD | WS_VISIBLE,
-		300, 90, 100, 25, noweb_wnd, NULL, hInstance, NULL);
+		300, 120, 100, 25, noweb_wnd, NULL, hInstance, NULL);
 	SendMessage(statictext, WM_SETFONT, (WPARAM)font, TRUE);
 	SendMessage(noweb_skip, WM_SETFONT, (WPARAM)font_bold, TRUE);
 	SendMessage(noweb_login, WM_SETFONT, (WPARAM)font_bold, TRUE);
