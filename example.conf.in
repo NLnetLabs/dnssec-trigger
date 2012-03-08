@@ -44,9 +44,9 @@
 # control-cert-file: "0keydir0/dnssec_trigger_control.pem"
 
 # webservers that are probed to see if internet access is possible.
-# They serve a simple static page over HTTP port 80.
+# They serve a simple static page over HTTP port 80.  It probes a random url:
 # after a space is the content expected on the page, (the page can contain
-# whitespace before and after this code).
+# whitespace before and after this code).  Without urls it skips http probes.
 
 # provided by NLnetLabs
 # It is provided on a best effort basis, with no service guarantee.

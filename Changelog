@@ -1,5 +1,7 @@
 8 March 2012: Wouter
 	- OSX GUI for no web access dialog.
+	- OSX update dnssec-trigger.conf with new url settings.
+	- OSX attempt to fix the double-window shown bug.
 
 7 March 2012: Wouter
 	- print syntax error for url config items.

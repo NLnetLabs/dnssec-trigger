@@ -114,6 +114,9 @@ awakeFromNib
 	if(!cfg)
 		fatal_exit("cannot read config file %s", cfgfile);
 
+	[unsafewindow orderOut:nil];
+	[hotsignwindow orderOut:nil];
+	[nowebwindow orderOut:nil];
 	/* spawn the feed thread */
 	attach_create();
 	feed_lock = [NSLock alloc];
