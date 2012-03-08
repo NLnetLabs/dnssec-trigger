@@ -1241,8 +1241,16 @@ int http_get_fetch(struct http_get* hg, const char* dest, char** err)
 	tv.tv_usec = HTTP_TIMEOUT%1000;
 	comm_timer_set(hg->timer, &tv);
 
+	/* create fd and connect nonblockingly */
+	if( (fd=http_get_connect(&addr, addrlen, err)) == -1) {
+		return 0;
+	}
+
 	/* commpoint, raw,   get nb_connect check on write */
-	hg->cp = comm_point_create_raw(hg->base, -1, 1, http_get_callback, hg);
+	/* we created the fd before to pass it here, so that the event_add
+	 * on windows sees the full (TCP, SOCK_STREAM) file descriptor and
+	 * activates the necessary workarounds for TCP sticky events */
+	hg->cp = comm_point_create_raw(hg->base, fd, 1, http_get_callback, hg);
 	if(!hg->cp) {
 		*err = "out of memory";
 		return 0;
@@ -1250,12 +1258,6 @@ int http_get_fetch(struct http_get* hg, const char* dest, char** err)
 	hg->cp->do_not_close = 0;
 	hg->cp->tcp_check_nb_connect = 1;
 	hg->state = http_state_request;
-
-	/* create fd and connect nonblockingly */
-	if( (fd=http_get_connect(&addr, addrlen, err)) == -1) {
-		return 0;
-	}
-	comm_point_start_listening(hg->cp, fd, -1);
 
 	*err = NULL;
 	return 1;
