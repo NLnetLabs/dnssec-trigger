@@ -224,6 +224,8 @@ init_nowebwnd(HINSTANCE hInstance)
 "\r\n"
 "While you login you are insecure, for backwards compatibility, until\r\n"
 "dnssec-trigger can detect web access.\r\n"
+"\r\n"
+"Skip this if you do not have to log in on this network.\r\n"
 	), WS_CHILD | WS_VISIBLE | SS_LEFT,
 		10, 10, 470, 70, noweb_wnd, NULL, hInstance, NULL);
 	noweb_skip = CreateWindow(TEXT("BUTTON"), TEXT("Skip"),
