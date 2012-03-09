@@ -167,7 +167,7 @@ example.conf:	$(srcdir)/example.conf.in Makefile
 
 dnssec-trigger.8:	$(srcdir)/dnssec-trigger.8.in Makefile
 	rm -f $@
-	sed -e 's?0VERSION0?$(VERSION)?' -e 's?0DATE0?'"`date +%F`"'?' -e 's?0keydir0?$(keydir)?' -e 's?0pidfile0?$(pidfile)?' -e 's?0configfile0?$(configfile)?' < $(srcdir)/dnssec-trigger.8.in > $@
+	sed -e 's?0VERSION0?$(VERSION)?' -e 's?0DATE0?'"`date +%F`"'?' -e 's?0keydir0?$(keydir)?' -e 's?0pidfile0?$(pidfile)?' -e 's?0configfile0?$(configfile)?' -e 's?0login_command0?$(login_command)?' -e 's?0login_location0?$(login_location)?' < $(srcdir)/dnssec-trigger.8.in > $@
 
 dnssec-trigger-control-setup:	$(srcdir)/dnssec-trigger-control-setup.sh.in Makefile
 	rm -f $@

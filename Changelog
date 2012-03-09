@@ -1,5 +1,6 @@
 9 March 2012: Wouter
 	- update osx config to new config template.
+	- login-command and login-location man page entries.
 
 8 March 2012: Wouter
 	- OSX GUI for no web access dialog.

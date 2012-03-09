@@ -131,6 +131,16 @@ uses 127.0.0.1 (the loopback interface).  SSL is used to secure it,
 and the keys are stored on the disk (see below).  The other tools read this
 config file to find the port number and key locations.
 .TP
+.B login\-command: \fR"0login_command0"
+The command that is run when the user clicks Login on the no web access
+dialog.  That is supposedly a web browser, that is aimed to open some url
+so that the hot-spot network login can intercept and show its login page.
+The default is a detected generic web browser.  The "" empty string turns off
+this feature and no command gets run.
+.TP
+.B login\-location: \fR"0login_location0"
+The url that is opened with the web browser.  Used as commandline argument.
+.TP
 .B server\-key\-file: \fR"0keydir0/dnssec_trigger_server.key"
 .TP
 .B server\-cert\-file: \fR"0keydir0/dnssec_trigger_server.pem"
