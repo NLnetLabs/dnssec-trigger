@@ -161,7 +161,7 @@ runsetupi="no"
 if [[ ! -f /etc/dnssec-trigger/dnssec-trigger.conf ]]; then
 	cp /etc/dnssec-trigger/dnssec-trigger.conf-default /etc/dnssec-trigger/dnssec-trigger.conf
 else
-	if grep ssl443 /etc/dnssec-trigger/dnssec-trigger.conf >/dev/null && grep "url:" /etc/dnssec-trigger/dnssec-trigger.conf >/dev/null; then
+	if grep ssl443 /etc/dnssec-trigger/dnssec-trigger.conf >/dev/null && grep "url:" /etc/dnssec-trigger/dnssec-trigger.conf >/dev/null && grep "login-location" /etc/dnssec-trigger/dnssec-trigger.conf >/dev/null; then
 		:
 	else
 		# need the new setting, copy anyway.

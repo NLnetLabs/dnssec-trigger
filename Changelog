@@ -1,3 +1,6 @@
+9 March 2012: Wouter
+	- update osx config to new config template.
+
 8 March 2012: Wouter
 	- OSX GUI for no web access dialog.
 	- OSX update dnssec-trigger.conf with new url settings.
