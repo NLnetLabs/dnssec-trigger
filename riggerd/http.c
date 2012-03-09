@@ -94,7 +94,7 @@ http_probe_setup_url(struct http_general* hg, struct http_probe* hp, size_t i)
 	if(!parse_url(hp->url, &hp->hostname, &hp->filename)) {
 		return 0;
 	}
-	log_info("setup url %s %s", hp->hostname, hp->filename);
+	verbose(VERB_ALGO, "setup url %s %s", hp->hostname, hp->filename);
 	return 1;
 }
 
@@ -190,7 +190,7 @@ void http_probe_remove_http_lookups(struct http_probe* hp)
 {
 	struct svr* svr = global_svr;
 	struct probe_ip* p = svr->probes, **pp = &svr->probes;
-	log_info("remove http lookups");
+	verbose(VERB_ALGO, "remove http lookups");
 	/* find and delete http lookups */
 	while(p) {
 		/* need to delete this? */
@@ -215,7 +215,7 @@ static void http_probe_done(struct http_general* hg,
 	struct http_probe* hp, char* reason)
 {
 	hp->finished = 1;
-	log_info("http probe%s %s done: %s", hp->ip6?"6":"4", hp->url,
+	verbose(VERB_OPS, "http probe%s %s done: %s", hp->ip6?"6":"4", hp->url,
 		reason?reason:"success");
 	if(reason == NULL) {
 		/* success! stop the other probe part */
@@ -445,7 +445,7 @@ static void fill_urls(struct http_general* hg)
 			&hg->codes[i]);
 	}
 	for(i=0; i<hg->url_num; i++)
-		log_info("hg url[%d]=%s", (int)i, hg->urls[i]);
+		verbose(VERB_ALGO, "hg url[%d]=%s", (int)i, hg->urls[i]);
 }
 
 struct http_general* http_general_start(struct svr* svr)
@@ -495,7 +495,7 @@ void http_general_delete(struct http_general* hg)
 void http_general_done(const char* reason)
 {
 	struct svr* svr = global_svr;
-	log_info("http_general done %s", reason?reason:"success");
+	verbose(VERB_OPS, "http_general done %s", reason?reason:"success");
 	if(!reason) {
 		svr->http->saw_http_work = 1;
 	}
@@ -519,11 +519,11 @@ void http_host_outq_done(struct probe_ip* p, const char* reason)
 {
 	struct http_probe* hp;
 	if(!reason) {
-		log_info("addr lookup %s at %s successful",
+		verbose(VERB_OPS, "addr lookup %s at %s successful",
 			p->host_c->qname, p->name);
 		p->works = 1;
 	} else {
-		log_info("addr lookup %s at %s failed: %s",
+		verbose(VERB_OPS, "addr lookup %s at %s failed: %s",
 			p->host_c->qname, p->name, reason);
 		p->reason = strdup(reason);
 		p->works = 0;
@@ -605,7 +605,7 @@ http_get_done(struct http_get* hg, char* reason, int connects)
 	p->finished = 1;
 	global_svr->num_probes_done++;
 	/* printout data we got (but pages can be big)
-	if(!reason) log_info("got %d data: '%s'", 
+	if(!reason) verbose(VERB_ALGO, "got %d data: '%s'", 
 		(int)ldns_buffer_position(hg->data),
 		ldns_buffer_begin(hg->data)); */
 	if(!reason || connects)
@@ -619,7 +619,7 @@ http_get_done(struct http_get* hg, char* reason, int connects)
 				p->name);
 	}
 
-	log_info("http_get_done: %s from %s: %s (%s)", hg->url, hg->dest,
+	verbose(VERB_OPS, "http_get_done: %s from %s: %s (%s)", hg->url, hg->dest,
 		reason?reason:"success",
 		!reason||connects?"connects":"noconnects");
 	if(!reason) {
@@ -640,7 +640,7 @@ void
 http_get_timeout_handler(void* arg)
 {
 	struct http_get* hg = (struct http_get*)arg;
-	log_info("http_get timeout");
+	verbose(VERB_ALGO, "http_get timeout");
 	http_get_done(hg, "timeout", 0);
 }
 
@@ -699,7 +699,7 @@ prep_get_cmd(struct http_get* hg)
 	if(ldns_buffer_printf(hg->buf, "\r\n") == -1)
 		return 0;
 	ldns_buffer_flip(hg->buf);
-	log_info("created http get text: %s", ldns_buffer_begin(hg->buf));
+	verbose(VERB_ALGO, "created http get text: %s", ldns_buffer_begin(hg->buf));
 	return 1;
 }
 
@@ -986,7 +986,7 @@ static int hg_handle_reply_header(struct http_get* hg)
 		return 0;
 	}
 	headlen = (size_t)(endstr-(char*)ldns_buffer_begin(hg->buf));
-	log_info("http done, parse reply header");
+	verbose(VERB_ALGO, "http done, parse reply header");
 	/* done reading, parse it */
 	log_assert(strncmp(ldns_buffer_at(hg->buf, headlen), "\r\n\r\n", 4)==0);
 	/* there is a header part, and a start of a trailing part. */
@@ -1050,7 +1050,7 @@ static int hg_handle_reply_data(struct http_get* hg)
 	if(!hg_add_data(hg, hg->buf, hg->datalen))
 		return 0;
 	/* done with success with data */
-	log_info("http read completed");
+	verbose(VERB_ALGO, "http read completed");
 	http_get_done(hg, NULL, 1);
 	return 0;
 }
@@ -1062,7 +1062,7 @@ chunk_header_parse(struct http_get* hg, char* line, void* arg)
 	size_t* chunklen = (size_t*)arg;
 	char* e = NULL;
 	size_t v;
-	log_info("http chunk header: '%s'", line);
+	verbose(VERB_ALGO, "http chunk header: '%s'", line);
 	v = (size_t)strtol(line, &e, 16);
 	if(e == line) {
 		http_get_done(hg, "could not parse chunk header", 1);
@@ -1101,7 +1101,7 @@ static int hg_handle_chunk_header(struct http_get* hg)
 	if(chunklen == 0) {
 		/* chunked read completed */
 		/* TODO there can be chunked trailer headers here .. */
-		log_info("http chunked read completed");
+		verbose(VERB_ALGO, "http chunked read completed");
 		http_get_done(hg, NULL, 1);
 		return 0;
 	}
@@ -1137,8 +1137,8 @@ static int hg_handle_chunk_data(struct http_get* hg)
 	}
 	/* done reading put it together */
 	log_assert(ldns_buffer_position(hg->buf) >= hg->datalen);
-	log_info("datalen %d", (int)hg->datalen);
-	log_info("position %d", (int)ldns_buffer_position(hg->buf));
+	verbose(VERB_ALGO, "datalen %d", (int)hg->datalen);
+	verbose(VERB_ALGO, "position %d", (int)ldns_buffer_position(hg->buf));
 	if(strncmp((char*)ldns_buffer_at(hg->buf, hg->datalen), "\r\n", 2)!=0) {
 		http_get_done(hg, "chunk data not terminated with eol", 1);
 		return 0;
@@ -1157,7 +1157,7 @@ static int hg_handle_chunk_data(struct http_get* hg)
 /** handle http get state (return true to continue processing) */
 static int hg_handle_state(struct http_get* hg)
 {
-	log_info("hg_handle_state %d", (int)hg->state);
+	verbose(VERB_ALGO, "hg_handle_state %d", (int)hg->state);
 	switch(hg->state) {
 		case http_state_none:
 			/* not possible */
@@ -1192,7 +1192,7 @@ http_get_callback(struct comm_point* ATTR_UNUSED(cp), void* arg, int err,
 		return 0;
 	}
 	/* is this read or write, and if so, what part of the protocol */
-	log_info("http_get: got event for %s from %s", hg->url, hg->dest);
+	verbose(VERB_ALGO, "http_get: got event for %s from %s", hg->url, hg->dest);
 
 	while(hg_handle_state(hg)) {
 		;
@@ -1209,12 +1209,12 @@ int http_get_fetch(struct http_get* hg, const char* dest, char** err)
 	socklen_t addrlen = 0;
 
 	/* parse the URL */
-	log_info("http_get fetch %s from %s", hg->url, dest);
+	verbose(VERB_ALGO, "http_get fetch %s from %s", hg->url, dest);
 	if(!parse_url(hg->url, &hg->hostname, &hg->filename)) {
 		*err = "cannot parse url";
 		return 0;
 	}
-	log_info("parsed into %s and %s", hg->hostname, hg->filename);
+	verbose(VERB_ALGO, "parsed into %s and %s", hg->hostname, hg->filename);
 
 	/* parse dest IP address */
 	if(!(hg->dest = strdup(dest))) {
