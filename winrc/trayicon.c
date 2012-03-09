@@ -397,6 +397,15 @@ LRESULT CALLBACK NowebWndProc(HWND hwnd, UINT message, WPARAM wParam,
 			ShowWindow(noweb_wnd, SW_HIDE);
 			attach_send_insecure(1);
 			noweb_asked = 1;
+			/* show web browser */
+			if(feed->cfg->login_command &&
+				feed->cfg->login_command[0]) {
+				sleep(1); /* wait for DNS to percolate */
+				(void)ShellExecute(NULL,
+					feed->cfg->login_command,
+					feed->cfg->login_location,
+					NULL, NULL, SW_SHOWNORMAL);
+			}
 		}
 		break;
 	case WM_CLOSE:
