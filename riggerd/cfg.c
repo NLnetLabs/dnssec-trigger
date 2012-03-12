@@ -373,6 +373,8 @@ keyword(struct cfg* cfg, char* p)
 	} else if(strncmp(p, "url:", 4) == 0) {
 		str2_arg(&cfg->http_urls, &cfg->http_urls_last, 
 			&cfg->num_http_urls, get_arg(p+4));
+	} else if(strncmp(p, "check-updates:", 14) == 0) {
+		bool_arg(&cfg->check_updates, p+14);
 	} else {
 		return 0;
 	}
@@ -425,6 +427,7 @@ struct cfg* cfg_create(const char* cfgfile)
 	cfg->login_location = strdup(LOGIN_LOCATION);
 	cfg->pidfile = strdup(PIDFILE);
 	cfg->resolvconf = strdup("/etc/resolv.conf");
+	cfg->check_updates = (strcmp(CHECK_UPDATES, "yes")==0);
 
 	if(!cfg->unbound_control || !cfg->pidfile || !cfg->server_key_file ||
 		!cfg->server_cert_file || !cfg->control_key_file ||

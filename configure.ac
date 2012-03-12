@@ -245,7 +245,7 @@ else
 		if test -x "`which nmcli 2>&1`" -o -x "`which nm-tool 2>&1`"; then
 		hooks="networkmanager"
 		else
-			if test `uname` = "Darwin"; then
+			if test "`uname`" = "Darwin"; then
 				hooks="osx"
 			else
 				if test -x /sbin/netconfig; then
@@ -305,7 +305,7 @@ AC_MSG_CHECKING([for gui])
 if test "$gui" != "auto"; then
 	:
 else
-	if test `uname` = "Darwin"; then
+	if test "`uname`" = "Darwin"; then
 		gui="cocoa"
 	else
 		if test "$on_mingw" = yes; then
@@ -404,7 +404,7 @@ if test "$login_command" = "auto"; then
   if test "$USE_WINSOCK" = 1; then
 	login_command="open"
   else
-    if test `uname` = "Darwin"; then
+    if test "`uname`" = "Darwin"; then
 	login_command="open"
     else
 	clist="xdg-open sensible-browser gnome-open x-www-browser firefox konqueror chrome google-chrome"
@@ -421,6 +421,25 @@ fi
 AC_MSG_RESULT([$login_command])
 AC_DEFINE_UNQUOTED([LOGIN_COMMAND], ["$login_command"], [web browser to open login url])
 AC_DEFINE_UNQUOTED([LOGIN_LOCATION], ["$login_location"], [login url to open at hot spots])
+
+AC_ARG_WITH([check-updates], AC_HELP_STRING([--with-check-updates=yesno],
+[Set default value for check-updates config option]),, withval="")
+if test -n "$withval"; then
+	check_updates="$withval"
+else
+	# enable on WIN, OSX, not on unixes (use ports, package manager there).
+	if test "$USE_WINSOCK" = 1; then
+		check_updates="yes"
+	else
+		if test "`uname`" = "Darwin"; then
+			check_updates="yes"
+		else
+			check_updates="no"
+		fi
+	fi
+fi
+AC_DEFINE_UNQUOTED([CHECK_UPDATES], ["$check_updates"], [default value for check-updates config option])
+AC_SUBST(check_updates)
 
 AC_ARG_WITH([keydir], AC_HELP_STRING([--with-keydir=path],
 [Set the directory where ssl key files are kept, read by daemon and other tools, default prefix/etc]),, withval="")

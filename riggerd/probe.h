@@ -154,5 +154,7 @@ int probe_is_cache(struct probe_ip* p);
 struct outq* outq_create(const char* ip, int tp, const char* domain,
 	int recurse, struct probe_ip* p, int tcp, int onssl, int port,
 	int edns);
+/* delete and stop outq */
+void outq_delete(struct outq* outq);
 
 #endif /* PROBE_H */

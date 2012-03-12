@@ -610,6 +610,7 @@ pidfile
 configfile
 uidir
 keydir
+check_updates
 login_location
 login_command
 xdg_autostart_dir
@@ -692,6 +693,7 @@ enable_appindicator
 with_xdg_autostart
 with_login_command
 with_login_location
+with_check_updates
 with_keydir
 with_uidir
 with_configfile
@@ -1353,6 +1355,8 @@ Optional Packages:
   --with-login-command    Set the command to start login, a web browser,
                           default 'auto'
   --with-login-location   Set the url location to login, default 'auto'
+  --with-check-updates=yesno
+                          Set default value for check-updates config option
   --with-keydir=path      Set the directory where ssl key files are kept, read
                           by daemon and other tools, default prefix/etc
   --with-uidir=path       Set the directory where ui files (icon,xml) are
@@ -6873,7 +6877,7 @@ else
 		if test -x "`which nmcli 2>&1`" -o -x "`which nm-tool 2>&1`"; then
 		hooks="networkmanager"
 		else
-			if test `uname` = "Darwin"; then
+			if test "`uname`" = "Darwin"; then
 				hooks="osx"
 			else
 				if test -x /sbin/netconfig; then
@@ -6948,7 +6952,7 @@ $as_echo_n "checking for gui... " >&6; }
 if test "$gui" != "auto"; then
 	:
 else
-	if test `uname` = "Darwin"; then
+	if test "`uname`" = "Darwin"; then
 		gui="cocoa"
 	else
 		if test "$on_mingw" = yes; then
@@ -7128,7 +7132,7 @@ if test "$login_command" = "auto"; then
   if test "$USE_WINSOCK" = 1; then
 	login_command="open"
   else
-    if test `uname` = "Darwin"; then
+    if test "`uname`" = "Darwin"; then
 	login_command="open"
     else
 	clist="xdg-open sensible-browser gnome-open x-www-browser firefox konqueror chrome google-chrome"
@@ -7153,6 +7157,35 @@ _ACEOF
 cat >>confdefs.h <<_ACEOF
 #define LOGIN_LOCATION "$login_location"
 _ACEOF
+
+
+
+# Check whether --with-check-updates was given.
+if test "${with_check_updates+set}" = set; then :
+  withval=$with_check_updates;
+else
+  withval=""
+fi
+
+if test -n "$withval"; then
+	check_updates="$withval"
+else
+	# enable on WIN, OSX, not on unixes (use ports, package manager there).
+	if test "$USE_WINSOCK" = 1; then
+		check_updates="yes"
+	else
+		if test "`uname`" = "Darwin"; then
+			check_updates="yes"
+		else
+			check_updates="no"
+		fi
+	fi
+fi
+
+cat >>confdefs.h <<_ACEOF
+#define CHECK_UPDATES "$check_updates"
+_ACEOF
+
 
 
 

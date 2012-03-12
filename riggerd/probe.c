@@ -53,8 +53,6 @@
 /* create probes for the ip addresses in the string */
 static void probe_spawn(const char* ip, int recurse, int dnstcp,
 	struct ssllist* ssldns, int port);
-/* delete and stop outq */
-static void outq_delete(struct outq* outq);
 /* set timeout on outq and create UDP query and send it */
 static int outq_settimeout_and_send(struct outq* outq);
 /* send outq over tcp */
@@ -712,7 +710,7 @@ outq_create(const char* ip, int tp, const char* domain, int recurse,
 	return outq;
 }
 
-static void outq_delete(struct outq* outq)
+void outq_delete(struct outq* outq)
 {
 	if(!outq) return;
 	comm_timer_delete(outq->timer);

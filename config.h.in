@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* default value for check-updates config option */
+#undef CHECK_UPDATES
+
 /* default config file name for dnssec-trigger */
 #undef CONFIGFILE
 

@@ -123,7 +123,7 @@ else
 KEYGEN_SRC=
 endif
 KEYGEN_OBJ=$(addprefix $(BUILD),$(KEYGEN_SRC:.c=.o)) $(COMPAT_OBJ)
-RIGGERD_SRC=riggerd/riggerd.c riggerd/log.c riggerd/netevent.c riggerd/rbtree.c riggerd/mini_event.c riggerd/net_help.c riggerd/winsock_event.c riggerd/fptr_wlist.c riggerd/cfg.c riggerd/svr.c riggerd/probe.c riggerd/ubhook.c riggerd/reshook.c riggerd/http.c
+RIGGERD_SRC=riggerd/riggerd.c riggerd/log.c riggerd/netevent.c riggerd/rbtree.c riggerd/mini_event.c riggerd/net_help.c riggerd/winsock_event.c riggerd/fptr_wlist.c riggerd/cfg.c riggerd/svr.c riggerd/probe.c riggerd/ubhook.c riggerd/reshook.c riggerd/http.c riggerd/update.c
 ifeq "$(hooks)" "windows"
 RIGGERD_SRC+=winrc/netlist.c winrc/win_svc.c winrc/w_inst.c
 endif
@@ -163,11 +163,11 @@ test:
 
 example.conf:	$(srcdir)/example.conf.in Makefile
 	rm -f $@
-	sed -e 's?0VERSION0?$(VERSION)?' -e 's?0keydir0?$(keydir)?' -e 's?0pidfile0?$(pidfile)?' -e 's?0unbound_control_path0?$(unbound_control_path)?' -e 's?0login_command0?$(login_command)?' -e 's?0login_location0?$(login_location)?' < $(srcdir)/example.conf.in > $@
+	sed -e 's?0VERSION0?$(VERSION)?' -e 's?0keydir0?$(keydir)?' -e 's?0pidfile0?$(pidfile)?' -e 's?0unbound_control_path0?$(unbound_control_path)?' -e 's?0login_command0?$(login_command)?' -e 's?0login_location0?$(login_location)?' -e 's?0check_updates0?@check_updates@?' < $(srcdir)/example.conf.in > $@
 
 dnssec-trigger.8:	$(srcdir)/dnssec-trigger.8.in Makefile
 	rm -f $@
-	sed -e 's?0VERSION0?$(VERSION)?' -e 's?0DATE0?'"`date +%F`"'?' -e 's?0keydir0?$(keydir)?' -e 's?0pidfile0?$(pidfile)?' -e 's?0configfile0?$(configfile)?' -e 's?0login_command0?$(login_command)?' -e 's?0login_location0?$(login_location)?' < $(srcdir)/dnssec-trigger.8.in > $@
+	sed -e 's?0VERSION0?$(VERSION)?' -e 's?0DATE0?'"`date +%F`"'?' -e 's?0keydir0?$(keydir)?' -e 's?0pidfile0?$(pidfile)?' -e 's?0configfile0?$(configfile)?' -e 's?0login_command0?$(login_command)?' -e 's?0login_location0?$(login_location)?' -e 's?0check_updates0?@check_updates@?' < $(srcdir)/dnssec-trigger.8.in > $@
 
 dnssec-trigger-control-setup:	$(srcdir)/dnssec-trigger-control-setup.sh.in Makefile
 	rm -f $@

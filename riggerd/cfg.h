@@ -98,6 +98,10 @@ struct cfg {
 	struct strlist2* http_urls, *http_urls_last;
 	int num_http_urls;
 
+	/** if we should perform version check (and ask user to update)
+	 * enabled on windows and osx. */
+	int check_updates;
+
 	/** port number for the control port */
 	int control_port;
 	/** private key file for server */
