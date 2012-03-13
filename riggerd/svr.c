@@ -47,6 +47,7 @@
 #include "netevent.h"
 #include "net_help.h"
 #include "reshook.h"
+#include "update.h"
 #ifdef USE_WINSOCK
 #include "winsock_event.h"
 #endif
@@ -92,6 +93,14 @@ struct svr* svr_create(struct cfg* cfg)
 		svr_delete(svr);
 		return NULL;
 	}
+	if(cfg->check_updates) {
+		svr->update = selfupdate_create(svr, cfg);
+		if(!svr->update) {
+			log_err("out of memory");
+			svr_delete(svr);
+			return NULL;
+		}
+	}
 
 	/* setup SSL_CTX */
 	if(!setup_ssl_ctx(svr)) {
@@ -134,6 +143,7 @@ void svr_delete(struct svr* svr)
 	if(svr->ctx) {
 		SSL_CTX_free(svr->ctx);
 	}
+	selfupdate_delete(svr->update);
 	ldns_buffer_free(svr->udp_buffer);
 	comm_timer_delete(svr->retry_timer);
 	comm_timer_delete(svr->tcp_timer);
@@ -1020,4 +1030,11 @@ void svr_tcp_callback(void* arg)
 		svr->tcp_timer_used = 1;
 		cmd_reprobe();
 	}
+}
+
+void svr_check_update(struct svr* svr)
+{
+	if(svr->update_desired && !svr->insecure_state && !svr->forced_insecure
+		&& svr->res_state != res_dark && svr->res_state != res_disconn)
+		selfupdate_start(svr->update);
 }

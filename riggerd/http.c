@@ -119,7 +119,8 @@ probe_create_addr(const char* ip, const char* domain, int rrtype)
 	}
 	/* no need for EDNS-probe, DNSSEC-types; we check for magic cookie in
 	 * HTTP response data */
-	p->host_c = outq_create(p->name, rrtype, domain, 1, p, 0, 0, p->port, 0);
+	p->host_c = outq_create(p->name, rrtype, domain, 1, p, 0, 0,
+		p->port, 0, 0);
 	if(!p->host_c) {
 		free(p->name);
 		free(p);

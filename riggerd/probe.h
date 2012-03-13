@@ -108,6 +108,7 @@ struct outq {
 	int on_ssl; /* if we are using SSL */
 	int port; /* port number (mostly 53) */
 	int edns; /* if edns yes */
+	int cdflag; /* if CD flag on query */
 	struct comm_point* c;
 	struct comm_timer* timer;
 	struct probe_ip* probe; /* reference only to owner */
@@ -150,10 +151,23 @@ void probe_setup_dnstcp(struct svr* svr);
 /** true if probe is a cache IP, a DNS server from the DHCP hook */
 int probe_is_cache(struct probe_ip* p);
 
-/** Create new outgoing query */
+/** Create new outgoing query:
+ * @param ip: server to send to (IP4 or IP6 string).
+ * @param tp: rr type
+ * @param domain: domain name in text format.
+ * @param recurse: +RD flag or not.
+ * @param p: parent pointer.
+ * @param tcp: false for UDP, true for TCP
+ * @param onssl: if true, (and TCP) uses SSL wrap.
+ * @param port: port number for query
+ * @param edns: if true, DO flag set.
+ * @param cdflag: if true, CD flag set.
+ * @return new outq or out of memory.
+ */
 struct outq* outq_create(const char* ip, int tp, const char* domain,
 	int recurse, struct probe_ip* p, int tcp, int onssl, int port,
-	int edns);
+	int edns, int cdflag);
+
 /* delete and stop outq */
 void outq_delete(struct outq* outq);
 

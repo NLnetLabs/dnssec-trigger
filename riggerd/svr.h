@@ -51,6 +51,7 @@ struct comm_point;
 struct ldns_struct_buffer;
 struct probe_ip;
 struct http_general;
+struct selfupdate;
 
 /**
  * The server
@@ -110,6 +111,11 @@ struct svr {
 
 	/** http lookup structure; or NULL if no urlprobe configured or done */
 	struct http_general* http;
+
+	/** self update structure; or NULL if no selfupdate */
+	struct selfupdate* update;
+	/** do we want to check for updates (when dnssec is available) */
+	int update_desired;
 
 	/** result of probes */
 	enum res_state { 
@@ -198,6 +204,8 @@ void svr_tcp_timer_stop(void);
 
 /** perform a reprobe */
 void cmd_reprobe(void);
+/** check if software updates have to be performed */
+void svr_check_update(struct svr* svr);
 
 int handle_ssl_accept(struct comm_point* c, void* arg, int error,
         struct comm_reply* reply_info);

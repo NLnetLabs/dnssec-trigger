@@ -41,9 +41,10 @@
 
 #ifndef UPDATE_H
 #define UPDATE_H
-
+#include <ldns/packet.h>
 struct outq;
 struct http_get;
+struct svr;
 struct cfg;
 struct comm_timer;
 
@@ -51,6 +52,8 @@ struct comm_timer;
  * The update data
  */
 struct selfupdate {
+	/** the server */
+	struct svr* svr;
 	/** the config to use  (reference) */
 	struct cfg* cfg;
 
@@ -73,8 +76,12 @@ struct selfupdate {
 	/** length of hash */
 	size_t hashlen;
 
+	/** get address for http fetch */
+	struct outq* addr_4;
+	struct outq* addr_6;
 	/** http get operation that fetches the installer (or NULL if not) */
-	struct http_get* download_http;
+	struct http_get* download_http4;
+	struct http_get* download_http6;
 	/** filename with downloaded file (or NULL) */
 	char* download_file;
 	/** if we have downloaded to file and hash is okay
@@ -82,14 +89,16 @@ struct selfupdate {
 	int file_available;
 
 	/** timer that sets selfupdate_desired after 24h in svr */
-	struct comm_timer* retry;
+	struct comm_timer* timer;
 };
 
-/** 24h retry time (in seconds) between version checks */
-#define SELFUPDATE_RETRY (24*3600)
+/** retry time (in seconds) between version checks */
+#define SELFUPDATE_RETRY (2*3600)
+/** 24h time (in seconds) between version checks */
+#define SELFUPDATE_NEXT_CHECK (24*3600)
 
 /** create new selfupdate structure (empty). */
-struct selfupdate* selfupdate_create(struct cfg* cfg);
+struct selfupdate* selfupdate_create(struct svr* svr, struct cfg* cfg);
 /** delete selfupdate structure */
 void selfupdate_delete(struct selfupdate* se);
 
@@ -101,5 +110,15 @@ void selfupdate_start(struct selfupdate* se);
 
 /** the user indicates his support for the update (or nonsupport) */
 void selfupdate_userokay(struct selfupdate* se, int okay);
+
+/** the outq query is done, error reason (or NULL if works) */
+void selfupdate_outq_done(struct selfupdate* se, struct outq* outq,
+	ldns_pkt* pkt, const char* reason);
+
+/** see if version x is newer than y */
+int version_is_newer(const char* x, const char* y);
+
+/** timeout handler for selfupdate timer */
+void selfupdate_timeout(void* arg);
 
 #endif /* UPDATE_H */

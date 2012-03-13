@@ -49,6 +49,7 @@
 #include "probe.h"
 #include "mini_event.h"
 #include "http.h"
+#include "update.h"
 #ifdef USE_WINSOCK
 #include "winrc/netlist.h"
 #include "winrc/win_svc.h"
@@ -77,6 +78,7 @@ fptr_whitelist_comm_timer(void (*fptr)(void*))
 	if(fptr == &outq_timeout) return 1;
 	else if(fptr == &svr_retry_callback) return 1;
 	else if(fptr == &http_get_timeout_handler) return 1;
+	else if(fptr == &selfupdate_timeout) return 1;
 	else if(fptr == &svr_tcp_callback) return 1;
 #ifdef USE_WINSOCK
 	else if(fptr == &wsvc_cron_cb) return 1;

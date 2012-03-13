@@ -48,6 +48,7 @@
 #include "ubhook.h"
 #include "reshook.h"
 #include "http.h"
+#include "update.h"
 #include <ldns/ldns.h>
 
 /* create probes for the ip addresses in the string */
@@ -337,6 +338,10 @@ outq_done(struct outq* outq, const char* reason)
 {
 	struct probe_ip* p = outq->probe;
 	const char* in = NULL;
+	if(!p) {
+		selfupdate_outq_done(global_svr->update, outq, NULL, reason);
+		return;
+	}
 	if(p->sslctx && !reason) {
 		reason = check_ssl(outq);
 	}
@@ -427,7 +432,9 @@ outq_check_packet(struct outq* outq, uint8_t* wire, size_t len)
 	ldns_pkt *p = NULL;
 	ldns_status s;
 	if(verbosity >= VERB_ALGO) {
-		if(outq->probe->to_http) {
+		if(!outq->probe) {
+		    verbose(VERB_ALGO, "%s TXT received", outq->qname);
+		} else if(outq->probe->to_http) {
 		    verbose(VERB_ALGO, "from %s %s received",
 			outq->probe->name, outq->probe->http_ip6?
 			"HTTPip6":"HTTPip4");
@@ -442,7 +449,8 @@ outq_check_packet(struct outq* outq, uint8_t* wire, size_t len)
 			)));
 		log_hex("packet", wire, len);
 	}
-	outq->probe->got_packet = 1;
+	if(outq->probe)
+		outq->probe->got_packet = 1;
 
 	if(!LDNS_QR_WIRE(wire)) {
 		outq_done(outq, "reply without QR flag");
@@ -451,7 +459,7 @@ outq_check_packet(struct outq* outq, uint8_t* wire, size_t len)
 	if(LDNS_TC_WIRE(wire)) {
 		/* start TCP query and wait for it */
 		verbose(VERB_ALGO, "%s: TC flag, switching to TCP",
-			outq->probe->name);
+			outq->probe?outq->probe->name:outq->qname);
 		if(!outq_send_tcp(outq)) {
 			outq_done(outq, "cannot send TCP query after TC flag");
 		}
@@ -481,6 +489,10 @@ outq_check_packet(struct outq* outq, uint8_t* wire, size_t len)
 		outq_done(outq, reason);
 		LDNS_FREE(r);
 		ldns_pkt_free(p);
+		return;
+	}
+	if(!outq->probe) {
+		selfupdate_outq_done(global_svr->update, outq, p, NULL);
 		return;
 	}
 	/* if this all OK, and addr, then use http addr process */
@@ -610,7 +622,7 @@ create_probe_query(struct outq* outq, ldns_buffer* buffer)
 	ldns_status status;
 	if(outq->recurse)
 		flags |= LDNS_RD;
-	if(outq->edns)
+	if(outq->cdflag)
 		flags |= LDNS_CD;
 	status = ldns_pkt_query_new_frm_str(&pkt, outq->qname, outq->qtype,
 		LDNS_RR_CLASS_IN, flags);
@@ -641,7 +653,7 @@ create_probe_query(struct outq* outq, ldns_buffer* buffer)
 
 struct outq*
 outq_create(const char* ip, int tp, const char* domain, int recurse,
-	struct probe_ip* p, int tcp, int onssl, int port, int edns)
+	struct probe_ip* p, int tcp, int onssl, int port, int edns, int cdflag)
 {
 	int fd;
 	struct outq* outq = (struct outq*)calloc(1, sizeof(*outq));
@@ -658,6 +670,7 @@ outq_create(const char* ip, int tp, const char* domain, int recurse,
 	outq->on_ssl = onssl;
 	outq->port = port;
 	outq->edns = edns;
+	outq->cdflag = cdflag;
 
 	if(!ipstrtoaddr(ip, port, &outq->addr, &outq->addrlen)) {
 		log_err("could not parse ip %s", ip);
@@ -749,7 +762,7 @@ void outq_timeout(void* arg)
 {
 	struct outq* outq = (struct outq*)arg;
 	verbose(VERB_ALGO, "%s %s: UDP timeout after %d msec",
-		outq->probe->name, outq->qtype==PROBE_NSEC3_QTYPE?"NSEC3":(
+		outq->probe?outq->probe->name:outq->qname, outq->qtype==PROBE_NSEC3_QTYPE?"NSEC3":(
 		outq->qtype==LDNS_RR_TYPE_DNSKEY?"DNSKEY":"DS"), outq->timeout);
 	if(outq->timeout > QUERY_END_TIMEOUT) {
 		/* too many timeouts */
@@ -950,9 +963,9 @@ static void probe_spawn(const char* ip, int recurse, int dnstcp,
 
 	/* send the probe queries and wait for reply */
 	p->dnskey_c = outq_create(p->name, LDNS_RR_TYPE_DNSKEY, ".",
-		recurse, p, dnstcp, ssldns!=0, port, 1);
+		recurse, p, dnstcp, ssldns!=0, port, 1, 1);
 	p->ds_c = outq_create(p->name, LDNS_RR_TYPE_DS, dest, recurse, p,
-		dnstcp, ssldns!=0, port, 1);
+		dnstcp, ssldns!=0, port, 1, 1);
 	if(!p->ds_c || !p->dnskey_c) {
 		log_err("could not send queries for probe");
 		probe_delete(p);
@@ -963,7 +976,7 @@ static void probe_spawn(const char* ip, int recurse, int dnstcp,
 		const char* nd = get_random_nsec3_dest();
 		verbose(VERB_ALGO, "nsec3 query %s", nd);
 		p->nsec3_c = outq_create(p->name, PROBE_NSEC3_QTYPE, nd,
-			recurse, p, dnstcp, ssldns!=0, port, 1);
+			recurse, p, dnstcp, ssldns!=0, port, 1, 1);
 		if(!p->nsec3_c) {
 			log_err("could not send nsec3 query for probe");
 			probe_delete(p);
@@ -1463,4 +1476,5 @@ probe_all_done(void)
 	}
 	svr->probetime = time(0);
 	svr_send_results(svr);
+	svr_check_update(svr);
 }
