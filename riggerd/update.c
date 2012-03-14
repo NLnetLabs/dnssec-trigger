@@ -137,8 +137,6 @@ void selfupdate_start(struct selfupdate* se)
 {
 	char* domain = NULL;
 	char* server = "127.0.0.1";
-	/* DEBUG */
-	server = "213.154.224.23";
 	/* do not start us again, if it fails we turn desired back on. */
 	if(!se->svr->update_desired) {
 		/* robust check for double start */
