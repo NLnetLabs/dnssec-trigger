@@ -850,7 +850,8 @@ static void handle_stoppanels_cmd(struct sslconn* sc)
 			s->line_state != persist_write)
 			continue;
 		(void)SSL_set_mode(s->ssl, SSL_MODE_AUTO_RETRY);
-		fd_set_block(SSL_get_fd(s->ssl));
+		if(SSL_get_fd(s->ssl) != -1)
+			fd_set_block(SSL_get_fd(s->ssl));
 		if(s->line_state == persist_write) {
 			/* busy with last results,  blocking write them */
 			if(SSL_write(s->ssl, ldns_buffer_current(s->buffer), 
@@ -867,7 +868,8 @@ static void handle_stoppanels_cmd(struct sslconn* sc)
 		}
 
 		/* it will be closed now */
-		fd_set_nonblock(SSL_get_fd(s->ssl));
+		if(SSL_get_fd(s->ssl) != -1)
+			fd_set_nonblock(SSL_get_fd(s->ssl));
 		comm_point_listen_for_rw(s->c, 1, 0);
 		s->line_state = persist_write_checkclose;
 	}
