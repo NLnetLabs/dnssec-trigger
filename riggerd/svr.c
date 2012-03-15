@@ -1037,8 +1037,6 @@ void svr_check_update(struct svr* svr)
 	if(svr->update_desired && !svr->insecure_state && !svr->forced_insecure
 		&& svr->res_state != res_dark && svr->res_state != res_disconn)
 	{
-		/* DISABLED, WORKED ON
 		selfupdate_start(svr->update);
-		*/
 	}
 }

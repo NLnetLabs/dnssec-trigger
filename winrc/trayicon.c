@@ -711,6 +711,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR args,
 	const char* cfgfile = NULL;
 	const char* uidir = NULL;
 	int r;
+	int smsz = 0;
 	WSADATA wsa_data;
 	struct cfg* cfg;
 	(void)hPrevInstance;
@@ -763,15 +764,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR args,
 	/* if the taskbar crashes and is restarted (explorer.exe) then this
 	 * message is sent so we can re-enter ourselves */
 	WM_TASKBARCREATED = RegisterWindowMessageA("TaskbarCreated");
+	if(GetSystemMetrics(SM_CXSMICON) > 16)
+		smsz = 32;
 	status_icon = (HICON)LoadImage(NULL,
 		get_ui_file(debug, uidir, "status.ico"),
-		IMAGE_ICON, 0, 0, LR_LOADFROMFILE);
+		IMAGE_ICON, smsz, smsz, LR_LOADFROMFILE);
 	status_icon_big = (HICON)LoadImage(NULL,
 		get_ui_file(debug, uidir, "status.ico"),
 		IMAGE_ICON, 64, 64, LR_LOADFROMFILE);
 	status_icon_alert = (HICON)LoadImage(NULL,
 		get_ui_file(debug, uidir, "alert.ico"),
-		IMAGE_ICON, 0, 0, LR_LOADFROMFILE);
+		IMAGE_ICON, smsz, smsz, LR_LOADFROMFILE);
 	status_icon_alert_big = (HICON)LoadImage(NULL,
 		get_ui_file(debug, uidir, "alert.ico"),
 		IMAGE_ICON, 64, 64, LR_LOADFROMFILE);
