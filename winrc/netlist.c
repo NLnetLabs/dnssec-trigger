@@ -333,7 +333,6 @@ static void
 sweep_adapters(char* netnames, size_t netnames_sz, char* result,
 	size_t result_sz) {
 	char buf[40960];
-	int unused; /* DEBUG */
 	IP_ADAPTER_ADDRESSES *p, *list = (IP_ADAPTER_ADDRESSES*)&buf;
 	ULONG r, sz = sizeof(buf), flags = 0;
 	if((r=GetAdaptersAddresses(AF_UNSPEC, flags, NULL, list, &sz))
@@ -456,7 +455,6 @@ static HANDLE notify_nets(void)
 		char ssid[10240];
 #ifdef HAVE_GETADAPTERSADDRESSES
 		/* see if we have additional information, on XP and later */
-		@@@ /* DEBUG */
 		sweep_adapters(netnames, sizeof(netnames), result,
 			sizeof(result));
 #endif /* HAVE_GETADAPTERSADDRESSES */
