@@ -42,6 +42,9 @@
 #include <winsock2.h>
 #include <mswsock.h>
 #include <nspapi.h>
+#ifdef HAVE_IPHLPAPI_H
+#include <iphlpapi.h>
+#endif
 #include "winrc/netlist.h"
 #include "winrc/win_svc.h"
 #include "riggerd/log.h"
