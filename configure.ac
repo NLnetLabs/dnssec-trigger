@@ -188,6 +188,7 @@ if test "$USE_WINSOCK" = 1; then
 	LIBS="$LIBS -liphlpapi"
 	AC_CHECK_FUNC([EVP_PKEY_CTX_new_id],,[AC_ERROR(Need newer openssl)])
 	AC_CHECK_FUNCS([_beginthreadex])
+	AC_CHECK_FUNCS([GetAdaptersAddresses])
 fi
 AC_DEFINE(USE_MINI_EVENT, 1, [Use builtin event system])
 if test $ac_cv_func_getaddrinfo = no; then

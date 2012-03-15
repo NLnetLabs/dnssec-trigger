@@ -1,3 +1,6 @@
+15 March 2012: Wouter
+	- configure windows detects GetAdaptersAdresses (XP and later).
+
 13 March 2012: Wouter
 	- self update work.
 
