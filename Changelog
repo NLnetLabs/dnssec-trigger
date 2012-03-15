@@ -1,5 +1,9 @@
 15 March 2012: Wouter
 	- configure windows detects GetAdaptersAdresses (XP and later).
+	- snapshot for test.
+	- Fix compatibility with VirtualBox on Windows, that messes with the
+	  network adapters.  Solution works on windows XP and later (detected
+	  by configure).
 
 13 March 2012: Wouter
 	- self update work.
