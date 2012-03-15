@@ -322,7 +322,7 @@ static void process_adapter(const char* guid, char* dest, size_t len,
 	}
 }
 
-#ifdef HAVE_ADAPTERSADDRESSES
+#ifdef HAVE_GETADAPTERSADDRESSES
 /** use the (XP) getAdaptersAddresses to look for UP networks and their DHCP,
  * because VirtualBox installs weird network adapters that make us have an
  * empty set of networks from WSALookupServiceBegin. */
@@ -358,7 +358,7 @@ sweep_adapters(char* netnames, size_t netnames_sz, char* result,
 		}
 	}
 }
-#endif /* HAVE_ADAPTERSADDRESSES */
+#endif /* HAVE_GETADAPTERSADDRESSES */
 
 /** start lookup and notify daemon of the current list */
 static HANDLE notify_nets(void)
@@ -451,12 +451,12 @@ static HANDLE notify_nets(void)
 #endif
 		) {
 		char ssid[10240];
-#ifdef HAVE_ADAPTERSADDRESSES
+#ifdef HAVE_GETADAPTERSADDRESSES
 		/* see if we have additional information, on XP and later */
 		@@@ /* DEBUG */
 		sweep_adapters(netnames, sizeof(netnames), result,
 			sizeof(result));
-#endif /* HAVE_ADAPTERSADDRESSES */
+#endif /* HAVE_GETADAPTERSADDRESSES */
 		/* start the probe for the notified IPs from up networks */
 		fetch_wlan_ssid(ssid, sizeof(ssid));
 		if(has_changed(netnames, result, ssid)) {
