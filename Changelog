@@ -4,6 +4,7 @@
 	- Fix compatibility with VirtualBox on Windows, that messes with the
 	  network adapters.  Solution works on windows XP and later (detected
 	  by configure).
+	- Fix trayicon on windows high DPI settings to look better.
 
 13 March 2012: Wouter
 	- self update work.
