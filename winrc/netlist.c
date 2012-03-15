@@ -322,6 +322,43 @@ static void process_adapter(const char* guid, char* dest, size_t len,
 	}
 }
 
+#ifdef HAVE_ADAPTERSADDRESSES
+/** use the (XP) getAdaptersAddresses to look for UP networks and their DHCP,
+ * because VirtualBox installs weird network adapters that make us have an
+ * empty set of networks from WSALookupServiceBegin. */
+static void
+sweep_adapters(char* netnames, size_t netnames_sz, char* result,
+	size_t result_sz) {
+	char buf[40960];
+	IP_ADAPTER_ADDRESSES *p, *list = (IP_ADAPTER_ADDRESSES*)&buf;
+	ULONG r, sz = sizeof(buf), flags = 0;
+	if((r=GetAdaptersAddresses(AF_UNSPEC, flags, NULL, list, &sz))
+		!= ERROR_SUCCESS) {
+		log_win_err("GetAdaptersAddresses", r);
+		return;
+	}
+	if(sz > sizeof(buf)) {
+		/* sanity check on buffer */
+		return;
+	}
+	/* inspect the adapters, to find ones we skipped and are UP with DHCP */
+	for(p=list; p; p=p->Next) {
+		if( (p->Flags&IP_ADAPTER_DHCP_ENABLED) && 
+			(p->OperStatus&IfOperStatusUp) &&
+			!strstr(netnames, p->AdapterName)) {
+			/* note that the dnsServers list for this structure
+			 * is now (likely) filled with 127.0.0.1 that
+			 * dnssec-trigger has configured itself, so we have
+			 * to go look in the registry */
+			verbose(VERB_ALGO, "GetAdaptersAddresses says %s is "
+				"UP DHCP", p->AdapterName);
+			process_adapter(p->AdapterName,
+				result, result_sz, netnames, netnames_sz);
+		}
+	}
+}
+#endif /* HAVE_ADAPTERSADDRESSES */
+
 /** start lookup and notify daemon of the current list */
 static HANDLE notify_nets(void)
 {
@@ -413,6 +450,11 @@ static HANDLE notify_nets(void)
 #endif
 		) {
 		char ssid[10240];
+#ifdef HAVE_ADAPTERSADDRESSES
+		/* see if we have additional information, on XP and later */
+		sweep_adapters(netnames, sizeof(netnames), result,
+			sizeof(result));
+#endif /* HAVE_ADAPTERSADDRESSES */
 		/* start the probe for the notified IPs from up networks */
 		fetch_wlan_ssid(ssid, sizeof(ssid));
 		if(has_changed(netnames, result, ssid)) {
