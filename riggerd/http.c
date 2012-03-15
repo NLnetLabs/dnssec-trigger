@@ -735,13 +735,15 @@ http_get_connect(struct sockaddr_storage* addr, socklen_t addrlen, char** err)
 		if(1) {
 #endif
 			*err = strerror(errno);
-			log_err("http_get: connect: %s", *err);
+			if(verbosity >= 2)
+				log_err("http_get: connect: %s", *err);
 			close(fd);
 #else /* USE_WINSOCK */
 		if(WSAGetLastError() != WSAEINPROGRESS &&
 			WSAGetLastError() != WSAEWOULDBLOCK) {
 			*err = wsa_strerror(WSAGetLastError());
-			log_err("http_get: connect: %s", *err);
+			if(verbosity >= 2)
+				log_err("http_get: connect: %s", *err);
 			closesocket(fd);
 #endif
 			return -1;

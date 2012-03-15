@@ -5,6 +5,7 @@
 	  network adapters.  Solution works on windows XP and later (detected
 	  by configure).
 	- Fix trayicon on windows high DPI settings to look better.
+	- silence connect() http errors, unless verbosity 2.
 
 13 March 2012: Wouter
 	- self update work.
