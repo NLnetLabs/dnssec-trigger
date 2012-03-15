@@ -188,7 +188,23 @@ if test "$USE_WINSOCK" = 1; then
 	LIBS="$LIBS -liphlpapi"
 	AC_CHECK_FUNC([EVP_PKEY_CTX_new_id],,[AC_ERROR(Need newer openssl)])
 	AC_CHECK_FUNCS([_beginthreadex])
-	AC_CHECK_FUNCS([GetAdaptersAddresses])
+
+	AC_MSG_CHECKING([for GetAdaptersAddresses])
+	AC_LINK_IFELSE(
+	[AC_LANG_SOURCE([[
+#include <windows.h>
+#include <iphlpapi.h>
+int main(void) {
+	(void)GetAdaptersAddresses(0, 0, NULL, NULL, NULL);
+	return 0;
+}
+]])]
+	, [
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_GETADAPTERSADDRESSES, [1], [If we have this function (windows XP and later)])
+	], [
+		AC_MSG_RESULT(no)
+	])
 fi
 AC_DEFINE(USE_MINI_EVENT, 1, [Use builtin event system])
 if test $ac_cv_func_getaddrinfo = no; then

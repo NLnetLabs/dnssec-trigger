@@ -48,7 +48,7 @@
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #undef HAVE_FSEEKO
 
-/* Define to 1 if you have the `GetAdaptersAddresses' function. */
+/* If we have this function (windows XP and later) */
 #undef HAVE_GETADAPTERSADDRESSES
 
 /* Whether getaddrinfo is available */

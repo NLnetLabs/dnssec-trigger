@@ -6639,17 +6639,37 @@ _ACEOF
 fi
 done
 
-	for ac_func in GetAdaptersAddresses
-do :
-  ac_fn_c_check_func "$LINENO" "GetAdaptersAddresses" "ac_cv_func_GetAdaptersAddresses"
-if test "x$ac_cv_func_GetAdaptersAddresses" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_GETADAPTERSADDRESSES 1
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for GetAdaptersAddresses" >&5
+$as_echo_n "checking for GetAdaptersAddresses... " >&6; }
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <windows.h>
+#include <iphlpapi.h>
+int main(void) {
+	(void)GetAdaptersAddresses(0, 0, NULL, NULL, NULL);
+	return 0;
+}
+
+
 _ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define HAVE_GETADAPTERSADDRESSES 1" >>confdefs.h
+
+
+else
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 
 fi
-done
-
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 fi
 
 $as_echo "#define USE_MINI_EVENT 1" >>confdefs.h
