@@ -576,6 +576,31 @@ selfupdate_write_file(struct selfupdate* se, struct http_get* hg)
 	return 1;
 }
 
+static void stop_other_http(struct selfupdate* se, struct http_get* hg)
+{
+	if(hg == se->download_http4) {
+		outq_delete(se->addr_6);
+		se->addr_6 = NULL;
+		ldns_rr_list_deep_free(se->addr_list_6);
+		se->addr_list_6 = NULL;
+		http_get_delete(se->download_http6);
+		se->download_http6 = NULL;
+	} else {
+		outq_delete(se->addr_4);
+		se->addr_4 = NULL;
+		ldns_rr_list_deep_free(se->addr_list_4);
+		se->addr_list_4 = NULL;
+		http_get_delete(se->download_http4);
+		se->download_http4 = NULL;
+	}
+}
+
+void selfupdate_http_connected(struct selfupdate* se, struct http_get* hg)
+{
+	/* we do not need the other one any more (happy eyeballs) */
+	stop_other_http(se, hg);
+}
+
 void
 selfupdate_http_get_done(struct selfupdate* se, struct http_get* hg, 
 	char* reason)
@@ -613,21 +638,7 @@ selfupdate_http_get_done(struct selfupdate* se, struct http_get* hg,
 		goto fail;
 	}
 	/* stop the other attempt (if any) */
-	if(hg == se->download_http4) {
-		outq_delete(se->addr_6);
-		se->addr_6 = NULL;
-		ldns_rr_list_deep_free(se->addr_list_6);
-		se->addr_list_6 = NULL;
-		http_get_delete(se->download_http6);
-		se->download_http6 = NULL;
-	} else {
-		outq_delete(se->addr_4);
-		se->addr_4 = NULL;
-		ldns_rr_list_deep_free(se->addr_list_4);
-		se->addr_list_4 = NULL;
-		http_get_delete(se->download_http4);
-		se->download_http4 = NULL;
-	}
+	stop_other_http(se, hg);
 
 	if(!selfupdate_write_file(se, hg)) {
 		selfupdate_start_retry_timer(se);

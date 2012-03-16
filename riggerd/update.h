@@ -141,6 +141,9 @@ int version_is_newer(const char* x, const char* y);
 /** timeout handler for selfupdate timer */
 void selfupdate_timeout(void* arg);
 
+/** routine called when http has connected to the server (but no data yet) */
+void selfupdate_http_connected(struct selfupdate* se, struct http_get* hg);
+
 /** routine called when http is done */
 void selfupdate_http_get_done(struct selfupdate* se, struct http_get* hg, 
 	char* reason);

@@ -817,6 +817,9 @@ static int hg_write_buf(struct http_get* hg, ldns_buffer* buf)
 		}
 		/* no connect error */
 		hg->cp->tcp_check_nb_connect = 0;
+		if(!hg->probe) {
+			selfupdate_http_connected(global_svr->update, hg);
+		}
 	}
 
 	/* write data */
