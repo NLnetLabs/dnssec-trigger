@@ -79,6 +79,7 @@ usage()
 	printf("  test_tcp	test option that enables tcp mode\n");
 	printf("  test_ssl	test option that enables ssl mode\n");
 	printf("  test_http	test option that pretends that http fails\n");
+	printf("  test_update	software update to the unstable test version\n");
 	printf("  results	continuous feed of probe results\n");
 	printf("  cmdtray	command channel for gui panel\n");
 	printf("  stoppanels	connected panels quit (for installers)\n");

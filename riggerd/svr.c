@@ -839,6 +839,13 @@ static void handle_test_http_cmd(struct sslconn* sc)
 	sslconn_shutdown(sc);
 }
 
+static void handle_test_update_cmd(struct sslconn* sc)
+{
+	global_svr->update->test_flag = 1;
+	global_svr->update_desired = 1;
+	sslconn_shutdown(sc);
+}
+
 static void handle_stoppanels_cmd(struct sslconn* sc)
 {
 	/* write stop to all connected panels */
@@ -919,6 +926,8 @@ static void sslconn_command(struct sslconn* sc)
 		handle_test_ssl_cmd(sc);
 	} else if(strncmp(str, "test_http", 8) == 0) {
 		handle_test_http_cmd(sc);
+	} else if(strncmp(str, "test_update", 11) == 0) {
+		handle_test_update_cmd(sc);
 	} else if(strncmp(str, "stoppanels", 10) == 0) {
 		handle_stoppanels_cmd(sc);
 	} else if(strncmp(str, "stop", 4) == 0) {
@@ -1039,8 +1048,6 @@ void svr_check_update(struct svr* svr)
 	if(svr->update_desired && !svr->insecure_state && !svr->forced_insecure
 		&& svr->res_state != res_dark && svr->res_state != res_disconn)
 	{
-		/* DEBUG turned off
 		selfupdate_start(svr->update);
-		*/
 	}
 }

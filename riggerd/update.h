@@ -66,6 +66,11 @@ struct selfupdate {
 	int user_replied;
 	/** did the user agree to install the update */
 	int user_okay;
+	/** if this flag is on update with the unstable test version 
+	 * This is used to test the software update mechanism.
+	 * Or to distribute test software to some participants.
+	 */
+	int test_flag;
 
 	/** query for TXT record with version and hash */
 	struct outq* txt_query;
@@ -76,14 +81,19 @@ struct selfupdate {
 	/** length of hash */
 	size_t hashlen;
 
-	/** get address for http fetch */
+	/** get address for http fetch, or NULL on its failure */
 	struct outq* addr_4;
 	struct outq* addr_6;
+	/** the address list for downloads */
+	ldns_rr_list* addr_list_4;
+	ldns_rr_list* addr_list_6;
 	/** http get operation that fetches the installer (or NULL if not) */
 	struct http_get* download_http4;
 	struct http_get* download_http6;
 	/** filename with downloaded file (or NULL) */
 	char* download_file;
+	/** filename of the download url (no directory part) */
+	char* filename;
 	/** if we have downloaded to file and hash is okay
 	 * we have to delete this file so it does not clog up the system */
 	int file_available;
@@ -96,6 +106,16 @@ struct selfupdate {
 #define SELFUPDATE_RETRY (2*3600)
 /** 24h time (in seconds) between version checks */
 #define SELFUPDATE_NEXT_CHECK (24*3600)
+/** 
+ * The dnssec trigger domain name (where the TXT records are)
+ * TXT records at {win,src,osx}.{test,version}.ourdomain
+ * with TXT "version" "sha256"
+ */
+#define DNSSECTRIGGER_DOMAIN "dnssec-trigger.nlnetlabs.nl"
+/** the download site for new software updates. */
+#define DNSSECTRIGGER_DOWNLOAD_HOST "www.nlnetlabs.nl"
+/** the download URL for the software updates, the directory (start with /) */
+#define DNSSECTRIGGER_DOWNLOAD_URLPRE "/downloads/dnssec-trigger/"
 
 /** create new selfupdate structure (empty). */
 struct selfupdate* selfupdate_create(struct svr* svr, struct cfg* cfg);
@@ -120,5 +140,9 @@ int version_is_newer(const char* x, const char* y);
 
 /** timeout handler for selfupdate timer */
 void selfupdate_timeout(void* arg);
+
+/** routine called when http is done */
+void selfupdate_http_get_done(struct selfupdate* se, struct http_get* hg, 
+	char* reason);
 
 #endif /* UPDATE_H */

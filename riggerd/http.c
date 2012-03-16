@@ -47,6 +47,7 @@
 #include "riggerd/probe.h"
 #include "riggerd/cfg.h"
 #include "riggerd/net_help.h"
+#include "riggerd/update.h"
 #ifdef USE_WINSOCK
 #include "winsock_event.h"
 #endif
@@ -332,6 +333,9 @@ http_probe_create_get(struct http_probe* hp, ldns_rr* addr, char** reason)
 		free(p);
 		return 0;
 	}
+	/* put a cap on the max data size because we expect very short
+	 * responses for our probe */
+	p->http->data_limit = MAX_HTTP_LENGTH*10;
 	if(!http_get_fetch(p->http, p->name, reason)) {
 		http_get_delete(p->http);
 		free(p->name); 
@@ -354,21 +358,32 @@ http_probe_create_get(struct http_probe* hp, ldns_rr* addr, char** reason)
 	return 1;
 }
 
+/** pick random address from ldns_rr_list and remove it from the list */
+ldns_rr* http_pick_random_addr(ldns_rr_list* list)
+{
+	size_t count;
+	size_t i;
+	ldns_rr* rr;
+
+	if(!list) return NULL;
+	count = ldns_rr_list_rr_count(list);
+	if(count == 0) return NULL;
+	i = (count == 1)?0:(ldns_get_random()%count);
+	rr = ldns_rr_list_rr(list, i);
+
+	/* remove from rr_list */
+	(void)ldns_rr_list_set_rr(list, ldns_rr_list_rr(list, count-1), i);
+	ldns_rr_list_set_rr_count(list, count-1);
+
+	return rr;
+}
+
 /** start http get with a random dest address from the set */
 void http_probe_start_http_get(struct http_probe* hp)
 {
 	char* reason = "out of memory";
 	/* pick random address */
-	size_t count = ldns_rr_list_rr_count(hp->addr);
-	size_t i = ldns_get_random()%count;
-	ldns_rr* rr = ldns_rr_list_rr(hp->addr, i);
-
-	/* remove from rr_list */
-	if(i < count) {
-		(void)ldns_rr_list_set_rr(hp->addr,
-			ldns_rr_list_rr(hp->addr, count-1), i);
-		ldns_rr_list_set_rr_count(hp->addr, count-1);
-	}
+	ldns_rr* rr = http_pick_random_addr(hp->addr);
 
 	/* create probe */
 	if(!http_probe_create_get(hp, rr, &reason)) {
@@ -600,9 +615,15 @@ hg_check_data(ldns_buffer* data, char* result)
 static void
 http_get_done(struct http_get* hg, char* reason, int connects)
 {
-	struct probe_ip* p = hg->probe;
-	struct http_probe* hp = (p->http_ip6)?
-		global_svr->http->v6:global_svr->http->v4;
+	struct probe_ip* p;
+	struct http_probe* hp;
+	if(!hg->probe) {
+		/* update http_get */
+		selfupdate_http_get_done(global_svr->update, hg, reason);
+		return;
+	}
+	p = hg->probe;
+	hp = (p->http_ip6)?global_svr->http->v6:global_svr->http->v4;
 	p->finished = 1;
 	global_svr->num_probes_done++;
 	/* printout data we got (but pages can be big)
@@ -700,7 +721,7 @@ prep_get_cmd(struct http_get* hg)
 	if(ldns_buffer_printf(hg->buf, "\r\n") == -1)
 		return 0;
 	ldns_buffer_flip(hg->buf);
-	verbose(VERB_ALGO, "created http get text: %s", ldns_buffer_begin(hg->buf));
+	/* verbose(VERB_ALGO, "created http get text: %s", ldns_buffer_begin(hg->buf)); */
 	return 1;
 }
 
@@ -833,7 +854,7 @@ static int hg_read_buf(struct http_get* hg, ldns_buffer* buf)
 	int fd = hg->cp->fd;
 	/* save up one space at end for a trailing zero byte */
 	r = recv(fd, (void*)ldns_buffer_current(buf),
-		ldns_buffer_remaining(buf)-1, 0);
+		ldns_buffer_remaining(buf), 0);
 	/* zero terminate for sure */
 	ldns_buffer_write_u8_at(buf, ldns_buffer_limit(buf)-1, 0);
 	/* check for errors */
@@ -856,6 +877,11 @@ static int hg_read_buf(struct http_get* hg, ldns_buffer* buf)
 #endif
 		log_err("http read: %s", str);
 		http_get_done(hg, str, 0);
+		return 0;
+	}
+	if(r == 0) {
+		log_err("http read: stream closed");
+		http_get_done(hg, "stream closed", 0);
 		return 0;
 	}
 	ldns_buffer_skip(buf, r);
@@ -982,6 +1008,7 @@ static int hg_handle_reply_header(struct http_get* hg)
 	/* check if done */
 	endstr = strstr((char*)ldns_buffer_begin(hg->buf), "\r\n\r\n");
 	if(!endstr) {
+		/* at end (with zero marker) */
 		if(ldns_buffer_remaining(hg->buf)-1 == 0) {
 			http_get_done(hg, "http headers too large", 1);
 			return 0;
@@ -1002,7 +1029,7 @@ static int hg_handle_reply_header(struct http_get* hg)
 	hg_buf_move(hg->buf, headlen+4);
 	/* if one data seg: see if data can fit into the buffer, or fail */
 	if(datalen != 0) {
-		if(datalen > HTTP_MAX_DATA) {
+		if(hg->data_limit && datalen > hg->data_limit) {
 			http_get_done(hg, "http reply data too large", 1);
 			return 0;
 		}
@@ -1024,7 +1051,8 @@ static int hg_handle_reply_header(struct http_get* hg)
 static int
 hg_add_data(struct http_get* hg, ldns_buffer* add, size_t len)
 {
-	if(ldns_buffer_position(hg->data) + len > HTTP_MAX_DATA) {
+	if(hg->data_limit && ldns_buffer_position(hg->data) + len >
+		hg->data_limit) {
 		http_get_done(hg, "http data too large", 1);
 		return 0;
 	}
@@ -1089,6 +1117,7 @@ static int hg_handle_chunk_header(struct http_get* hg)
 	}
 	endstr = strstr((char*)ldns_buffer_begin(hg->buf), "\r\n");
 	if(!endstr) {
+		/* at end (with zero marker) */
 		if(ldns_buffer_remaining(hg->buf)-1 == 0) {
 			http_get_done(hg, "http chunk headers too large", 1);
 			return 0;
@@ -1111,7 +1140,7 @@ static int hg_handle_chunk_header(struct http_get* hg)
 	/* move trailing part to front of data buffer (skip /r/n) */
 	hg_buf_move(hg->buf, headlen+2);
 	/* see if data can possibly fit */
-	if(chunklen > HTTP_MAX_DATA) {
+	if(hg->data_limit && chunklen > hg->data_limit) {
 		http_get_done(hg, "http reply chunk data too large", 1);
 		return 0;
 	}

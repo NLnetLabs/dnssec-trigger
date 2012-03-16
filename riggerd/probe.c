@@ -433,7 +433,11 @@ outq_check_packet(struct outq* outq, uint8_t* wire, size_t len)
 	ldns_status s;
 	if(verbosity >= VERB_ALGO) {
 		if(!outq->probe) {
-		    verbose(VERB_ALGO, "%s TXT received", outq->qname);
+		    verbose(VERB_ALGO, "%s %s received", outq->qname,
+		    	outq->qtype==LDNS_RR_TYPE_TXT?"TXT":(
+		    	outq->qtype==LDNS_RR_TYPE_A?"A":(
+		    	outq->qtype==LDNS_RR_TYPE_AAAA?"AAAA":"other"
+			)));
 		} else if(outq->probe->to_http) {
 		    verbose(VERB_ALGO, "from %s %s received",
 			outq->probe->name, outq->probe->http_ip6?

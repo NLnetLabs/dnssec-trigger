@@ -66,6 +66,17 @@ struct selfupdate* selfupdate_create(struct svr* svr, struct cfg* cfg)
 	return se;
 }
 
+/** delete the temporary file */
+static void
+selfupdate_delete_file(struct selfupdate* se)
+{
+	if(se->download_file) {
+		(void)unlink(se->download_file);
+		free(se->download_file);
+		se->download_file = NULL;
+	}
+}
+
 /** zero and init */
 static void selfupdate_init(struct selfupdate* se)
 {
@@ -85,12 +96,18 @@ static void selfupdate_init(struct selfupdate* se)
 	se->addr_4 = NULL;
 	outq_delete(se->addr_6);
 	se->addr_6 = NULL;
+	ldns_rr_list_deep_free(se->addr_list_4);
+	se->addr_list_4 = NULL;
+	ldns_rr_list_deep_free(se->addr_list_6);
+	se->addr_list_6 = NULL;
 	http_get_delete(se->download_http4);
 	se->download_http4 = NULL;
 	http_get_delete(se->download_http6);
 	se->download_http6 = NULL;
-	free(se->download_file);
-	se->download_file = NULL;
+
+	selfupdate_delete_file(se);
+	free(se->filename);
+	se->filename = NULL;
 }
 
 void selfupdate_delete(struct selfupdate* se)
@@ -150,11 +167,17 @@ void selfupdate_start(struct selfupdate* se)
 
 	/* start lookup of the domain name with version string and hash */
 #ifdef USE_WINSOCK
-	domain = "win.version.dnssec-trigger.nlnetlabs.nl";
+	if(se->test_flag)
+		domain = "win.test."DNSSECTRIGGER_DOMAIN;
+	else	domain = "win.version."DNSSECTRIGGER_DOMAIN;
 #elif defined(HOOKS_OSX)
-	domain = "osx.version.dnssec-trigger.nlnetlabs.nl";
+	if(se->test_flag)
+		domain = "osx.test."DNSSECTRIGGER_DOMAIN;
+	else	domain = "osx.version."DNSSECTRIGGER_DOMAIN;
 #else
-	domain = "src.version.dnssec-trigger.nlnetlabs.nl";
+	if(se->test_flag)
+		domain = "src.test."DNSSECTRIGGER_DOMAIN;
+	else	domain = "src.version."DNSSECTRIGGER_DOMAIN;
 #endif
 	log_info("fetch domain %s TXT", domain);
 
@@ -166,6 +189,22 @@ void selfupdate_start(struct selfupdate* se)
 		selfupdate_start_retry_timer(se);
 		return;
 	}
+}
+
+/** remove "bla" to bla without quotes */
+static void remove_quotes(char* str)
+{
+	size_t len;
+	if(!str || str[0] != '"')
+		return;
+	len = strlen(str);
+	if(len <= 1)
+		return;
+	/* remove endquote */
+	if(str[len-1] == '"')
+		str[len-1] = 0;
+	/* remove startquote, end also EOS marker */
+	memmove(str, str+1, len);
 }
 
 /** parse the TXT record into version and hash */
@@ -199,6 +238,8 @@ static int selfupdate_parse_rr(struct selfupdate* se, ldns_rr* txt)
 		log_err("out of memory");
 		return 0;
 	}
+	remove_quotes(se->version_available);
+	remove_quotes(hashstr);
 
 	/* parse the hash string */
 	se->hashlen = strlen(hashstr)/2;
@@ -225,7 +266,7 @@ static int
 selfupdate_start_http_fetch(struct selfupdate* se)
 {
 	char* server = "127.0.0.1";
-	char* domain = "www.nlnetlabs.nl";
+	char* domain = DNSSECTRIGGER_DOWNLOAD_HOST;
 	/* get ip4 and ip6 simultaneously, with addr lookup and http_get */
 	se->addr_4 = outq_create(server, LDNS_RR_TYPE_A, domain, 1, NULL,
 		0, 0, DNS_PORT, 1, 0);
@@ -253,7 +294,7 @@ version_is_newer(const char* x, const char* y)
 	/* returns true if cannot determine and it is different */
 
 	if(x[0] == 0)
-		return 0; /* the empty version is no fun */
+		return 0; /* the empty version is no fun, do not prefer it */
 
 	/* for the part before the rc or _, compare the numbers every dot */
 	while(xat[0] && yat[0]) {
@@ -283,6 +324,7 @@ version_is_newer(const char* x, const char* y)
 		return 1; /* x=1.2 y=1.2[rcorsnap] and thus x is newer */
 	if(xat[0] != 0 && yat[0] == 0)
 		return 0; /* x=1.2[rcorsnap] y=1.2 and thus x is not newer */
+	/* both xat and yat are not at eos */
 	
 	if(strncmp(xat, "rc", 2)==0 && strncmp(yat, "rc", 2)==0) {
 		/* compare rc versions */
@@ -369,8 +411,237 @@ static void selfupdate_outq_done_txt(struct selfupdate* se, struct outq* outq,
 			return;
 		}
 	} else {
+		verbose(VERB_ALGO, "version %s available (it is not newer)",
+			se->version_available);
 		selfupdate_start_next_timer(se);
 	}
+}
+
+/*
+ * Initiate file download from http
+ */
+static int selfupdate_start_file_download(struct selfupdate* se,
+	ldns_rr_list* addr)
+{
+	char url[256];
+	char file[256];
+	char* reason = NULL;
+	struct http_get** handle;
+	char* ipstr;
+	ldns_rr* rr;
+	file[0]=0;
+	url[0]=0;
+
+	/* pick the next address (randomly) */
+	rr = http_pick_random_addr(addr);
+	if(!rr || !ldns_rr_rdf(rr, 0)) {
+		log_err("addr without rdata");
+		ldns_rr_free(rr);
+		return 0;
+	}
+	ipstr = ldns_rdf2str(ldns_rr_rdf(rr, 0));
+	if(!ipstr) {
+		log_err("out of memory");
+		ldns_rr_free(rr);
+		return 0;
+	}
+
+	/* create the URL */
+#ifdef HOOKS_OSX
+	snprintf(file, sizeof(file), "dnssectrigger-%s.dmg",
+		se->version_available);
+#elif defined(USE_WINSOCK)
+	snprintf(file, sizeof(file), "dnssec_trigger_setup_%s.exe",
+		se->version_available);
+#else /* UNIX */
+	snprintf(file, sizeof(file), "dnssec-trigger-%s.tar.gz",
+		se->version_available);
+#endif
+	snprintf(url, sizeof(url), "http://%s%s%s%s",
+		DNSSECTRIGGER_DOWNLOAD_HOST,
+		DNSSECTRIGGER_DOWNLOAD_URLPRE,
+		se->test_flag?"test/":"",
+		file);
+	if(!(se->filename=strdup(file))) {
+		log_err("out of memory");
+		ldns_rr_free(rr);
+		free(ipstr);
+		return 0;
+	}
+
+	/* start http_get */
+	verbose(VERB_ALGO, "fetch %s from %s", url, ipstr);
+	if(ldns_rr_get_type(rr) == LDNS_RR_TYPE_A)
+		handle = &se->download_http4;
+	else	handle = &se->download_http6;
+	ldns_rr_free(rr);
+	http_get_delete(*handle);
+	*handle = http_get_create(url, se->svr->base, NULL);
+	if(!*handle) {
+		log_err("out of memory");
+		http_get_delete(*handle);
+		*handle = NULL;
+		free(ipstr);
+		return 0;
+	}
+	if(!http_get_fetch(*handle, ipstr, &reason)) {
+		log_err("update fetch failed: %s", reason?reason:"fail");
+		http_get_delete(*handle);
+		*handle = NULL;
+		free(ipstr);
+		return 0;
+	}
+	free(ipstr);
+	return 1;
+}
+
+/** attempt next address in the selfupdate addr list */
+static int
+selfupdate_next_addr(struct selfupdate* se, ldns_rr_list* list)
+{
+	while(list && ldns_rr_list_rr_count(list)) {
+		if(selfupdate_start_file_download(se, list)) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/** check hash on data segment */
+static int
+software_hash_ok(struct selfupdate* se, struct http_get* hg)
+{
+	unsigned char download_hash[LDNS_SHA256_DIGEST_LENGTH];
+	if(se->hashlen != LDNS_SHA256_DIGEST_LENGTH) {
+		log_err("bad hash length from TXT record %d", (int)se->hashlen);
+		return 0;
+	}
+	(void)ldns_sha256(ldns_buffer_begin(hg->data),
+		ldns_buffer_limit(hg->data), download_hash);
+	if(memcmp(download_hash, se->hash, se->hashlen) != 0) {
+		log_err("hash mismatch:");
+		log_hex("download", download_hash, sizeof(download_hash));
+		log_hex("txtindns", se->hash, se->hashlen);
+		return 0;
+	}
+	verbose(VERB_ALGO, "downloaded file sha256 is OK");
+	return 1;
+}
+
+/** write to temporary file */
+static int
+selfupdate_write_file(struct selfupdate* se, struct http_get* hg)
+{
+	char buf[1024];
+	FILE *out;
+	/* get directory to store the file into */
+#ifdef HOOKS_OSX
+	char* dirname = UIDIR"/";
+#elif defined(USE_WINSOCK)
+	char* dirname = lookup_reg_str("Software\\Unbound", "InstallLocation");
+	if(!dirname) dirname = strdup(UIDIR"\\");
+	if(!dirname) { log_err("out of memory"); return 0; }
+#else /* UNIX */
+	char* dirname = "/tmp/";
+#endif
+	snprintf(buf, sizeof(buf), "%s%s", dirname, se->filename);
+	if(se->download_file)
+		selfupdate_delete_file(se);
+	se->download_file = strdup(buf);
+	if(!se->download_file) {
+		log_err("out of memory");
+	fail:
+		selfupdate_delete_file(se);
+#ifdef USE_WINSOCK
+		free(dirname);
+#endif
+		return 0;
+	}
+	out = fopen(se->download_file, "wb");
+	if(!out) {
+		log_err("cannot open file %s: %s", se->download_file,
+			strerror(errno));
+		goto fail;
+	}
+	if(!fwrite(ldns_buffer_begin(hg->data), 1, ldns_buffer_limit(hg->data),
+		out)) {
+		log_err("cannot write to file %s: %s", se->download_file,
+			strerror(errno));
+		goto fail;
+	}
+	fclose(out);
+#ifdef USE_WINSOCK
+	free(dirname);
+#endif
+	return 1;
+}
+
+void
+selfupdate_http_get_done(struct selfupdate* se, struct http_get* hg, 
+	char* reason)
+{
+	ldns_rr_list* list = (hg == se->download_http4)?
+		se->addr_list_4:se->addr_list_6;
+	struct http_get** handle = (hg == se->download_http4)?
+		&se->download_http4:&se->download_http6;
+	verbose(VERB_ALGO, "selfupdate download done %s",
+		reason?reason:"success");
+	if(reason) {
+	fail:
+		/* try next address or fail completely */
+		if(selfupdate_next_addr(se, list))
+			return;
+		/* we failed, see if the other is active or done */
+		if(hg == se->download_http4 && se->addr_6) {
+			outq_delete(se->addr_4);
+			se->addr_4 = NULL;
+		} else if(hg == se->download_http6 && se->addr_4) {
+			outq_delete(se->addr_6);
+			se->addr_6 = NULL;
+		} else {
+			selfupdate_start_retry_timer(se);
+		}
+		http_get_delete(*handle);
+		*handle = NULL;
+		return;
+	}
+	verbose(VERB_ALGO, "done with success");
+	ldns_buffer_flip(hg->data);
+	/* check data integrity */
+	if(!software_hash_ok(se, hg)) {
+		log_err("bad hash on download of %s from %s", hg->url, hg->dest);
+		goto fail;
+	}
+	/* stop the other attempt (if any) */
+	if(hg == se->download_http4) {
+		outq_delete(se->addr_6);
+		se->addr_6 = NULL;
+		ldns_rr_list_deep_free(se->addr_list_6);
+		se->addr_list_6 = NULL;
+		http_get_delete(se->download_http6);
+		se->download_http6 = NULL;
+	} else {
+		outq_delete(se->addr_4);
+		se->addr_4 = NULL;
+		ldns_rr_list_deep_free(se->addr_list_4);
+		se->addr_list_4 = NULL;
+		http_get_delete(se->download_http4);
+		se->download_http4 = NULL;
+	}
+
+	if(!selfupdate_write_file(se, hg)) {
+		selfupdate_start_retry_timer(se);
+		http_get_delete(*handle);
+		*handle = NULL;
+		return;
+	}
+
+	http_get_delete(*handle);
+	*handle = NULL;
+
+	/* go and ask the user for permission */
+	se->update_available = 1;
+	/* TODO signal panel and get return command */
 }
 
 /* 
@@ -412,9 +683,21 @@ static void selfupdate_outq_done_addr(struct selfupdate* se, struct outq* outq,
 		ldns_rr_list_deep_free(addr);
 		goto failed;
 	}
-	ldns_rr_list_deep_free(addr);
+	if(outq->qtype == LDNS_RR_TYPE_A) {
+		ldns_rr_list_deep_free(se->addr_list_4);
+		se->addr_list_4 = addr;
+	} else {
+		ldns_rr_list_deep_free(se->addr_list_6);
+		se->addr_list_6 = addr;
+	}
 	ldns_pkt_free(pkt);
-	/* TODO */
+	pkt = NULL;
+
+	/* start the download of the file */
+	if(!selfupdate_next_addr(se, addr)) {
+		log_err("selfupdate could not initiate file download");
+		goto failed;
+	}
 }
 
 

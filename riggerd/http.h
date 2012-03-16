@@ -167,6 +167,9 @@ struct http_get {
 	/* data length (of replydata or chunkdata) */
 	size_t datalen;
 
+	/* max data we want (0 is no max) */
+	size_t data_limit;
+
 	/* the buffer with contents sent/received */
 	ldns_buffer* buf;
 	/* the buffer with the result data */
@@ -187,8 +190,6 @@ struct http_get {
 
 /* define max length that the buffer is created for */
 #define MAX_HTTP_LENGTH 16384
-/* max length of the data - we cannot read more than this data */
-#define HTTP_MAX_DATA 1048576
 /* the timeout for the HTTP part of the httpprobe operation, in msec */
 #define HTTP_TIMEOUT 3000
 /* HTTP port */
@@ -226,5 +227,8 @@ int http_get_callback(struct comm_point* cp, void* arg, int err,
 	struct comm_reply* reply);
 /** handle timeout for the http_get operation */
 void http_get_timeout_handler(void* arg);
+
+/** pick random RR from rr list, removes it from the list. list not empty*/
+ldns_rr* http_pick_random_addr(ldns_rr_list* list);
 
 #endif /* HTTP_H */
