@@ -854,7 +854,7 @@ static int hg_read_buf(struct http_get* hg, ldns_buffer* buf)
 	int fd = hg->cp->fd;
 	/* save up one space at end for a trailing zero byte */
 	r = recv(fd, (void*)ldns_buffer_current(buf),
-		ldns_buffer_remaining(buf), 0);
+		ldns_buffer_remaining(buf)-1, 0);
 	/* zero terminate for sure */
 	ldns_buffer_write_u8_at(buf, ldns_buffer_limit(buf)-1, 0);
 	/* check for errors */
@@ -1034,7 +1034,7 @@ static int hg_handle_reply_header(struct http_get* hg)
 			return 0;
 		}
 		if(!ldns_buffer_reserve(hg->buf,
-			datalen - ldns_buffer_position(hg->buf))) {
+			datalen - ldns_buffer_position(hg->buf)+1)) {
 			http_get_done(hg, "out of memory", 1);
 			return 0;
 		}
@@ -1145,7 +1145,7 @@ static int hg_handle_chunk_header(struct http_get* hg)
 		return 0;
 	}
 	if(!ldns_buffer_reserve(hg->buf,
-		chunklen - ldns_buffer_position(hg->buf))) {
+		chunklen - ldns_buffer_position(hg->buf)+1)) {
 		http_get_done(hg, "out of memory", 1);
 		return 0;
 	}
