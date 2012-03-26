@@ -165,6 +165,10 @@ static int check_for_event(void)
 	int fd;
 	fd_set r;
 	feed->lock();
+	if(!feed->ssl_read) {
+		feed->unlock();
+		return 0;
+	}
 	fd = SSL_get_fd(feed->ssl_read);
 	feed->unlock();
 	/* select on it */
@@ -201,7 +205,7 @@ read_an_ssl_line(SSL* ssl, char* line, size_t len)
 	return 0;
 }
 
-static void read_from_feed(void)
+static int read_from_feed(void)
 {
 	struct strlist* first=NULL, *last=NULL;
 	char line[1024];
@@ -211,14 +215,15 @@ static void read_from_feed(void)
 		if(verbosity > 2) printf("feed: %s\n", line);
 		if(strcmp(line, "stop") == 0) {
 			strlist_delete(first);
+			feed->unlock();
 			feed->quit();
-			return;
+			return 0;
 		}
 		if(line[0] == 0) {
 			strlist_delete(feed->results);
 			feed->results = first;
 			feed->results_last = last;
-			return;
+			return 1;
 		}
 		strlist_append(&first, &last, line);
 	}
@@ -228,6 +233,7 @@ static void read_from_feed(void)
 	feed->ssl_read = try_contact_server();
 	write_firstcmd(feed->ssl_read, "results\n");
 	feed->connected = 1;
+	return 1;
 }
 
 static void process_results(void)
@@ -238,8 +244,14 @@ static void process_results(void)
 
 	/* fetch data */
 	feed->lock();
-	if(!feed->connected) return;
-	if(!feed->results_last) return;
+	if(!feed->connected) {
+		feed->unlock();
+		return;
+	}
+	if(!feed->results_last) {
+		feed->unlock();
+		return;
+	}
 	a.now_insecure = (strstr(s, "insecure_mode")!=NULL);
 	a.now_http_insecure = (strstr(s, "http_insecure")!=NULL);
 	a.now_forced_insecure = (strstr(s, "forced_insecure")!=NULL);
@@ -265,11 +277,11 @@ static void attach_main(void)
 			feed->unlock();
 			break;
 		}
-		read_from_feed();
+		if(!read_from_feed())
+			break;
 		feed->unlock();
 		process_results();
 	}
-
 }
 
 static void send_ssl_cmd(const char* cmd)

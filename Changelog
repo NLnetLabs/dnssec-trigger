@@ -1,3 +1,6 @@
+26 March 2012: Wouter
+	- lock unlock and delete at exit of panel is improved.
+
 15 March 2012: Wouter
 	- configure windows detects GetAdaptersAdresses (XP and later).
 	- snapshot for test.
