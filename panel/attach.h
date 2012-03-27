@@ -74,6 +74,9 @@ struct feed {
 	void (*quit)(void);
 	/* alert function, new status information */
 	void (*alert)(struct alert_arg*);
+	/* update_alert function, new software update info, must free
+	 * the passed (malloced) version string. */ 
+	void (*update_alert)(char*);
 
 	/* if connection with the daemon has been established. */
 	int connected;
@@ -84,6 +87,9 @@ struct feed {
 	struct strlist* results, *results_last;
 	/* if we are in insecure mode - here to see if it has changed */
 	int insecure_mode;
+
+	/* list of lines for update status */
+	struct strlist* update, *update_last;
 
 	/* config */
 	struct cfg* cfg;

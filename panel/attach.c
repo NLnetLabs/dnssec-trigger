@@ -213,17 +213,35 @@ static int read_from_feed(void)
 	while(read_an_ssl_line(feed->ssl_read, line, sizeof(line))) {
 		/* stop at empty line */
 		if(verbosity > 2) printf("feed: %s\n", line);
-		if(strcmp(line, "stop") == 0) {
+		if(!first && strcmp(line, "") == 0) {
+			/* skip empty lines at start */
+			continue;
+		}
+		if(!first && strcmp(line, "stop") == 0) {
 			strlist_delete(first);
 			feed->unlock();
 			feed->quit();
 			return 0;
 		}
 		if(line[0] == 0) {
-			strlist_delete(feed->results);
-			feed->results = first;
-			feed->results_last = last;
-			return 1;
+			if(!first)
+				return 1; /* robust */
+			if(strncmp(first->str, "at ", 3) == 0) {
+				if(verbosity >2) printf("got results\n");
+				strlist_delete(feed->results);
+				feed->results = first;
+				feed->results_last = last;
+				return 1;
+			} else if(strncmp(first->str, "update ", 7) == 0) {
+				if(verbosity >2) printf("got update\n");
+				strlist_delete(feed->update);
+				feed->update = first;
+				feed->update_last = last;
+				return 3;
+			}
+			if(verbosity >2) printf("got unknown\n");
+			strlist_delete(first);
+			return 1; /* robust */
 		}
 		strlist_append(&first, &last, line);
 	}
@@ -236,9 +254,32 @@ static int read_from_feed(void)
 	return 1;
 }
 
+static void process_update(void)
+{
+	char* s;
+
+	/* fetch data */
+	feed->lock();
+	if(!feed->connected) {
+		feed->unlock();
+		return;
+	}
+	if(!feed->results_last) {
+		feed->unlock();
+		return;
+	}
+	s = strdup(feed->results_last->str);
+	feed->unlock();
+
+	if(s) {
+		if(feed->update_alert) feed->update_alert(s);
+		else free(s);
+	}
+}
+
 static void process_results(void)
 {
-	char* s = feed->results_last->str;
+	char* s;
 	struct alert_arg a;
 	memset(&a, 0, sizeof(a));
 
@@ -252,6 +293,7 @@ static void process_results(void)
 		feed->unlock();
 		return;
 	}
+	s = feed->results_last->str;
 	a.now_insecure = (strstr(s, "insecure_mode")!=NULL);
 	a.now_http_insecure = (strstr(s, "http_insecure")!=NULL);
 	a.now_forced_insecure = (strstr(s, "forced_insecure")!=NULL);
@@ -277,10 +319,18 @@ static void attach_main(void)
 			feed->unlock();
 			break;
 		}
-		if(!read_from_feed())
-			break;
-		feed->unlock();
-		process_results();
+		switch(read_from_feed()) {
+			case 0: return;
+			default:
+			case 1: continue;
+			
+			case 2: feed->unlock();
+				process_results();
+				break;
+			case 3: feed->unlock();
+				process_update();
+				break;
+		}
 	}
 }
 
