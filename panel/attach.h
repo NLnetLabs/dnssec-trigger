@@ -123,6 +123,8 @@ void attach_send_insecure(int val);
 void attach_send_reprobe(void);
 void attach_send_hotspot_signon(void);
 void attach_send_skip_http(void);
+void attach_send_update_cancel(void);
+void attach_send_update_ok(void);
 
 /** get tooltip text from alert state (fixed string) */
 const char* state_tooltip(struct alert_arg* a);

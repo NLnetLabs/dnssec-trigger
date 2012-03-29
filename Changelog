@@ -1,3 +1,8 @@
+29 March 2012: Wouter
+	- fix exit of panel and threads
+	- fix read multiple persist actions in one SSL packet frame.
+	- gtk gui to ask for install of new software.  No unix action exists.
+
 26 March 2012: Wouter
 	- lock unlock and delete at exit of panel is improved.
 

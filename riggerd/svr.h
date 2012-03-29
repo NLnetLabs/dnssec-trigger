@@ -206,6 +206,8 @@ void svr_tcp_timer_stop(void);
 void cmd_reprobe(void);
 /** check if software updates have to be performed */
 void svr_check_update(struct svr* svr);
+/** signal update to panels over commandchannel */
+void svr_signal_update(struct svr* svr, char* version_available);
 
 int handle_ssl_accept(struct comm_point* c, void* arg, int error,
         struct comm_reply* reply_info);

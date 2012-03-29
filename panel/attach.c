@@ -169,6 +169,10 @@ static int check_for_event(void)
 		feed->unlock();
 		return 0;
 	}
+	if(SSL_pending(feed->ssl_read) != 0) {
+		feed->unlock();
+		return 1;
+	}
 	fd = SSL_get_fd(feed->ssl_read);
 	feed->unlock();
 	/* select on it */
@@ -264,11 +268,11 @@ static void process_update(void)
 		feed->unlock();
 		return;
 	}
-	if(!feed->results_last) {
+	if(!feed->update_last) {
 		feed->unlock();
 		return;
 	}
-	s = strdup(feed->results_last->str);
+	s = strdup(feed->update_last->str);
 	feed->unlock();
 
 	if(s) {
@@ -320,10 +324,11 @@ static void attach_main(void)
 			break;
 		}
 		switch(read_from_feed()) {
-			case 0: return;
+			case 0: /* already unlocked the lock */
+				return;
 			default:
-			case 1: continue;
-			
+			case 1: feed->unlock();
+				break;
 			case 2: feed->unlock();
 				process_results();
 				break;
@@ -336,6 +341,7 @@ static void attach_main(void)
 
 static void send_ssl_cmd(const char* cmd)
 {
+	if(verbosity > 2) printf("sslcmd: %s\n", cmd);
 	feed->lock();
 	if(feed->ssl_write) {
 		if(SSL_write(feed->ssl_write, cmd, (int)strlen(cmd)) <= 0) {
@@ -371,6 +377,16 @@ void attach_send_hotspot_signon(void)
 void attach_send_skip_http(void)
 {
 	send_ssl_cmd("skip_http\n");
+}
+
+void attach_send_update_cancel(void)
+{
+	send_ssl_cmd("update_cancel\n");
+}
+
+void attach_send_update_ok(void)
+{
+	send_ssl_cmd("update_ok\n");
 }
 
 const char* state_tooltip(struct alert_arg* a)

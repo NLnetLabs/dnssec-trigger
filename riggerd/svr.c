@@ -453,10 +453,13 @@ int control_callback(struct comm_point* c, void* arg, int err,
 		/* we are done handle it */
 		sslconn_command(s);
 	} else if(s->line_state == persist_read) {
-		if(!sslconn_readline(s))
-			return 0;
-		/* we are done handle it */
-		sslconn_persist_command(s);
+		do {
+			if(!sslconn_readline(s))
+				return 0;
+			/* we are done handle it */
+			sslconn_persist_command(s);
+			/* there may be more to read in the same SSL packet */
+		} while(SSL_pending(s->ssl) != 0);
 	} else if(s->line_state == persist_write) {
 		if(sslconn_checkclose(s))
 			return 0;
@@ -701,6 +704,10 @@ static void sslconn_persist_command(struct sslconn* sc)
 		handle_skip_http_cmd();
 	} else if(strcmp(str, "hotspot_signon") == 0) {
 		handle_hotspot_signon_cmd(global_svr);
+	} else if(strcmp(str, "update_cancel") == 0) {
+		selfupdate_userokay(global_svr->update, 0);
+	} else if(strcmp(str, "update_ok") == 0) {
+		selfupdate_userokay(global_svr->update, 1);
 	} else {
 		log_err("unknown command from panel: %s", str);
 	}
@@ -712,6 +719,14 @@ static void handle_submit(char* ips)
 {
 	/* start probing the servers */
 	probe_start(ips);
+}
+
+/** append update signal to buffer to send */
+static void
+append_update_to_con(struct sslconn* s, char* version_available)
+{
+	ldns_buffer_printf(s->buffer, "update %s\n%s\n\n", PACKAGE_VERSION,
+		version_available);
 }
 
 static void
@@ -768,9 +783,33 @@ send_results_to_con(struct svr* svr, struct sslconn* s)
 		svr->http_insecure?" http_insecure":""
 		);
 	ldns_buffer_printf(s->buffer, "\n");
+	if(svr->update && svr->update->update_available &&
+		!svr->update->user_replied) {
+		log_info("append_update signal");
+		append_update_to_con(s, svr->update->version_available);
+	}
 	ldns_buffer_flip(s->buffer);
 	comm_point_listen_for_rw(s->c, 1, 1);
 	s->line_state = persist_write;
+}
+
+void svr_signal_update(struct svr* svr, char* version_available)
+{
+	/* write stop to all connected panels */
+	struct sslconn* s;
+	for(s=svr->busy_list; s; s=s->next) {
+		if(s->line_state == persist_write) {
+			/* busy with last results, fetch update later */
+			s->fetch_another_update=1;
+		}
+		if(s->line_state == persist_write_checkclose) {
+			ldns_buffer_clear(s->buffer);
+			append_update_to_con(s, version_available);
+			ldns_buffer_flip(s->buffer);
+			comm_point_listen_for_rw(s->c, 1, 1);
+			s->line_state = persist_write;
+		}
+	}
 }
 
 static void handle_results_cmd(struct sslconn* sc)

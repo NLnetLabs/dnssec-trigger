@@ -44,6 +44,7 @@
 #include "http.h"
 #include "netevent.h"
 #include "log.h"
+#include "cfg.h"
 #include "svr.h"
 #include <ldns/ldns.h>
 
@@ -646,13 +647,15 @@ selfupdate_http_get_done(struct selfupdate* se, struct http_get* hg,
 		*handle = NULL;
 		return;
 	}
+	se->file_available = 1;
 
 	http_get_delete(*handle);
 	*handle = NULL;
 
 	/* go and ask the user for permission */
 	se->update_available = 1;
-	/* TODO signal panel and get return command */
+	/* signal panel and get return command */
+	svr_signal_update(se->svr, se->version_available);
 }
 
 /* 
@@ -725,13 +728,43 @@ void selfupdate_outq_done(struct selfupdate* se, struct outq* outq,
 	}
 }
 
+/** do the software update install (system specific) */
+static void
+selfupdate_do_install(struct selfupdate* se)
+{
+	if(!se) return;
+	if(!se->update_available) return;
+	if(!se->file_available || !se->filename) return;
+	verbose(VERB_OPS, "software update, install of %s", se->filename);
+	if(se->svr->cfg->noaction) {
+		verbose(VERB_OPS, "noaction is true, no install action");
+		return;
+	}
+#ifdef USE_WINSOCK
+	/* fork and exec the installer that will stop this program and update*/
+	/* TODO */
+#elif defined(HOOKS_OSX)
+	/* fork and exec installer */
+	/* TODO */
+#else
+	log_err("on unix, do not know how to install. tarball %s (is deleted"
+		"on exit of the daemon)", se->filename);
+#endif
+}
+
 void selfupdate_userokay(struct selfupdate* se, int okay)
 {
+	if(!se)
+		return;
+	if(se->user_replied)
+		return; /* already replied, this is a duplicate */
 	/* is the user OK ? */
 	/* if not, note so we do not ask him again for 24h or next start */
 	se->user_replied = 1;
 	se->user_okay = okay;
 
-	/* TODO if OK run installer (fork,exec because it updates this one) */
+	/* if OK run installer (fork,exec because it updates this one) */
+	if(se->user_okay) {
+		selfupdate_do_install(se);
+	}
 }
-

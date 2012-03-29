@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk+" version="2.16"/>
-  <!-- interface-naming-policy project-wide -->
   <object class="GtkDialog" id="hotsign_dialog">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
@@ -9,7 +8,7 @@
     <property name="type_hint">dialog</property>
     <signal name="delete-event" handler="on_hotsign_dialog_delete_event" swapped="no"/>
     <child internal-child="vbox">
-      <object class="GtkVBox" id="dialog-vbox3">
+      <object class="GtkBox" id="dialog-vbox3">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="spacing">2</property>
@@ -30,17 +29,17 @@ network via its portal page, select &lt;i&gt;Reprobe&lt;/i&gt; to get secure aga
           </packing>
         </child>
         <child internal-child="action_area">
-          <object class="GtkHButtonBox" id="dialog-action_area3">
+          <object class="GtkButtonBox" id="dialog-action_area3">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="layout_style">end</property>
             <child>
               <object class="GtkButton" id="hotsign_cancel_button">
                 <property name="label" translatable="yes">Cancel</property>
-                <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="use_action_appearance">False</property>
                 <signal name="clicked" handler="on_hotsign_cancel_button_clicked" swapped="no"/>
               </object>
               <packing>
@@ -52,10 +51,10 @@ network via its portal page, select &lt;i&gt;Reprobe&lt;/i&gt; to get secure aga
             <child>
               <object class="GtkButton" id="hotsign_ok_button">
                 <property name="label" translatable="yes">OK</property>
-                <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="use_action_appearance">False</property>
                 <signal name="clicked" handler="on_hotsign_ok_button_clicked" swapped="no"/>
               </object>
               <packing>
@@ -87,22 +86,22 @@ network via its portal page, select &lt;i&gt;Reprobe&lt;/i&gt; to get secure aga
     <property name="urgency_hint">True</property>
     <signal name="delete-event" handler="on_noweb_dialog_delete_event" swapped="no"/>
     <child internal-child="vbox">
-      <object class="GtkVBox" id="dialog-vbox5">
+      <object class="GtkBox" id="dialog-vbox5">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="spacing">2</property>
         <child internal-child="action_area">
-          <object class="GtkHButtonBox" id="dialog-action_area5">
+          <object class="GtkButtonBox" id="dialog-action_area5">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="layout_style">end</property>
             <child>
               <object class="GtkButton" id="skip_button">
                 <property name="label" translatable="yes">Skip</property>
-                <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="use_action_appearance">False</property>
                 <signal name="clicked" handler="on_skip_button_clicked" swapped="no"/>
               </object>
               <packing>
@@ -114,11 +113,11 @@ network via its portal page, select &lt;i&gt;Reprobe&lt;/i&gt; to get secure aga
             <child>
               <object class="GtkButton" id="login_button">
                 <property name="label" translatable="yes">Log in</property>
-                <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="has_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="use_action_appearance">False</property>
                 <signal name="clicked" handler="on_login_button_clicked" swapped="no"/>
               </object>
               <packing>
@@ -169,22 +168,22 @@ dnssec-trigger can detect web access.
     <property name="type_hint">normal</property>
     <signal name="delete-event" handler="on_result_dialog_delete_event" swapped="no"/>
     <child internal-child="vbox">
-      <object class="GtkVBox" id="dialog-vbox1">
+      <object class="GtkBox" id="dialog-vbox1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="spacing">2</property>
         <child internal-child="action_area">
-          <object class="GtkHButtonBox" id="dialog-action_area1">
+          <object class="GtkButtonBox" id="dialog-action_area1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="layout_style">end</property>
             <child>
               <object class="GtkButton" id="result_ok_button">
                 <property name="label" translatable="yes">OK</property>
-                <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="use_action_appearance">False</property>
                 <signal name="clicked" handler="on_result_ok_button_clicked" swapped="no"/>
               </object>
               <packing>
@@ -205,8 +204,6 @@ dnssec-trigger can detect web access.
           <object class="GtkScrolledWindow" id="scrolledwindow1">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="hscrollbar_policy">automatic</property>
-            <property name="vscrollbar_policy">automatic</property>
             <child>
               <object class="GtkTextView" id="result_textview">
                 <property name="visible">True</property>
@@ -232,9 +229,9 @@ dnssec-trigger can detect web access.
     <property name="can_focus">False</property>
     <child>
       <object class="GtkMenuItem" id="reprobe">
-        <property name="use_action_appearance">False</property>
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="use_action_appearance">False</property>
         <property name="label" translatable="yes">Reprobe</property>
         <property name="use_underline">True</property>
         <signal name="activate" handler="on_reprobe_activate" swapped="no"/>
@@ -242,18 +239,18 @@ dnssec-trigger can detect web access.
     </child>
     <child>
       <object class="GtkMenuItem" id="proberesults">
-        <property name="use_action_appearance">False</property>
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="use_action_appearance">False</property>
         <property name="label" translatable="yes">Probe results</property>
         <signal name="activate" handler="on_proberesults_activate" swapped="no"/>
       </object>
     </child>
     <child>
       <object class="GtkMenuItem" id="hotspotsignon">
-        <property name="use_action_appearance">False</property>
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="use_action_appearance">False</property>
         <property name="label" translatable="yes">Hotspot signon</property>
         <property name="use_underline">True</property>
         <signal name="activate" handler="on_hotspotsignon_activate" swapped="no"/>
@@ -267,9 +264,9 @@ dnssec-trigger can detect web access.
     </child>
     <child>
       <object class="GtkMenuItem" id="quit">
-        <property name="use_action_appearance">False</property>
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="use_action_appearance">False</property>
         <property name="label" translatable="yes">Quit</property>
         <signal name="activate" handler="on_quit_activate" swapped="no"/>
       </object>
@@ -283,22 +280,22 @@ dnssec-trigger can detect web access.
     <property name="urgency_hint">True</property>
     <signal name="delete-event" handler="on_unsafe_dialog_delete_event" swapped="no"/>
     <child internal-child="vbox">
-      <object class="GtkVBox" id="dialog-vbox2">
+      <object class="GtkBox" id="dialog-vbox2">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="spacing">2</property>
         <child internal-child="action_area">
-          <object class="GtkHButtonBox" id="dialog-action_area2">
+          <object class="GtkButtonBox" id="dialog-action_area2">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="layout_style">end</property>
             <child>
               <object class="GtkButton" id="disconnect_button">
                 <property name="label" translatable="yes">Disconnect</property>
-                <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="use_action_appearance">False</property>
                 <signal name="clicked" handler="on_disconnect_button_clicked" swapped="no"/>
               </object>
               <packing>
@@ -310,10 +307,10 @@ dnssec-trigger can detect web access.
             <child>
               <object class="GtkButton" id="insecure_button">
                 <property name="label" translatable="yes">Insecure</property>
-                <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="use_action_appearance">False</property>
                 <signal name="clicked" handler="on_insecure_button_clicked" swapped="no"/>
               </object>
               <packing>
@@ -369,6 +366,82 @@ its signon page. Then use &lt;i&gt;Reprobe&lt;/i&gt; from the menu to retry.
     <action-widgets>
       <action-widget response="-2">disconnect_button</action-widget>
       <action-widget response="0">insecure_button</action-widget>
+    </action-widgets>
+  </object>
+  <object class="GtkDialog" id="update_dialog">
+    <property name="can_focus">False</property>
+    <property name="border_width">5</property>
+    <property name="title" translatable="yes">Software Update for Dnssec Trigger</property>
+    <property name="type_hint">dialog</property>
+    <signal name="delete-event" handler="on_update_dialog_delete_event" swapped="no"/>
+    <child internal-child="vbox">
+      <object class="GtkBox" id="dialog-vbox8">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="spacing">2</property>
+        <child>
+          <object class="GtkLabel" id="update_label">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">There is a software update available for dnssec-trigger.
+Do you wish to install the update?</property>
+            <property name="use_markup">True</property>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox" id="dialog-action_area8">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="layout_style">end</property>
+            <child>
+              <object class="GtkButton" id="update_cancel_button">
+                <property name="label" translatable="yes">Cancel</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_action_appearance">False</property>
+                <signal name="clicked" handler="on_update_cancel_button_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="update_ok_button">
+                <property name="label" translatable="yes">OK</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="has_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_action_appearance">False</property>
+                <signal name="clicked" handler="on_update_ok_button_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="pack_type">end</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+    <action-widgets>
+      <action-widget response="0">update_cancel_button</action-widget>
+      <action-widget response="0">update_ok_button</action-widget>
     </action-widgets>
   </object>
 </interface>

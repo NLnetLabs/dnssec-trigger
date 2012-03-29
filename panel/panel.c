@@ -62,6 +62,8 @@ static GtkWidget* result_window;
 static GtkWidget* unsafe_dialog;
 static GtkWidget* hotsign_dialog;
 static GtkWidget* noweb_dialog;
+static GtkWidget* update_dialog;
+static GtkLabel* update_label;
 static GdkPixbuf* normal_icon;
 static GdkPixbuf* alert_icon;
 static GtkMenu* statusmenu;
@@ -73,6 +75,7 @@ static int unsafe_should = 0;
 static int noweb_asked = 0;
 
 static void feed_alert(struct alert_arg* a);
+static void feed_update_alert(char* new_version);
 void present_unsafe_dialog(void);
 void present_noweb_dialog(void);
 
@@ -202,6 +205,7 @@ spawn_feed(struct cfg* cfg)
 	feed->unlock = &unlock_feed_lock;
 	feed->quit = &feed_quit;
 	feed->alert = &feed_alert;
+	feed->update_alert = &feed_update_alert;
 
 	thr = g_thread_create(&feed_thread, cfg, FALSE, &err);
 	if(!thr) fatal_exit("cannot create thread: %s", err->message);
@@ -424,6 +428,55 @@ void present_noweb_dialog(void)
 	gtk_window_present(GTK_WINDOW(noweb_dialog));
 }
 
+/** show software update question */
+void panel_update_alert(char* new_version)
+{
+	char update_text[1024];
+	printf("show version for %s to %s\n",
+		PACKAGE_VERSION, new_version);
+	/* set the text label */
+	snprintf(update_text, sizeof(update_text),
+		"There is a software update available for dnssec-trigger\n"
+		"from %s to %s.\n"
+		"Do you wish to install the update now?",
+		PACKAGE_VERSION, new_version);
+	gtk_label_set_markup(update_label, update_text);
+
+	gtk_window_set_keep_above(GTK_WINDOW(update_dialog), TRUE);
+	gtk_widget_show(GTK_WIDGET(update_dialog));
+	gtk_window_deiconify(GTK_WINDOW(update_dialog));
+	gdk_window_raise(gtk_widget_get_window(update_dialog));
+	gtk_window_present(GTK_WINDOW(update_dialog));
+
+	free(new_version);
+}
+
+G_MODULE_EXPORT
+gboolean
+on_update_dialog_delete_event(GtkWidget* ATTR_UNUSED(widget),
+	GdkEvent* ATTR_UNUSED(event), gpointer ATTR_UNUSED(user_data))
+{
+	gtk_widget_hide(GTK_WIDGET(update_dialog));
+	attach_send_update_cancel();
+	return TRUE; /* stop other handlers, do not destroy the window */
+}
+
+G_MODULE_EXPORT
+void on_update_cancel_button_clicked(GtkButton *ATTR_UNUSED(button), gpointer
+	ATTR_UNUSED(user_data))
+{
+	gtk_widget_hide(GTK_WIDGET(update_dialog));
+	attach_send_update_cancel();
+}
+
+G_MODULE_EXPORT
+void on_update_ok_button_clicked(GtkButton *ATTR_UNUSED(button), gpointer
+	ATTR_UNUSED(user_data))
+{
+	gtk_widget_hide(GTK_WIDGET(update_dialog));
+	attach_send_update_ok();
+}
+
 G_MODULE_EXPORT
 gboolean
 on_noweb_dialog_delete_event(GtkWidget* ATTR_UNUSED(widget),
@@ -459,6 +512,7 @@ void on_login_button_clicked(GtkButton *ATTR_UNUSED(button), gpointer
 /* the parameters for the panel alert state */
 static GMutex* call_lock = NULL;
 static struct alert_arg cp_arg;
+static char* cp_new_version = NULL;
 
 gboolean call_alert(gpointer ATTR_UNUSED(arg))
 {
@@ -486,6 +540,35 @@ void call_panel_alert_state(struct alert_arg* a)
 	 * GTK+ is not threadsafe on windows */
 	g_idle_add(&call_alert, NULL);
 }
+
+gboolean call_update_alert(gpointer ATTR_UNUSED(arg))
+{
+	/* get params */
+	char* vs;
+	g_mutex_lock(call_lock);
+	vs = cp_new_version;
+	cp_new_version = NULL;
+	g_mutex_unlock(call_lock);
+	panel_update_alert(vs);
+	/* only call once, remove call_alert from the glib mainloop */
+	return FALSE;
+}
+
+/* schedule a call to the panel software alert from the main thread */
+void call_panel_update_alert(char* a)
+{
+	if(!call_lock) {
+		call_lock = g_mutex_new();
+	}
+	/* store parameters */
+	g_mutex_lock(call_lock);
+	free(cp_new_version);
+	cp_new_version = a;
+	g_mutex_unlock(call_lock);
+	/* the  call_alert function will run from the main thread, because
+	 * GTK+ is not threadsafe on windows */
+	g_idle_add(&call_update_alert, NULL);
+}
 #endif /* USE_WINSOCK */
 
 /** callback that alerts panel of new status */
@@ -498,6 +581,20 @@ static void feed_alert(struct alert_arg* a)
 	/* call the above function from the main thread, in case the system
  	 * is not threadsafe (windows) */
 	call_panel_alert_state(a);
+#endif
+	gdk_threads_leave();
+}
+
+/** callback that alerts panel of new software update */
+static void feed_update_alert(char* new_version)
+{
+	gdk_threads_enter();
+#ifndef USE_WINSOCK
+	panel_update_alert(new_version);
+#else
+	/* call the above function from the main thread, in case the system
+ 	 * is not threadsafe (windows) */
+	call_update_alert(new_version);
 #endif
 	gdk_threads_leave();
 }
@@ -583,6 +680,10 @@ init_gui(int debug)
 		"noweb_dialog"));
 	hotsign_dialog = GTK_WIDGET(gtk_builder_get_object(builder,
 		"hotsign_dialog"));
+	update_dialog = GTK_WIDGET(gtk_builder_get_object(builder,
+		"update_dialog"));
+	update_label = GTK_LABEL(gtk_builder_get_object(builder,
+		"update_label"));
 	statusmenu = GTK_MENU(gtk_builder_get_object(builder, "statusmenu"));
 	/* we need to incref otherwise we may lose the reference */
 	g_object_ref(G_OBJECT(statusmenu));
@@ -590,6 +691,7 @@ init_gui(int debug)
 	g_object_ref(G_OBJECT(result_window));
 	g_object_ref(G_OBJECT(unsafe_dialog));
 	g_object_ref(G_OBJECT(noweb_dialog));
+	g_object_ref(G_OBJECT(update_dialog));
 	g_object_ref(G_OBJECT(hotsign_dialog));
 
 	/* no more need for the builder */
@@ -604,6 +706,7 @@ init_gui(int debug)
 	gtk_window_set_icon(GTK_WINDOW(result_window), normal_icon);
 	gtk_window_set_icon(GTK_WINDOW(unsafe_dialog), alert_icon);
 	gtk_window_set_icon(GTK_WINDOW(noweb_dialog), alert_icon);
+	gtk_window_set_icon(GTK_WINDOW(update_dialog), normal_icon);
 	gtk_window_set_icon(GTK_WINDOW(hotsign_dialog), alert_icon);
 }
 
@@ -615,6 +718,7 @@ stop_gui(void)
 	gtk_widget_hide(GTK_WIDGET(noweb_dialog));
 	gtk_widget_hide(GTK_WIDGET(hotsign_dialog));
 	gtk_widget_hide(GTK_WIDGET(result_window));
+	gtk_widget_hide(GTK_WIDGET(update_dialog));
 	gtk_widget_hide(GTK_WIDGET(statusmenu));
 #ifndef HAVE_APP_INDICATOR
 	gtk_status_icon_set_visible(status_icon, FALSE);
