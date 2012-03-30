@@ -6,6 +6,10 @@ SetCompressor /solid /final lzma
 !include MUI2.nsh
 !include WinMessages.nsh
 
+!include FileFunc.nsh
+!insertmacro GetParameters
+!insertmacro GetOptions
+
 !define VERSION "0.0.0"
 !define QUADVERSION "0.0.0.0"
 
@@ -314,6 +318,17 @@ done_keys:
 	Exec '"$INSTDIR\dnssec-trigger-panel.exe"'
 	# make sure 'old' tray icons disappear.
 	!insertmacro RefreshSysTray
+
+	# is selfdelete set? (/delself on commandline).
+	${GetParameters} $R0
+	ClearErrors
+	${GetOptions} $R0 /delself $0
+	IfErrors done_delself 0
+	# delete self (after reboot since we are currently opened to execute)
+	Delete /REBOOTOK "$EXEPATH"
+	done_delself:
+	ClearErrors
+
 sectionEnd
 
 # set section descriptions

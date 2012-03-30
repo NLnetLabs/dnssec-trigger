@@ -56,9 +56,11 @@ static TCHAR trayclassname[] = TEXT("dnssec trigger tray icon");
 static TCHAR insecclassname[] = TEXT("Network DNSSEC Failure");
 static TCHAR hotsignclassname[] = TEXT("Hotspot Signon");
 static TCHAR nowebclassname[] = TEXT("No Web Access");
+static TCHAR updateclassname[] = TEXT("Dnssec Trigger Software Update");
 #define ID_TRAY_APP_ICON 5000
 #define WM_TRAYICON (WM_USER + 1)
 #define WM_PANELALERT (WM_USER + 2)
+#define WM_PANELUPDATEALERT (WM_USER + 3)
 #define ID_TRAY_MENU_QUIT 3000
 #define ID_TRAY_MENU_REPROBE 3001
 #define ID_TRAY_MENU_PROBERESULTS 3002
@@ -100,6 +102,15 @@ static HWND noweb_skip;
 /* the 'Login' button */
 static HWND noweb_login;
 
+/* the update dialog */
+static HWND update_wnd;
+/* the update text */
+static HWND update_label;
+/* the 'OK' button on update */
+static HWND update_ok;
+/* the 'Cancel' button on update */
+static HWDN update_cancel;
+
 /** if we have asked about disconnect or insecure */
 static int unsafe_asked = 0;
 /** if we should ask unsafe */
@@ -110,6 +121,7 @@ static int noweb_asked = 0;
 static void panel_alert(void);
 static void panel_dialog(void);
 static void noweb_dialog(void);
+static void panel_update_alert(void);
 
 static HFONT font;
 static HFONT font_bold;
@@ -238,6 +250,34 @@ init_nowebwnd(HINSTANCE hInstance)
 	SendMessage(noweb_skip, WM_SETFONT, (WPARAM)font_bold, TRUE);
 	SendMessage(noweb_login, WM_SETFONT, (WPARAM)font_bold, TRUE);
 	ShowWindow(noweb_wnd, SW_HIDE);
+}
+
+static void
+init_updatewnd(HINSTANCE hInstance)
+{
+	/* update dialog:
+	 * text with explanation (and version number)
+	 * Cancel and OK buttons */
+	update_wnd = CreateWindowEx(0, updateclassname,
+		TEXT("Software Update Dnssec Trigger"),
+		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX |
+		WS_MAXIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT,
+		455, 150, NULL, NULL, hInstance, NULL);
+	update_label = CreateWindow(TEXT("STATIC"), TEXT(
+"There is a software update available for dnssec-trigger.\r\n"
+"Do you wish to install the update?\r\n"
+	), WS_CHILD | WS_VISIBLE | SS_LEFT,
+		10, 10, 430, 70, update_wnd, NULL, hInstance, NULL);
+	update_cancel = CreateWindow(TEXT("BUTTON"), TEXT("Cancel"),
+		WS_CHILD | WS_VISIBLE,
+		180, 90, 100, 25, update_wnd, NULL, hInstance, NULL);
+	update_ok = CreateWindow(TEXT("BUTTON"), TEXT("OK"),
+		WS_CHILD | WS_VISIBLE,
+		300, 90, 100, 25, update_wnd, NULL, hInstance, NULL);
+	SendMessage(update_label, WM_SETFONT, (WPARAM)font, TRUE);
+	SendMessage(update_cancel, WM_SETFONT, (WPARAM)font_bold, TRUE);
+	SendMessage(update_ok, WM_SETFONT, (WPARAM)font_bold, TRUE);
+	ShowWindow(update_wnd, SW_HIDE);
 }
 
 static void
@@ -421,6 +461,43 @@ LRESULT CALLBACK NowebWndProc(HWND hwnd, UINT message, WPARAM wParam,
 	return DefWindowProc(hwnd, message, wParam, lParam);
 }
 
+LRESULT CALLBACK UpdateWndProc(HWND hwnd, UINT message, WPARAM wParam,
+	LPARAM lParam)
+{
+	switch(message) {
+	case WM_SYSCOMMAND:
+		switch(wParam & 0xfff0) { /* removes reserved lower 4 bits */
+		case SC_MINIMIZE:
+			break;
+		case SC_CLOSE:
+			ShowWindow(update_wnd, SW_HIDE);
+			attach_send_update_cancel();
+			return 0;
+			break;
+		}
+		break;
+	case WM_COMMAND:
+		/* buttons pressed */
+		if((HWND)lParam == update_cancel) {
+			ShowWindow(update_wnd, SW_HIDE);
+			attach_send_update_cancel();
+		} else if((HWND)lParam == update_ok) {
+			ShowWindow(update_wnd, SW_HIDE);
+			attach_send_update_ok();
+		}
+		break;
+	case WM_CLOSE:
+		ShowWindow(update_wnd, SW_HIDE);
+		attach_send_update_cancel();
+		return 0;
+		break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	}
+	return DefWindowProc(hwnd, message, wParam, lParam);
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	if(message==WM_TASKBARCREATED) {
@@ -478,6 +555,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	/* our own panel alert message */
 	case WM_PANELALERT:
 		panel_alert();
+		break;
+	/* our own panel update alert message */
+	case WM_PANELUPDATEALERT:
+		panel_update_alert();
 		break;
 	case WM_COMMAND:
 		/* result window OK */
@@ -543,6 +624,20 @@ static void noweb_dialog(void)
 	SetForegroundWindow(noweb_wnd);
 }
 
+static void update_dialog(char* new_version)
+{
+	char update_text[1024];
+	snprintf(update_text, sizeof(update_text),
+		"There is a software update available for dnssec-trigger\r\n"
+		"from %s to %s.\r\n"
+		"Do you wish to install the update now?\r\n",
+		PACKAGE_VERSION, new_version);
+	if(!SetWindowText(update_label, update_text))
+		log_err("Could not SetWindowText %d", GetLastError());
+	ShowWindow(update_wnd, SW_SHOW);
+	SetForegroundWindow(update_wnd);
+}
+
 static void do_args(char* str, int* debug, const char** cfgfile)
 {
 	char* p = str;
@@ -586,7 +681,8 @@ static RETSIGTYPE record_sigh(int sig)
 typedef LONG lock_basic_t;
 static lock_basic_t feed_lock;
 static lock_basic_t alert_lock;
-struct alert_arg alertinfo;
+static struct alert_arg alertinfo;
+static char* updateinfo;
 static HANDLE feed_thread;
 
 void lock_basic_init(lock_basic_t* lock)
@@ -633,6 +729,33 @@ static void feed_quit(void)
 {
 	/* post a message to the main window (in another thread) */
 	PostMessage(mainwnd, WM_DESTROY, 0, 0);
+}
+
+static void panel_update_alert(void)
+{
+	/* get info */
+	char* new_version = NULL;
+	lock_basic_lock(&alert_lock);
+	new_version = updateinfo;
+	updateinfo = NULL;
+	lock_basic_unlock(&alert_lock);
+	if(!new_version)
+		return;
+
+	update_dialog(new_version);
+	free(new_version);
+}
+
+static void feed_update_alert(char* new_version)
+{
+	lock_basic_lock(&alert_lock);
+	free(updateinfo);
+	updateinfo = new_version;
+	lock_basic_unlock(&alert_lock);
+	/* post a message to the main window, so that it gets received
+	 * by the main thread, since it has to do the GUI functions */
+	if(!PostMessage(mainwnd, WM_PANELUPDATEALERT, 0, 0))
+		log_err("could not PostMessage");
 }
 
 static void panel_alert(void)
@@ -682,6 +805,7 @@ static void spawn_feed(struct cfg* cfg)
 	feed->unlock = &unlock_feed_lock;
 	feed->quit = &feed_quit;
 	feed->alert = &feed_alert;
+	feed->update_alert = &feed_update_alert;
 
 	/* run thread */
 #ifndef HAVE__BEGINTHREADEX
@@ -813,12 +937,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR args,
 	if(!RegisterClassEx(&wnd)) {
 		FatalAppExit(0, TEXT("Cannot RegisterClassEx"));
 	}
+	wnd.lpszClassName = updateclassname;
+	wnd.hIcon = status_icon_big;
+	wnd.hIconSm = status_icon;
+	wnd.lpfnWndProc = UpdateWndProc;
+	if(!RegisterClassEx(&wnd)) {
+		FatalAppExit(0, TEXT("Cannot RegisterClassEx"));
+	}
 
 	init_font();
 	init_mainwnd(hInstance);
 	init_insecwnd(hInstance);
 	init_hotsignwnd(hInstance);
 	init_nowebwnd(hInstance);
+	init_updatewnd(hInstance);
 	ShowWindow(mainwnd, SW_HIDE);
 	init_icon();
 	spawn_feed(cfg);
@@ -831,6 +963,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR args,
 	attach_stop();
 	lock_basic_destroy(&feed_lock);
 	lock_basic_destroy(&alert_lock);
+	free(updateinfo);
 	WSACleanup();
 	return msg.wParam;
 }
