@@ -306,13 +306,16 @@ void append_txt(NSTextView* pane, char* str)
 -(void)PresentUpdateDialog:(char*)newversion
 {
 	/* set text in updatelabel */
-	char updatetext[1024];
+	NSString* str;
+	char update_text[1024];
 	snprintf(update_text, sizeof(update_text),
 		"There is a software update available for dnssec-trigger\n"
 		"from %s to %s.\n"
 		"Do you wish to install the update now?",
 		PACKAGE_VERSION, newversion);
-	updatelabel.stringValue = [NSString stringWithUTF8String:updatetext];
+	/* no need to [str release] because of convenience function */
+	str = [NSString stringWithUTF8String:update_text];
+	[updatelabel setStringValue:str];
 
 	[updatewindow center];
     	if([updatewindow isMiniaturized]) /* without this if(), random win popsup often */
