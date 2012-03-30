@@ -517,8 +517,8 @@ software_hash_ok(struct selfupdate* se, struct http_get* hg)
 		log_err("bad hash length from TXT record %d", (int)se->hashlen);
 		return 0;
 	}
-	(void)ldns_sha256(ldns_buffer_begin(hg->data),
-		ldns_buffer_limit(hg->data), download_hash);
+	(void)ldns_sha256((unsigned char*)ldns_buffer_begin(hg->data),
+		(unsigned int)ldns_buffer_limit(hg->data), download_hash);
 	if(memcmp(download_hash, se->hash, se->hashlen) != 0) {
 		log_err("hash mismatch:");
 		log_hex("download", download_hash, sizeof(download_hash));
