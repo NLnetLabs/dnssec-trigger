@@ -15,6 +15,13 @@ struct cfg;
 -(BOOL)windowShouldClose:(NSWindow*)sender;
 @end
 
+/* class that helps catch window close on the update window */
+@interface UpdateDelegate : NSObject {
+}
+-(BOOL)windowShouldClose:(NSWindow*)sender;
+@end
+
+
 @interface RiggerApp : NSObject {
 	/* outlets connect to the interface */
 	IBOutlet NSMenu* riggermenu;
@@ -27,6 +34,8 @@ struct cfg;
 	IBOutlet NSTextField* unsafepane;
 	IBOutlet NSWindow* hotsignwindow;
 	IBOutlet NSWindow* nowebwindow;
+	IBOutlet NSWindow* updatewindow;
+	IBOutlet NSTextView* updatelabel;
 	
 @public
 	/** if we have asked about disconnect or insecure */
@@ -50,12 +59,16 @@ struct cfg;
 -(IBAction)HotsignCancel:(id)sender;
 -(IBAction)NowebLogin:(id)sender;
 -(IBAction)NowebSkip:(id)sender;
+-(IBAction)UpdateOK:(id)sender;
+-(IBAction)UpdateCancel:(id)sender;
 -(BOOL)windowShouldClose:(NSWindow*)sender;
 -(void)SpawnFeed:(id)param;
+-(void)PanelUpdateAlert;
 -(void)PanelAlert;
 -(void)PresentUnsafeDialog;
 -(void)PanelAlertDanger;
 -(void)PanelAlertSafe;
 -(void)PresentNowebDialog;
+-(void)PresentUpdateDialog:(char*)newversion;
 
 @end

@@ -20,6 +20,7 @@ static NSLock* feed_lock = NULL;
 /** basically these are the commandline arguments to PanelAlert */
 static NSLock* alert_lock;
 static struct alert_arg alertinfo;
+static char* versioninfo = NULL;
 
 static RiggerApp* mainapp = NULL;
 
@@ -45,6 +46,18 @@ static void feed_quit(void)
 	exit(0);
 }
 
+static void feed_update_alert(char* new_version)
+{
+	/* store parameters in threadsafe manner */
+	[alert_lock lock];
+	free(versioninfo);
+	versioninfo = new_version;
+	[alert_lock unlock];
+	if(verb) printf("panel update state in attach\n");
+	[mainapp performSelectorOnMainThread:@selector(PanelUpdateAlert)
+							  withObject:nil waitUntilDone:NO];
+}
+
 static void feed_alert(struct alert_arg* a)
 {
 	/* store parameters in threadsafe manner */
@@ -66,6 +79,16 @@ static void feed_alert(struct alert_arg* a)
 	return YES;
 }
 @end /* of NowebDelegate */
+
+@implementation UpdateDelegate
+-(BOOL)windowShouldClose:(NSWindow*)sender
+{
+	if(verb) NSLog(@"updateclose handler");
+	/* like pressing cancel */
+	attach_send_update_cancel();
+	return YES;
+}
+@end /* of UpdateDelegate */
 
 @implementation RiggerApp
 
@@ -121,6 +144,7 @@ awakeFromNib
 	feed->unlock = &unlock_feed_lock;
 	feed->quit = &feed_quit;
 	feed->alert = &feed_alert;
+	feed->update_alert = &feed_update_alert;
 	atexit(&cleanup);
 	[NSThread detachNewThreadSelector:@selector(SpawnFeed:)
 							 toTarget:self withObject:nil];
@@ -136,6 +160,7 @@ dealloc
 	[alert_lock release];
 	[icon release];
 	[icon_alert release];
+	free(versioninfo);
 	[super dealloc];
 }
 
@@ -264,6 +289,38 @@ void append_txt(NSTextView* pane, char* str)
 	[nowebwindow orderFront:nil];
 }
 
+-(IBAction)UpdateOK:(id)sender
+{
+	if(verb) NSLog(@"update OK");
+    	[updatewindow orderOut:sender];
+	attach_send_update_ok();
+}
+
+-(IBAction)UpdateCancel:(id)sender
+{
+	if(verb) NSLog(@"update Cancel");
+    	[updatewindow orderOut:sender];
+	attach_send_update_cancel();
+}
+
+-(void)PresentUpdateDialog:(char*)newversion
+{
+	/* set text in updatelabel */
+	char updatetext[1024];
+	snprintf(update_text, sizeof(update_text),
+		"There is a software update available for dnssec-trigger\n"
+		"from %s to %s.\n"
+		"Do you wish to install the update now?",
+		PACKAGE_VERSION, newversion);
+	updatelabel.stringValue = [NSString stringWithUTF8String:updatetext];
+
+	[updatewindow center];
+    	if([updatewindow isMiniaturized]) /* without this if(), random win popsup often */
+		[updatewindow deminiaturize:nil];
+        [updatewindow setLevel:NSScreenSaverWindowLevel + 1];
+	[updatewindow orderFront:nil];
+}
+
 -(BOOL)windowShouldClose:(NSWindow*)sender
 {
 	if(verb) NSLog(@"unsafeclose handler");
@@ -331,6 +388,19 @@ static void do_noweb(void)
 	process_state(&a, &unsafe_asked, &noweb_asked, &do_danger, &do_safe, &do_ask,
 		&do_noweb);
 	if(!a.now_dark) unsafe_should = 0;
+}
+
+-(void)PanelUpdateAlert
+{
+	char* newversion;
+	if(verb) NSLog(@"PanelAlert function");
+	[alert_lock lock];
+	newversion = versioninfo;
+	versioninfo = NULL;
+	[alert_lock unlock];
+
+	[mainapp PresentUpdateDialog:newversion];
+	free(newversion);
 }
 
 @end
