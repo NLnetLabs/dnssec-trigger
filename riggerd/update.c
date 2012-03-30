@@ -761,32 +761,62 @@ static void win_run_updater(char* filename)
 }
 #endif /* USE_WINSOCK */
 
+#ifdef HOOKS_OSX
+/* fork and exec the script that opens the dmg and runs installer */
+static void
+osx_run_updater(char* filename)
+{
+	pid_t pid = fork();
+	switch(pid) {
+	default: /* main */
+		return;
+	case -1: /* error */
+		log_err("cannot fork installscript: %s", strerror(errno));
+		return;
+	case 0: /* child */
+		break;
+	}
+	/* run the install script */
+	if(execl(LIBEXEC_DIR "/dnssec-trigger-setdns.sh", "install", filename,
+		(char*)0) < 0) {
+		log_err("cannot exec setdns install: %s", strerror(errno));
+	}
+	exit(1);
+}
+#endif /* HOOKS_OSX */
+
 /** do the software update install (system specific) */
 static void
 selfupdate_do_install(struct selfupdate* se)
 {
 	if(!se) return;
 	if(!se->update_available) return;
-	if(!se->file_available || !se->filename) return;
-	verbose(VERB_OPS, "software update, install of %s", se->filename);
+	if(!se->file_available || !se->download_file) return;
+	verbose(VERB_OPS, "software update, install of %s", se->download_file);
 	if(se->svr->cfg->noaction) {
 		verbose(VERB_OPS, "noaction is true, no install action");
 		return;
 	}
 #ifdef USE_WINSOCK
 	/* fork and exec the installer that will stop this program and update*/
-	win_run_updater(se->filename);
+	win_run_updater(se->download_file);
 	/* this stops the filename from being deleted when we exit,
 	 * the installer deletes itself (with after reboot flag). */
-	free(se->filename);
-	se->filename = NULL;
+	free(se->download_file);
+	se->download_file = NULL;
 	se->file_available = 0;
 #elif defined(HOOKS_OSX)
 	/* fork and exec installer */
-	/* TODO */
+	osx_run_updater(se->download_file);
+	/* stops filename from deleted by this daemon on exit, since
+	 * the postinstall makes us exit and the installer is deleted by
+	 * the fork-exec-ed script */
+	free(se->download_file);
+	se->download_file = NULL;
+	se->file_available = 0;
 #else
 	log_err("on unix, do not know how to install. tarball %s (is deleted"
-		"on exit of the daemon)", se->filename);
+		"on exit of the daemon)", se->download_file);
 #endif
 }
 

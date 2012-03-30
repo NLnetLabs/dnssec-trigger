@@ -1,6 +1,6 @@
 30 March 2012: Wouter
 	- windows implementation for update dialog and selfupdate.
-	- work on osx update dialog.
+	- work on osx update dialog and selfupdate.
 
 29 March 2012: Wouter
 	- fix exit of panel and threads

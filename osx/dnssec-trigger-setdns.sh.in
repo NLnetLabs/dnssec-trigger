@@ -4,6 +4,18 @@
 #
 # usage:  set example.com 192.0.2.1 192.0.2.2
 
+# perform software upgrade install
+function doinstall () {
+	dmg="$*"
+	mnt="/tmp/installdir.$$"
+	hdiutil attach "$dmg" -mountpoint "$mnt" -nobrowse -noautoopen -noverify
+	# run the installer from mnt/dnssectrigger-x.x-i386.mpkg
+	pkg="`echo $mnt/dnssectrigger*pkg`"
+	installer -pkg "$pkg" -target /
+	hdiutil detach "$mnt" -force
+	rm -f $dmg
+}
+
 cmd="$1"
 shift
 if test "$cmd" = "set"; then
@@ -12,6 +24,9 @@ if test "$cmd" = "set"; then
 	# remaining arguments are the servers to set
 	servers="$*"
 	logger "dnssec-trigger-setdns to $domain and $servers"
+elif test "$cmd" = "install"; then
+	doinstall "$*"
+	exit 0
 else
 	if test "$cmd" = "uninit"; then
 		logger "dnssec-trigger-setdns uninit dns override"
