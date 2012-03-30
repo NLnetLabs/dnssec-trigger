@@ -315,7 +315,7 @@ void append_txt(NSTextView* pane, char* str)
 		PACKAGE_VERSION, newversion);
 	/* no need to [str release] because of convenience function */
 	str = [NSString stringWithUTF8String:update_text];
-	[updatelabel setStringValue:str];
+	[updatelabel setString:str];
 
 	[updatewindow center];
     	if([updatewindow isMiniaturized]) /* without this if(), random win popsup often */
