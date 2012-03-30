@@ -109,7 +109,7 @@ static HWND update_label;
 /* the 'OK' button on update */
 static HWND update_ok;
 /* the 'Cancel' button on update */
-static HWDN update_cancel;
+static HWND update_cancel;
 
 /** if we have asked about disconnect or insecure */
 static int unsafe_asked = 0;
@@ -633,7 +633,8 @@ static void update_dialog(char* new_version)
 		"Do you wish to install the update now?\r\n",
 		PACKAGE_VERSION, new_version);
 	if(!SetWindowText(update_label, update_text))
-		log_err("Could not SetWindowText %d", GetLastError());
+		log_err("Could not SetWindowText: %s",
+			wsa_strerror(GetLastError()));
 	ShowWindow(update_wnd, SW_SHOW);
 	SetForegroundWindow(update_wnd);
 }
