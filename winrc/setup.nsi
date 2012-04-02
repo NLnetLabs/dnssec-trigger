@@ -209,8 +209,6 @@ section "-hidden.postinstall"
 	proc::KillProcess "dnssec-trigger-panel"
 	proc::KillProcess "dnssec-triggerd"
 	proc::KillProcess "unbound"
-	Delete "$R1/unbound.exe"
-	Delete "$R1/dnssec-triggerd.exe"
 	Sleep 3000
 	donestop:
 
@@ -218,11 +216,13 @@ section "-hidden.postinstall"
 	setOutPath $INSTDIR
 	File "..\LICENSE"
 	File "..\tmp.collect\README.txt"
-	File "..\dnssec-triggerd.exe"
+	File "..\dnssec-triggerd.exe" /oname=dnssec-triggerd-temp.exe
+	Rename /REBOOTOK dnssec-triggerd-temp.exe dnssec-triggerd.exe
 	File "..\dnssec-trigger-panel.exe"
 	File "..\dnssec-trigger-control.exe"
 	File "..\dnssec-trigger-keygen.exe"
-	File "..\tmp.collect\unbound.exe"
+	File "..\tmp.collect\unbound.exe" /oname=unbound-temp.exe
+	Rename /REBOOTOK unbound-temp.exe unbound.exe
 	File "..\tmp.collect\unbound-control.exe"
 	File "..\tmp.collect\unbound-anchor.exe"
 	File "..\tmp.collect\unbound-host.exe"
