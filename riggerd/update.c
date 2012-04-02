@@ -180,7 +180,7 @@ void selfupdate_start(struct selfupdate* se)
 		domain = "src.test."DNSSECTRIGGER_DOMAIN;
 	else	domain = "src.version."DNSSECTRIGGER_DOMAIN;
 #endif
-	log_info("fetch domain %s TXT", domain);
+	verbose(VERB_ALGO, "fetch domain %s TXT", domain);
 
 	/* setup TXT query, DO to get AD flag, no CD flag we want to check it */
 	se->txt_query = outq_create(server, LDNS_RR_TYPE_TXT, domain,
@@ -724,6 +724,12 @@ void selfupdate_outq_done(struct selfupdate* se, struct outq* outq,
 		selfupdate_outq_done_addr(se, outq, pkt, reason);
 	else {
 		log_err("internal error: selfupdate unknown outq? leaked");
+		log_info("reason: %s, outq %s %d %s %s %s",
+			reason?reason:"null",
+			outq->qname, (int)outq->qtype,
+			outq->edns?"edns":"noedns",
+			outq->cdflag?"cdflag":"nocdflag",
+			outq->on_tcp?"tcp":"udp");
 		/* and ignore this to continue ... */
 	}
 }
@@ -750,7 +756,8 @@ static void win_run_updater(char* filename)
 	free(ubdir);
 	if(!CreateProcess(NULL, cmdline, NULL, NULL, 0,
 		CREATE_NO_WINDOW, NULL, NULL, &sinfo, &pinfo))
-		log_err("CreateProcess Error");
+		/* log_err("CreateProcess Error"); */
+		log_win_err("CreateProcess failed", GetLastError());
 	else {
 		/* we do not wait for this, it will attempt to stop the
 		   service to update this executable, so we need to go back

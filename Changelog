@@ -1,3 +1,8 @@
+2 April 2012: Wouter
+	- Remove debug print from update code.
+	- Add debug prints to update code.
+	- Fix FIONBIO error on windows.
+
 30 March 2012: Wouter
 	- windows implementation for update dialog and selfupdate.
 	- work on osx update dialog and selfupdate.

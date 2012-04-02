@@ -896,8 +896,16 @@ static void handle_stoppanels_cmd(struct sslconn* sc)
 			s->line_state != persist_write)
 			continue;
 		(void)SSL_set_mode(s->ssl, SSL_MODE_AUTO_RETRY);
-		if(SSL_get_fd(s->ssl) != -1)
+		if(SSL_get_fd(s->ssl) != -1) {
+#ifdef USE_WINSOCK
+			/* to be able to set it back to blocking mode
+			 * we have to remove the EventSelect on it */
+			if(WSAEventSelect(SSL_get_fd(s->ssl), NULL, 0)!=0)
+				log_err("WSAEventSelect disable: %s",
+					wsa_strerror(WSAGetLastError()));
+#endif
 			fd_set_block(SSL_get_fd(s->ssl));
+		}
 		if(s->line_state == persist_write) {
 			/* busy with last results,  blocking write them */
 			if(SSL_write(s->ssl, ldns_buffer_current(s->buffer), 
