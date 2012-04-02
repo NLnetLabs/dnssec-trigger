@@ -209,6 +209,8 @@ section "-hidden.postinstall"
 	proc::KillProcess "dnssec-trigger-panel"
 	proc::KillProcess "dnssec-triggerd"
 	proc::KillProcess "unbound"
+	Delete "$R1/unbound.exe"
+	Delete "$R1/dnssec-triggerd.exe"
 	Sleep 3000
 	donestop:
 
