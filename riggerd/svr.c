@@ -395,9 +395,24 @@ int control_callback(struct comm_point* c, void* arg, int err,
 				comm_point_listen_for_rw(c, 0, 1);
 				return 0;
 			} else if(r2 == SSL_ERROR_SYSCALL) {
-				if(errno != 0)
+				if(ERR_peek_error()) {
+					char errbuf[128];
+					ERR_error_string_n(ERR_get_error(),
+						errbuf, sizeof(errbuf));
+					log_err("ssl_handshake: %s", errbuf);
+				} else if(r == 0) {
+					log_err("ssl_handshake EOF violation");
+				} else if(r == -1) {
+#ifdef USE_WINSOCK
+					log_err("ssl_handshake syscall: "
+						"%s, wsa: %s", strerror(errno),
+						wsa_strerror(WSAGetLastError()));
+#else
 					log_err("ssl_handshake syscall: %s",
 						strerror(errno));
+#endif
+				} else	log_err("ssl_handshake syscall ret %d",
+						r);
 				sslconn_delete(s);
 				return 0;
 			} else {
@@ -506,12 +521,18 @@ static int sslconn_readline(struct sslconn* sc)
 					ERR_error_string_n(ERR_get_error(),
 						errbuf, sizeof(errbuf));
 					log_err("ssl_read: %s", errbuf);
-				} else if(r == 0)
+				} else if(r == 0) {
 					log_err("ssl_read EOF violation");
-				else if(r == -1)
+				} else if(r == -1) {
+#ifdef USE_WINSOCK
+					log_err("ssl_read syscall: "
+						"%s, wsa: %s", strerror(errno),
+						wsa_strerror(WSAGetLastError()));
+#else
 					log_err("ssl_read syscall: %s",
 						strerror(errno));
-				else	log_err("ssl_read syscall ret %d", r);
+#endif
+				} else	log_err("ssl_read syscall ret %d", r);
 				sslconn_delete(sc);
 				return 0;
 			}
@@ -560,12 +581,18 @@ static int sslconn_write(struct sslconn* sc)
 					ERR_error_string_n(ERR_get_error(),
 						errbuf, sizeof(errbuf));
 					log_err("ssl_write: %s", errbuf);
-				} else if(r == 0)
+				} else if(r == 0) {
 					log_err("ssl_write EOF violation");
-				else if(r == -1)
+				} else if(r == -1) {
+#ifdef USE_WINSOCK
+					log_err("ssl_write syscall: "
+						"%s, wsa: %s", strerror(errno),
+						wsa_strerror(WSAGetLastError()));
+#else
 					log_err("ssl_write syscall: %s",
 						strerror(errno));
-				else	log_err("ssl_write syscall ret %d", r);
+#endif
+				} else	log_err("ssl_write syscall ret %d", r);
 				sslconn_delete(sc);
 				return 0;
 			}
@@ -628,12 +655,18 @@ static int sslconn_checkclose(struct sslconn* sc)
 				ERR_error_string_n(ERR_get_error(),
 					errbuf, sizeof(errbuf));
 				log_err("checkclose ssl_read: %s", errbuf);
-			} else if(r == 0)
+			} else if(r == 0) {
 				log_err("checkclose ssl_read EOF violation");
-			else if(r == -1)
+			} else if(r == -1) {
+#ifdef USE_WINSOCK
+				log_err("checkclose ssl_read syscall: "
+					"%s, wsa: %s", strerror(errno),
+					wsa_strerror(WSAGetLastError()));
+#else
 				log_err("checkclose ssl_read syscall: %s",
 					strerror(errno));
-			else	log_err("checkclose ssl_read syscall ret %d",
+#endif
+			} else	log_err("checkclose ssl_read syscall ret %d",
 					r);
 			sslconn_delete(sc);
 			return 0;
