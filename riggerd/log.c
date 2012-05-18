@@ -423,6 +423,7 @@ char* wsa_strerror(DWORD err)
 	case WSA_QOS_ESHAPERATEOBJ: return "Invalid QOS shaping rate object.";
 	case WSA_QOS_RESERVED_PETYPE: return "Reserved policy QOS element type.";
 	case RPC_S_SERVER_UNAVAILABLE: return "The RPC server is unavailable.";
+	case RPC_S_UNKNOWN_IF: return "The interface is unknown";
 	default:
 		snprintf(unknown, sizeof(unknown),
 			"unknown WSA error code %d", (int)err);

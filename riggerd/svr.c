@@ -525,9 +525,15 @@ static int sslconn_readline(struct sslconn* sc)
 					log_err("ssl_read EOF violation");
 				} else if(r == -1) {
 #ifdef USE_WINSOCK
-					log_err("ssl_read syscall: "
+					int wsar = WSAGetLastError();
+					/* conn reset common at restarts */
+					if(wsar == WSAECONNRESET)
+						verbose(VERB_ALGO,
+							"ssl_read syscall: %s"
+							wsa_strerror(wsar));
+					else log_err("ssl_read syscall: "
 						"%s, wsa: %s", strerror(errno),
-						wsa_strerror(WSAGetLastError()));
+						wsa_strerror(wsar));
 #else
 					log_err("ssl_read syscall: %s",
 						strerror(errno));
@@ -659,7 +665,13 @@ static int sslconn_checkclose(struct sslconn* sc)
 				log_err("checkclose ssl_read EOF violation");
 			} else if(r == -1) {
 #ifdef USE_WINSOCK
-				log_err("checkclose ssl_read syscall: "
+				int wsar = WSAGetLastError();
+				/* connreset common at restart of system */
+				if(wsar == WSAECONNRESET)
+				    verbose(VERB_ALGO,
+					"checkclose ssl_read syscall: %s"
+					wsa_strerror(wsar));
+				else log_err("checkclose ssl_read syscall: "
 					"%s, wsa: %s", strerror(errno),
 					wsa_strerror(WSAGetLastError()));
 #else

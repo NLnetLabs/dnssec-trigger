@@ -1,5 +1,7 @@
 18 May 2012: Wouter
 	- improved printout of SSL_ERROR_SYSCALL errors.
+	- do not print interface-unknown and conn-reset errors upon system
+	  restart for windows, only printed on high verbosity.
 
 2 April 2012: Wouter
 	- Remove debug print from update code.
