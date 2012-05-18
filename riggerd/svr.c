@@ -529,7 +529,7 @@ static int sslconn_readline(struct sslconn* sc)
 					/* conn reset common at restarts */
 					if(wsar == WSAECONNRESET)
 						verbose(VERB_ALGO,
-							"ssl_read syscall: %s"
+							"ssl_read syscall: %s",
 							wsa_strerror(wsar));
 					else log_err("ssl_read syscall: "
 						"%s, wsa: %s", strerror(errno),
@@ -669,7 +669,7 @@ static int sslconn_checkclose(struct sslconn* sc)
 				/* connreset common at restart of system */
 				if(wsar == WSAECONNRESET)
 				    verbose(VERB_ALGO,
-					"checkclose ssl_read syscall: %s"
+					"checkclose ssl_read syscall: %s",
 					wsa_strerror(wsar));
 				else log_err("checkclose ssl_read syscall: "
 					"%s, wsa: %s", strerror(errno),
