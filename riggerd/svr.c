@@ -501,9 +501,17 @@ static int sslconn_readline(struct sslconn* sc)
 				comm_point_listen_for_rw(sc->c, 0, 1);
 				return 0;
 			} else if(want == SSL_ERROR_SYSCALL) {
-				if(errno != 0)
+				if(ERR_peek_error()) {
+					char errbuf[128];
+					ERR_error_string_n(ERR_get_error(),
+						errbuf, sizeof(errbuf));
+					log_err("ssl_read: %s", errbuf);
+				} else if(r == 0)
+					log_err("ssl_read EOF violation");
+				else if(r == -1)
 					log_err("ssl_read syscall: %s",
 						strerror(errno));
+				else	log_err("ssl_read syscall ret %d", r);
 				sslconn_delete(sc);
 				return 0;
 			}
@@ -547,10 +555,17 @@ static int sslconn_write(struct sslconn* sc)
 			} else if(want == SSL_ERROR_WANT_WRITE) {
 				return 0;
 			} else if(want == SSL_ERROR_SYSCALL) {
-				/* want syscall, errno==0 : unclean closed */
-				if(errno != 0)
+				if(ERR_peek_error()) {
+					char errbuf[128];
+					ERR_error_string_n(ERR_get_error(),
+						errbuf, sizeof(errbuf));
+					log_err("ssl_write: %s", errbuf);
+				} else if(r == 0)
+					log_err("ssl_write EOF violation");
+				else if(r == -1)
 					log_err("ssl_write syscall: %s",
 						strerror(errno));
+				else	log_err("ssl_write syscall ret %d", r);
 				sslconn_delete(sc);
 				return 0;
 			}
@@ -608,9 +623,18 @@ static int sslconn_checkclose(struct sslconn* sc)
 			comm_point_listen_for_rw(sc->c, 0, 1);
 			return 0;
 		} else if(want == SSL_ERROR_SYSCALL) {
-			if(errno != 0)
+			if(ERR_peek_error()) {
+				char errbuf[128];
+				ERR_error_string_n(ERR_get_error(),
+					errbuf, sizeof(errbuf));
+				log_err("checkclose ssl_read: %s", errbuf);
+			} else if(r == 0)
+				log_err("checkclose ssl_read EOF violation");
+			else if(r == -1)
 				log_err("checkclose ssl_read syscall: %s",
 					strerror(errno));
+			else	log_err("checkclose ssl_read syscall ret %d",
+					r);
 			sslconn_delete(sc);
 			return 0;
 		}
