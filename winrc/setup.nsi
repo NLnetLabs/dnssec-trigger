@@ -217,12 +217,12 @@ section "-hidden.postinstall"
 	File "..\LICENSE"
 	File "..\tmp.collect\README.txt"
 	File /oname=dnssec-triggerd-temp.exe "..\dnssec-triggerd.exe"
-	Rename /REBOOTOK dnssec-triggerd-temp.exe dnssec-triggerd.exe
+	Rename dnssec-triggerd-temp.exe dnssec-triggerd.exe
 	File "..\dnssec-trigger-panel.exe"
 	File "..\dnssec-trigger-control.exe"
 	File "..\dnssec-trigger-keygen.exe"
 	File /oname=unbound-temp.exe "..\tmp.collect\unbound.exe"
-	Rename /REBOOTOK unbound-temp.exe unbound.exe
+	Rename unbound-temp.exe unbound.exe
 	File "..\tmp.collect\unbound-control.exe"
 	File "..\tmp.collect\unbound-anchor.exe"
 	File "..\tmp.collect\unbound-host.exe"
