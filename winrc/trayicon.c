@@ -830,11 +830,11 @@ static void panel_alert(void)
 		state_tooltip(&a));
 
 	/* twiddle the NIF_TIP flag to get the tooltip to update */
-	notifydata.uFlags ~= NIF_TIP;
+	notifydata.uFlags ^= NIF_TIP;
 	if(!Shell_NotifyIcon(NIM_MODIFY, &notifydata)) {
 		log_err("cannot Shell_NotifyIcon modify");
 	}
-	notifydata.uFlags ~= NIF_TIP;
+	notifydata.uFlags ^= NIF_TIP;
 	if(!Shell_NotifyIcon(NIM_MODIFY, &notifydata)) {
 		log_err("cannot Shell_NotifyIcon modify");
 	}
