@@ -349,10 +349,10 @@ static void win_run_updater(char* filename)
 	/* CMD /C shows UAC privilege elevation dialog to the user */
 	snprintf(cmdline, sizeof(cmdline), "CMD /C \"%s\" /S /delself /D=%s", filename, ubdir);
 	free(ubdir);
-	log_err("cmdline is %s", cmdline);
 	if(!CreateProcess(NULL, cmdline, NULL, NULL, 0,
 		CREATE_NO_WINDOW, NULL, NULL, &sinfo, &pinfo))
-		log_err("CreateProcess Error %d", (int)GetLastError());
+		log_err("CreateProcess Error %d for cmdline: %s",
+			(int)GetLastError(), cmdline);
 		/*log_win_err("CreateProcess failed", GetLastError());*/
 	else {
 		/* we do not wait for this, it will attempt to stop the
