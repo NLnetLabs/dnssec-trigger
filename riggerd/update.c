@@ -539,15 +539,18 @@ selfupdate_write_file(struct selfupdate* se, struct http_get* hg)
 	FILE *out;
 	/* get directory to store the file into */
 #ifdef HOOKS_OSX
-	char* dirname = UIDIR"/";
+	char* dirname = UIDIR;
+	char* slash="/";
 #elif defined(USE_WINSOCK)
 	char* dirname = w_lookup_reg_str("Software\\Unbound", "InstallLocation");
-	if(!dirname) dirname = strdup(UIDIR"\\");
+	char* slash="\\";
+	if(!dirname) dirname = strdup(UIDIR);
 	if(!dirname) { log_err("out of memory"); return 0; }
 #else /* UNIX */
-	char* dirname = "/tmp/";
+	char* dirname = "/tmp";
+	char* slash="/";
 #endif
-	snprintf(buf, sizeof(buf), "%s%s", dirname, se->filename);
+	snprintf(buf, sizeof(buf), "%s%s%s", dirname, slash, se->filename);
 	if(se->download_file)
 		selfupdate_delete_file(se);
 	se->download_file = strdup(buf);

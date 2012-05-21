@@ -372,7 +372,7 @@ static void win_update_to_version(char* version)
 			"please reinstall manually");
 		return;
 	}
-	snprintf(fname, sizeof(fname), "%sdnssec_trigger_setup_%s.exe",
+	snprintf(fname, sizeof(fname), "%s\\dnssec_trigger_setup_%s.exe",
 		uidir, version);
 	free(uidir);
 	win_run_updater(fname);
