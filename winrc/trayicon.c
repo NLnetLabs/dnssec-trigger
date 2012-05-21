@@ -306,7 +306,12 @@ static void
 init_icon(void)
 {
 	memset(&notifydata, 0, sizeof(notifydata));
+	/*
+	 * correct code, but the hardcoded size works around tooltip
+	 * bug (no tooltip updates picked up)
 	notifydata.cbSize = sizeof(notifydata);
+	*/
+	notifydata.cbSize = NOTIFYICONDATA_V2_SIZE;
 	notifydata.hWnd = mainwnd;
 	notifydata.uID = ID_TRAY_APP_ICON;
 	/* flags for icon, wndmessage on click, and show tooltip */
@@ -826,7 +831,8 @@ static void panel_alert(void)
 	lock_basic_unlock(&alert_lock);
 	
 	/* update tooltip */
-	snprintf(notifydata.szTip, 64, "%s", state_tooltip(&a));
+	snprintf(notifydata.szTip, sizeof(notifydata.szTip), "%s",
+		state_tooltip(&a));
 	if(!Shell_NotifyIcon(NIM_MODIFY, &notifydata)) {
 		log_err("cannot Shell_NotifyIcon modify");
 	}
