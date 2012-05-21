@@ -348,9 +348,10 @@ static void win_run_updater(char* filename)
 	   quotes (even if there are spaces in the path) */
 	snprintf(cmdline, sizeof(cmdline), "\"%s\" /S /delself /D=%s", filename, ubdir);
 	free(ubdir);
+	log_err("cmdline is %s", cmdline);
 	if(!CreateProcess(NULL, cmdline, NULL, NULL, 0,
 		CREATE_NO_WINDOW, NULL, NULL, &sinfo, &pinfo))
-		log_err("CreateProcess Error");
+		log_err("CreateProcess Error %d", (int)GetLastError());
 		/*log_win_err("CreateProcess failed", GetLastError());*/
 	else {
 		/* we do not wait for this, it will attempt to stop the
