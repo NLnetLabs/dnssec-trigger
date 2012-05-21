@@ -534,9 +534,10 @@ LRESULT CALLBACK UpdateWndProc(HWND hwnd, UINT message, WPARAM wParam,
 		} else if((HWND)lParam == update_ok) {
 			ShowWindow(update_wnd, SW_HIDE);
 			attach_send_update_ok();
-			win_update_to_version(update_to_version);
-			free(update_to_version);
-			update_to_version = NULL;
+			if(update_new_version)
+				win_update_to_version(update_new_version);
+			free(update_new_version);
+			update_new_version = NULL;
 		}
 		break;
 	case WM_CLOSE:
