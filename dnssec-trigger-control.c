@@ -143,6 +143,11 @@ go_cmd(SSL* ssl, int argc, char* argv[])
 		send_file(ssl, stdin, buf, sizeof(buf));
 	}
 
+#ifndef UB_ON_WINDOWS
+	/* line buffering does not work on windows */
+	setvbuf(stdout, NULL, (int)_IOLBF, 0);
+#endif
+
 	while(1) {
 		ERR_clear_error();
 		if((r = SSL_read(ssl, buf, (int)sizeof(buf)-1)) <= 0) {
