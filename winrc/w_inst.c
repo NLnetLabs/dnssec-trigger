@@ -206,6 +206,8 @@ wsvc_install(FILE* out, const char* rename)
         strcat(path, " -w service");
         scm = OpenSCManager(NULL, NULL, (int)SC_MANAGER_CREATE_SERVICE);
         if(!scm) fatal_win(out, "could not OpenSCManager");
+	/* the dnssectrigger service depends on 'unbound' to start,
+	 * because it will signal it to do stuff */
         sv = CreateService(
                 scm,
                 SERVICE_NAME, /* name of service */
@@ -217,7 +219,7 @@ wsvc_install(FILE* out, const char* rename)
                 path, /* path to service's binary */
                 NULL, /* no load ordering group */
                 NULL, /* no tag identifier */
-                NULL, /* no deps */
+                "unbound\0\0", /* DependsOn */
                 NULL, /* on LocalSystem */
                 NULL /* no password */
                 );
