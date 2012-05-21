@@ -2,6 +2,7 @@
 	- windows runs installer from userspace.
 	- windows dnssectrigger depends on unbound for boot invocation,
 	  this fixes an error where it cannot tell unbound what to do.
+	- fix updater for double callback due to retry and double reply.
 
 18 May 2012: Wouter
 	- improved printout of SSL_ERROR_SYSCALL errors.
