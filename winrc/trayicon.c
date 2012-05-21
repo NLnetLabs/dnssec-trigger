@@ -110,6 +110,8 @@ static HWND update_label;
 static HWND update_ok;
 /* the 'Cancel' button on update */
 static HWND update_cancel;
+/* new version for update */
+static char* update_new_version;
 
 /** if we have asked about disconnect or insecure */
 static int unsafe_asked = 0;
@@ -327,6 +329,54 @@ panel_proberesults(void)
 	ShowWindow(mainwnd, SW_SHOW);
 }
 
+/* run software updater on windows: create the process */
+static void win_run_updater(char* filename)
+{
+	char* ubdir = w_lookup_reg_str("Software\\Unbound", "InstallLocation");
+	char cmdline[1024];
+	STARTUPINFO sinfo;
+	PROCESS_INFORMATION pinfo;
+	memset(&pinfo, 0, sizeof(pinfo));
+	memset(&sinfo, 0, sizeof(sinfo));
+	sinfo.cb = sizeof(sinfo);
+	if(!ubdir) {
+		log_err("out of memory or improper registry in reinstall, "
+			"please reinstall manually");
+		return;
+	}
+	/* case sensitive /S and /D. /D must be last on the line and without
+	   quotes (even if there are spaces in the path) */
+	snprintf(cmdline, sizeof(cmdline), "\"%s\" /S /delself /D=%s", filename, ubdir);
+	free(ubdir);
+	if(!CreateProcess(NULL, cmdline, NULL, NULL, 0,
+		CREATE_NO_WINDOW, NULL, NULL, &sinfo, &pinfo))
+		/* log_err("CreateProcess Error"); */
+		log_win_err("CreateProcess failed", GetLastError());
+	else {
+		/* we do not wait for this, it will attempt to stop the
+		   service to update this executable, so we need to go back
+		   to our runloop */
+		CloseHandle(pinfo.hProcess);
+		CloseHandle(pinfo.hThread);
+	}
+}
+
+/* start software updater given version number */
+static void win_update_to_version(char* version)
+{
+	char* uidir = w_lookup_reg_str("Software\\Unbound", "InstallLocation");
+	char fname[260];
+	if(!uidir) {
+		log_err("out of memory or improper registry in reinstall, "
+			"please reinstall manually");
+		return;
+	}
+	snprintf(fname, sizeof(fname), "%sdnssec_trigger_setup_%s.exe",
+		uidir, version);
+	free(uidir);
+	win_run_updater(fname);
+}
+
 LRESULT CALLBACK InsecWndProc(HWND hwnd, UINT message, WPARAM wParam,
 	LPARAM lParam)
 {
@@ -484,6 +534,9 @@ LRESULT CALLBACK UpdateWndProc(HWND hwnd, UINT message, WPARAM wParam,
 		} else if((HWND)lParam == update_ok) {
 			ShowWindow(update_wnd, SW_HIDE);
 			attach_send_update_ok();
+			win_update_to_version(update_to_version);
+			free(update_to_version);
+			update_to_version = NULL;
 		}
 		break;
 	case WM_CLOSE:
@@ -637,6 +690,8 @@ static void update_dialog(char* new_version)
 			wsa_strerror(GetLastError()));
 	ShowWindow(update_wnd, SW_SHOW);
 	SetForegroundWindow(update_wnd);
+	free(update_new_version);
+	update_new_version = strdup(new_version);
 }
 
 static void do_args(char* str, int* debug, const char** cfgfile)
@@ -965,6 +1020,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR args,
 	lock_basic_destroy(&feed_lock);
 	lock_basic_destroy(&alert_lock);
 	free(updateinfo);
+	free(update_new_version);
 	WSACleanup();
 	return msg.wParam;
 }

@@ -1,3 +1,6 @@
+21 May 2012: Wouter
+	- windows runs installer from userspace.
+
 18 May 2012: Wouter
 	- improved printout of SSL_ERROR_SYSCALL errors.
 	- do not print interface-unknown and conn-reset errors upon system

@@ -806,7 +806,9 @@ selfupdate_do_install(struct selfupdate* se)
 	}
 #ifdef USE_WINSOCK
 	/* fork and exec the installer that will stop this program and update*/
-	win_run_updater(se->download_file);
+	/* Do not run updater from service, but from userspace, so that
+	 * tray icon gets started correctly and so on, and reboot warn dialog*/
+	/*win_run_updater(se->download_file);*/
 	/* this stops the filename from being deleted when we exit,
 	 * the installer deletes itself (with after reboot flag). */
 	free(se->download_file);
