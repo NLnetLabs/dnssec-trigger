@@ -350,8 +350,8 @@ static void win_run_updater(char* filename)
 	free(ubdir);
 	if(!CreateProcess(NULL, cmdline, NULL, NULL, 0,
 		CREATE_NO_WINDOW, NULL, NULL, &sinfo, &pinfo))
-		/* log_err("CreateProcess Error"); */
-		log_win_err("CreateProcess failed", GetLastError());
+		log_err("CreateProcess Error");
+		/*log_win_err("CreateProcess failed", GetLastError());*/
 	else {
 		/* we do not wait for this, it will attempt to stop the
 		   service to update this executable, so we need to go back
