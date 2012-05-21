@@ -310,7 +310,9 @@ init_icon(void)
 	notifydata.hWnd = mainwnd;
 	notifydata.uID = ID_TRAY_APP_ICON;
 	/* flags for icon, wndmessage on click, and show tooltip */
-	notifydata.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+	notifydata.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP | 
+		0x80 /*NIF_SHOWTIP*/;
+	/* NIF_SHOWTIP on Vista makes old tooltip show */
 	notifydata.uCallbackMessage = WM_TRAYICON;
 	notifydata.hIcon = status_icon;
 	/* tooltip (less than 64 chars) */
