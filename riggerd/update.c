@@ -739,40 +739,6 @@ void selfupdate_outq_done(struct selfupdate* se, struct outq* outq,
 	}
 }
 
-#ifdef USE_WINSOCK
-/* run software updater on windows: create the process */
-static void win_run_updater(char* filename)
-{
-	char* ubdir = w_lookup_reg_str("Software\\Unbound", "InstallLocation");
-	char cmdline[1024];
-	STARTUPINFO sinfo;
-	PROCESS_INFORMATION pinfo;
-	memset(&pinfo, 0, sizeof(pinfo));
-	memset(&sinfo, 0, sizeof(sinfo));
-	sinfo.cb = sizeof(sinfo);
-	if(!ubdir) {
-		log_err("out of memory or improper registry in reinstall, "
-			"please reinstall manually");
-		return;
-	}
-	/* case sensitive /S and /D. /D must be last on the line and without
-	   quotes (even if there are spaces in the path) */
-	snprintf(cmdline, sizeof(cmdline), "\"%s\" /S /delself /D=%s", filename, ubdir);
-	free(ubdir);
-	if(!CreateProcess(NULL, cmdline, NULL, NULL, 0,
-		CREATE_NO_WINDOW, NULL, NULL, &sinfo, &pinfo))
-		/* log_err("CreateProcess Error"); */
-		log_win_err("CreateProcess failed", GetLastError());
-	else {
-		/* we do not wait for this, it will attempt to stop the
-		   service to update this executable, so we need to go back
-		   to our runloop */
-		CloseHandle(pinfo.hProcess);
-		CloseHandle(pinfo.hThread);
-	}
-}
-#endif /* USE_WINSOCK */
-
 #ifdef HOOKS_OSX
 /* fork and exec the script that opens the dmg and runs installer */
 static void
