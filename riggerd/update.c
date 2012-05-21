@@ -732,9 +732,6 @@ void selfupdate_outq_done(struct selfupdate* se, struct outq* outq,
 			outq->edns?"edns":"noedns",
 			outq->cdflag?"cdflag":"nocdflag",
 			outq->on_tcp?"tcp":"udp");
-		log_info("addr_4 %x, addr_6 %x", (int)se->addr_4, (int)se->addr_6);
-		log_info("alist_4 %x, aalist_6 %x", (int)se->addr_list_4, (int)se->addr_list_6);
-		log_info("the outq is %x", (int)outq);
 		/* and ignore this to continue ... */
 	}
 }
