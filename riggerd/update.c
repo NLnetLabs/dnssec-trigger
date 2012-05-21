@@ -361,6 +361,8 @@ static void selfupdate_outq_done_txt(struct selfupdate* se, struct outq* outq,
 	ldns_rr_list* txt;
 	verbose(VERB_ALGO, "selfupdate %s done: %s", outq->qname,
 		reason?reason:"success");
+	outq_delete(se->txt_query);
+	se->txt_query = NULL;
 	if(reason || !pkt) {
 		/* it failed */
 		ldns_pkt_free(pkt); /* in case there is a packet */
