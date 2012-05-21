@@ -311,7 +311,7 @@ init_icon(void)
 	 * bug (no tooltip updates picked up)
 	notifydata.cbSize = sizeof(notifydata);
 	*/
-	notifydata.cbSize = NOTIFYICONDATA_V2_SIZE;
+	notifydata.cbSize = NOTIFYICONDATA_V3_SIZE;
 	notifydata.hWnd = mainwnd;
 	notifydata.uID = ID_TRAY_APP_ICON;
 	/* flags for icon, wndmessage on click, and show tooltip */
