@@ -306,12 +306,7 @@ static void
 init_icon(void)
 {
 	memset(&notifydata, 0, sizeof(notifydata));
-	/*
-	 * correct code, but the hardcoded size works around tooltip
-	 * bug (no tooltip updates picked up)
 	notifydata.cbSize = sizeof(notifydata);
-	*/
-	notifydata.cbSize = NOTIFYICONDATA_V3_SIZE;
 	notifydata.hWnd = mainwnd;
 	notifydata.uID = ID_TRAY_APP_ICON;
 	/* flags for icon, wndmessage on click, and show tooltip */
