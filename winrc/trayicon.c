@@ -826,8 +826,7 @@ static void panel_alert(void)
 	lock_basic_unlock(&alert_lock);
 	
 	/* update tooltip */
-	snprintf(notifydata.szTip, sizeof(notifydata.szTip), "%s",
-		state_tooltip(&a));
+	snprintf(notifydata.szTip, 64, "%s", state_tooltip(&a));
 	if(!Shell_NotifyIcon(NIM_MODIFY, &notifydata)) {
 		log_err("cannot Shell_NotifyIcon modify");
 	}
