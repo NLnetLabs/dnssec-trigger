@@ -346,7 +346,7 @@ static void win_run_updater(char* filename)
 	}
 	/* case sensitive /S and /D. /D must be last on the line and without
 	   quotes (even if there are spaces in the path) */
-	snprintf(cmdline, sizeof(cmdline), "\"%s\" /S /delself /D=%s", filename, ubdir);
+	snprintf(cmdline, sizeof(cmdline), "CMD /C \"%s\" /S /delself /D=%s", filename, ubdir);
 	free(ubdir);
 	log_err("cmdline is %s", cmdline);
 	if(!CreateProcess(NULL, cmdline, NULL, NULL, 0,
