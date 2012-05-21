@@ -828,9 +828,17 @@ static void panel_alert(void)
 	/* update tooltip */
 	snprintf(notifydata.szTip, sizeof(notifydata.szTip), "%s",
 		state_tooltip(&a));
+
+	/* twiddle the NIF_TIP flag to get the tooltip to update */
+	notifydata.uFlags ~= NIF_TIP;
 	if(!Shell_NotifyIcon(NIM_MODIFY, &notifydata)) {
 		log_err("cannot Shell_NotifyIcon modify");
 	}
+	notifydata.uFlags ~= NIF_TIP;
+	if(!Shell_NotifyIcon(NIM_MODIFY, &notifydata)) {
+		log_err("cannot Shell_NotifyIcon modify");
+	}
+
 	/* handle it */
 	process_state(&a, &unsafe_asked, &noweb_asked, &panel_danger,
 		&panel_safe, &panel_dialog, &noweb_dialog);
