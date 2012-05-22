@@ -252,6 +252,11 @@ section "-hidden.postinstall"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DnssecTrigger" "URLInfoAbout" "http://nlnetlabs.nl"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DnssecTrigger" "Publisher" "NLnet Labs"
 
+	# for a silent install (upgrade) config file changes make no
+	# sense, right now.  If we change the registry entries,
+	# this will have to be fixed up here.
+	IfSilent skip_config
+
 	DetailPrint "Setup config files"
 	# setup unbound registry entries
 	WriteRegStr HKLM "Software\Unbound" "InstallLocation" "$INSTDIR"
@@ -295,12 +300,17 @@ done_keys:
 	nsExec::ExecToLog '"$INSTDIR\dnssec-trigger-keygen.exe" -d "$INSTDIR"'
 	# generate unbound keys
 	nsExec::ExecToLog '"$INSTDIR\dnssec-trigger-keygen.exe" -u -d "$INSTDIR"'
+skip_config:
+	# If silent (upgrade), then the start menu items can be left untouched
+	# (in their original present/absent state).
+	IfSilent skip_menu
 
 	# start menu items
 	!insertmacro MUI_STARTMENU_WRITE_BEGIN DnssecTriggerStartMenu
 	CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
 	CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\uninst.exe" "" "" "" "" "" "Uninstall dnssec trigger"
 	!insertmacro MUI_STARTMENU_WRITE_END
+skip_menu:
 
 	# install unbound service entry
 	DetailPrint "Start unbound daemon"

@@ -1,3 +1,7 @@
+22 May 2012: Wouter
+	- Fix windows upgrade to preserve config files and to preserve the
+	  installed (or not-installed) startmenu links.
+
 21 May 2012: Wouter
 	- windows runs installer from userspace.
 	- windows dnssectrigger depends on unbound for boot invocation,
