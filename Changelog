@@ -1,6 +1,7 @@
 22 May 2012: Wouter
 	- Fix windows upgrade to preserve config files and to preserve the
 	  installed (or not-installed) startmenu links.
+	- Fix to not mess up the config files on a reinstall on windows.
 
 21 May 2012: Wouter
 	- windows runs installer from userspace.
