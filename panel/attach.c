@@ -209,6 +209,13 @@ read_an_ssl_line(SSL* ssl, char* line, size_t len)
 	return 0;
 }
 
+/**
+ * Read data from feed and return indication what to do
+ * 0: stop. lock is unlocked for exit.
+ * 1: nothing. caller unlocks lock.
+ * 2: new probe results. caller unlocks lock.
+ * 3: new softwareupdate. caller unlocks lock.
+ */
 static int read_from_feed(void)
 {
 	struct strlist* first=NULL, *last=NULL;
