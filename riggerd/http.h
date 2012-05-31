@@ -96,6 +96,8 @@ struct http_probe {
 	int num_failed_addr_qs;
 	/* list of addresses (RR records) */
 	ldns_rr_list* addr;
+	/* port number */
+	int port;
 
 	/* result: did we get addresses? */
 	int got_addrs;
@@ -184,6 +186,8 @@ struct http_get {
 
 	/* destination IP as a string */
 	char* dest;
+	/* port number */
+	int port;
 	/* the probe that this is part of */
 	struct probe_ip* probe;
 };
@@ -217,10 +221,11 @@ void http_get_delete(struct http_get* hg);
  * Parses, connects, and so on.
  * @param hg: http_get structure.
  * @param dest: destination IP address.
+ * @param port: port number (HTTP_PORT is the default 80).
  * @param err: the detailed error on failure (set to constant string).
  * @return false if failed.
  */
-int http_get_fetch(struct http_get* hg, const char* dest, char** err);
+int http_get_fetch(struct http_get* hg, const char* dest, int port, char** err);
 
 /** handle socket events on http_get */
 int http_get_callback(struct comm_point* cp, void* arg, int err,

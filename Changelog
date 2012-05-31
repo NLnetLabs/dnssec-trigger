@@ -1,5 +1,7 @@
 31 May 2012: Wouter
 	- Fix bug in processing tray icon results from daemon.
+	- url can contain numerical IP address and port number, in http
+	  implementation.
 
 22 May 2012: Wouter
 	- Fix windows upgrade to preserve config files and to preserve the

@@ -212,6 +212,115 @@ void http_probe_remove_http_lookups(struct http_probe* hp)
 	}
 }
 
+/** parse http-hostname as IP address */
+static int
+parse_http_addr(char* s, struct sockaddr_storage* addr, socklen_t* len,
+	int* port)
+{
+	if(s[0]=='[') {
+		char temp[128];
+		char* eb = strchr(s, ']');
+		/* [addr] or [addr]:port */
+		if(!eb) return 0; /* no close bracket */
+		*port = HTTP_PORT;
+
+		/* extract address part */
+		*eb = 0;
+		strlcpy(temp, s+1, sizeof(temp));
+		*eb = ']';
+
+		/* we know that eb[0] is ']' */
+		if(eb[1] == 0) {
+			/* '[addr]' */
+			return ipstrtoaddr(temp, *port, addr, len);
+		} else if(eb[1] == ':') {
+			/* '[addr]:port' */
+			*port = atoi(eb+2);
+			return ipstrtoaddr(temp, *port, addr, len);
+		}
+		return 0;
+	}
+
+	/* attempt parse of plain ip4 or ip6 */
+	*port = HTTP_PORT;
+	if(ipstrtoaddr(s, HTTP_PORT, addr, len))
+		return 1;
+
+	/* attempt addr:port */
+	if(strchr(s, ':')) {
+		char temp[128];
+		char* e= strchr(s, ':');
+
+		/* extract address part */
+		*e = 0;
+		strlcpy(temp, s, sizeof(temp));
+		*e = ':';
+
+		*port = atoi(e+1);
+		return ipstrtoaddr(temp, *port, addr, len);
+	}
+	return 0;
+}
+
+/** see if hostname is ip4, or ip6 or [ip6] or [ip6]:port or ip4:port */
+static int
+http_probe_hostname_has_addr(struct http_probe* hp)
+{
+	struct sockaddr_storage addr;
+	socklen_t len = 0;
+	ldns_rr* rr;
+	ldns_rdf* f;
+	if(!parse_http_addr(hp->hostname, &addr, &len, &hp->port))
+		return 0;
+
+	/* setup addr structure and port */
+	hp->addr = ldns_rr_list_new();
+	if(!hp->addr) {
+		log_err("out of memory");
+		/* fail ... lookup the string as DNS name */
+		return 0;
+	}
+
+	/* if we are not appriopriate (IP6 addr and we are IP4) we have empty
+	 * list as the result */
+	if(addr_is_ip6(&addr, len)) {
+		if(!hp->ip6)
+			return 1;
+	} else  {
+		if(hp->ip6)
+			return 1;
+	}
+	
+	rr = ldns_rr_new_frm_type(addr_is_ip6(&addr, len)?
+		LDNS_RR_TYPE_AAAA:LDNS_RR_TYPE_A);
+	if(!rr) {
+		log_err("out of memory");
+		/* 'succeed' with empty rr list */
+		return 1;
+	}
+	if(addr_is_ip6(&addr, len)) {
+		f = ldns_rdf_new_frm_data(LDNS_RDF_TYPE_AAAA, INET6_SIZE,
+			&((struct sockaddr_in6*)&addr)->sin6_addr);
+	} else {
+		f = ldns_rdf_new_frm_data(LDNS_RDF_TYPE_A, INET_SIZE,
+			&((struct sockaddr_in*)&addr)->sin_addr);
+	}
+	if(!f) {
+		ldns_rr_free(rr);
+		log_err("out of memory");
+		/* 'succeed' with empty rr list */
+		return 1;
+	}
+	(void)ldns_rr_a_set_address(rr, f);
+	if(!ldns_rr_list_push_rr(hp->addr, rr)) {
+		ldns_rr_free(rr);
+		log_err("out of memory");
+		/* 'succeed' with empty rr list */
+		return 1;
+	}
+	return 1;
+}
+
 /** the http_probe is done (fail with reason, or its is NULL) */
 static void http_probe_done(struct http_general* hg,
 	struct http_probe* hp, char* reason)
@@ -259,10 +368,23 @@ static void http_probe_go_next_url(struct http_general* hg,
 	hp->filename = NULL;
 	ldns_rr_list_deep_free(hp->addr);
 	hp->addr = NULL;
+	hp->port = HTTP_PORT;
 
 	log_assert(hp->url_idx < hg->url_num);
 	if(!http_probe_setup_url(hg, hp, ++hp->url_idx)) {
 		http_probe_done(hg, hp, "out of memory or parse error");
+		return;
+	}
+	if(http_probe_hostname_has_addr(hp)) {
+		if(!hp->addr || ldns_rr_list_rr_count(hp->addr)==0) {
+			if(hp->ip6)
+			     http_probe_done(hg, hp, "no address of type IP6");
+			else http_probe_done(hg, hp, "no address of type IP4");
+			return;
+		}
+		hp->got_addrs = 1;
+		hp->do_addr = 0;
+		http_probe_start_http_get(hp);
 		return;
 	}
 	http_probe_make_addr_queries(hg, hp);
@@ -310,7 +432,7 @@ http_probe_create_get(struct http_probe* hp, ldns_rr* addr, char** reason)
 		*reason = "out of memory";
 		return 0;
 	}
-	p->port = 80;
+	p->port = hp->port;
 	p->to_http = 1;
 	p->http_ip6 = hp->ip6;
 	if(!addr || !ldns_rr_rdf(addr, 0)) {
@@ -336,7 +458,7 @@ http_probe_create_get(struct http_probe* hp, ldns_rr* addr, char** reason)
 	/* put a cap on the max data size because we expect very short
 	 * responses for our probe */
 	p->http->data_limit = MAX_HTTP_LENGTH*10;
-	if(!http_get_fetch(p->http, p->name, reason)) {
+	if(!http_get_fetch(p->http, p->name, hp->port, reason)) {
 		http_get_delete(p->http);
 		free(p->name); 
 		free(p);
@@ -413,9 +535,22 @@ http_probe_start(struct http_general* hg, int ip6)
 	struct http_probe* hp = (struct http_probe*)calloc(1, sizeof(*hp));
 	if(!hp) return NULL;
 	hp->ip6 = ip6;
+	hp->port = HTTP_PORT;
 	if(!http_probe_setup_url(hg, hp, 0)) {
 		http_probe_delete(hp);
 		return NULL;
+	}
+	if(http_probe_hostname_has_addr(hp)) {
+		if(!hp->addr || ldns_rr_list_rr_count(hp->addr)==0) {
+			if(hp->ip6)
+			     http_probe_done(hg, hp, "no address of type IP6");
+			else http_probe_done(hg, hp, "no address of type IP4");
+			return hp;
+		}
+		hp->got_addrs = 1;
+		hp->do_addr = 0;
+		http_probe_start_http_get(hp);
+		return hp;
 	}
 	http_probe_make_addr_queries(hg, hp);
 	return hp;
@@ -1236,7 +1371,7 @@ http_get_callback(struct comm_point* ATTR_UNUSED(cp), void* arg, int err,
 	return 0;
 }
 
-int http_get_fetch(struct http_get* hg, const char* dest, char** err)
+int http_get_fetch(struct http_get* hg, const char* dest, int port, char** err)
 {
 	int fd;
 	struct timeval tv;
@@ -1256,7 +1391,8 @@ int http_get_fetch(struct http_get* hg, const char* dest, char** err)
 		*err = "out of memory";
 		return 0;
 	}
-	if(!ipstrtoaddr(dest, HTTP_PORT, &addr, &addrlen)) {
+	hg->port = port;
+	if(!ipstrtoaddr(dest, port, &addr, &addrlen)) {
 		log_err("error in syntax of IP address %s", dest);
 		*err = "cannot parse IP address";
 		return 0;

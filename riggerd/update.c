@@ -487,7 +487,7 @@ static int selfupdate_start_file_download(struct selfupdate* se,
 		free(ipstr);
 		return 0;
 	}
-	if(!http_get_fetch(*handle, ipstr, &reason)) {
+	if(!http_get_fetch(*handle, ipstr, HTTP_PORT, &reason)) {
 		log_err("update fetch failed: %s", reason?reason:"fail");
 		http_get_delete(*handle);
 		*handle = NULL;
