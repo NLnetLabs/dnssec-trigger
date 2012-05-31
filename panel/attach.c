@@ -235,7 +235,7 @@ static int read_from_feed(void)
 				strlist_delete(feed->results);
 				feed->results = first;
 				feed->results_last = last;
-				return 1;
+				return 2;
 			} else if(strncmp(first->str, "update ", 7) == 0) {
 				if(verbosity >2) printf("got update\n");
 				strlist_delete(feed->update);

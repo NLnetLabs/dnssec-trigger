@@ -1,3 +1,6 @@
+31 May 2012: Wouter
+	- Fix bug in processing tray icon results from daemon.
+
 22 May 2012: Wouter
 	- Fix windows upgrade to preserve config files and to preserve the
 	  installed (or not-installed) startmenu links.
