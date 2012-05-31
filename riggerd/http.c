@@ -277,8 +277,7 @@ http_probe_hostname_has_addr(struct http_probe* hp)
 	hp->addr = ldns_rr_list_new();
 	if(!hp->addr) {
 		log_err("out of memory");
-		/* fail ... lookup the string as DNS name */
-		return 0;
+		return 1;
 	}
 
 	/* if we are not appriopriate (IP6 addr and we are IP4) we have empty
@@ -295,7 +294,6 @@ http_probe_hostname_has_addr(struct http_probe* hp)
 		LDNS_RR_TYPE_AAAA:LDNS_RR_TYPE_A);
 	if(!rr) {
 		log_err("out of memory");
-		/* 'succeed' with empty rr list */
 		return 1;
 	}
 	if(addr_is_ip6(&addr, len)) {
@@ -308,14 +306,12 @@ http_probe_hostname_has_addr(struct http_probe* hp)
 	if(!f) {
 		ldns_rr_free(rr);
 		log_err("out of memory");
-		/* 'succeed' with empty rr list */
 		return 1;
 	}
 	(void)ldns_rr_a_set_address(rr, f);
 	if(!ldns_rr_list_push_rr(hp->addr, rr)) {
 		ldns_rr_free(rr);
 		log_err("out of memory");
-		/* 'succeed' with empty rr list */
 		return 1;
 	}
 	return 1;
