@@ -1184,6 +1184,10 @@ reply_header_parse(struct http_get* hg, char* line, void* arg)
 		*datalen = 0;
 	} else if(strncasecmp(line, "Location: ", 10) == 0
 		&& hg->redirect_now) {
+		/* skip whitespace before url */
+		char* url = line+10;
+		while(isspace(*url))
+			url++;
 		hg->redirect_now = 0;
 		http_get_done(hg, NULL, 1, line+10);
 		return 0;
