@@ -755,7 +755,8 @@ osx_run_updater(char* filename)
 		break;
 	}
 	/* run the install script */
-	if(execl(LIBEXEC_DIR "/dnssec-trigger-setdns.sh", "install", filename,
+	if(execl(LIBEXEC_DIR "/dnssec-trigger-setdns.sh", 
+		 LIBEXEC_DIR "/dnssec-trigger-setdns.sh", "install", filename,
 		(char*)0) < 0) {
 		log_err("cannot exec setdns install: %s", strerror(errno));
 	}
