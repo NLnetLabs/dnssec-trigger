@@ -5,6 +5,7 @@
 	- fix osx execl for software install.
 	- update tray icon for osx software install.
 	- fix osx comma in multiple DNS servers.
+	- fix update installer
 
 31 May 2012: Wouter
 	- Fix bug in processing tray icon results from daemon.

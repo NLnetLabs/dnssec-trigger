@@ -10,7 +10,7 @@ function doinstall () {
 	mnt="/tmp/installdir.$$"
 	hdiutil attach "$dmg" -mountpoint "$mnt" -nobrowse -noautoopen -noverify
 	# run the installer from mnt/dnssectrigger-x.x-i386.mpkg
-	pkg="`echo $mnt/dnssectrigger*pkg`"
+	pkg="`ls -d $mnt/dnssectrigger-*.mpkg`"
 	installer -pkg "$pkg" -target /
 	hdiutil detach "$mnt" -force
 	rm -f $dmg
