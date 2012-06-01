@@ -2,6 +2,8 @@
 	- Http redirect support, for plain http check, in case hotspot has
 	  a proxy that starts giving the internet contents.
 	- GUI for OSX for software updates.
+	- fix osx execl for software install.
+	- update tray icon for osx software install.
 
 31 May 2012: Wouter
 	- Fix bug in processing tray icon results from daemon.
