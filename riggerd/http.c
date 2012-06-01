@@ -376,12 +376,6 @@ static void http_probe_go_next_url(struct http_general* hg,
 			return;
 		}
 	} else {
-		free(hp->url);
-		hp->url = NULL;
-		free(hp->hostname);
-		hp->hostname = NULL;
-		free(hp->filename);
-		hp->filename = NULL;
 		hp->url = redirect_url;
 		if(!parse_url(hp->url, &hp->hostname, &hp->filename)) {
 			http_probe_done(hg, hp, "out of memory or parse error");
