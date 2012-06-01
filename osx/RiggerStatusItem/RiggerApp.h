@@ -35,7 +35,7 @@ struct cfg;
 	IBOutlet NSWindow* hotsignwindow;
 	IBOutlet NSWindow* nowebwindow;
 	IBOutlet NSWindow* updatewindow;
-	IBOutlet NSTextView* updatelabel;
+	IBOutlet NSTextField* updatelabel;
 	
 @public
 	/** if we have asked about disconnect or insecure */
