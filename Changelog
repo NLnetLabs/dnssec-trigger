@@ -1,3 +1,7 @@
+1 June 2012: Wouter
+	- Http redirect support, for plain http check, in case hotspot has
+	  a proxy that starts giving the internet contents.
+
 31 May 2012: Wouter
 	- Fix bug in processing tray icon results from daemon.
 	- url can contain numerical IP address and port number, in http

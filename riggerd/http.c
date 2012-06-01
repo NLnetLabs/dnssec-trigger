@@ -381,6 +381,8 @@ static void http_probe_go_next_url(struct http_general* hg,
 			http_probe_done(hg, hp, "out of memory or parse error");
 			return;
 		}
+		verbose(VERB_ALGO, "restart http probe for %s %s",
+			hp->hostname, hp->filename);
 	}
 	if(http_probe_hostname_has_addr(hp)) {
 		if(!hp->addr || ldns_rr_list_rr_count(hp->addr)==0) {
@@ -823,6 +825,10 @@ http_get_done(struct http_get* hg, char* reason, int connects, char* redirect)
 		p->works = 1;
 	} else if(redirect_dup) {
 		/* do not set p->works otherwise, dupped already */
+		char buf[1024];
+		snprintf(buf, sizeof(buf), "http redirect to %s", redirect);
+		p->reason = strdup(buf);
+		if(!p->reason) log_err("malloc failure");
 	} else {
 		p->works = 0;
 		p->reason = strdup(reason);
@@ -1150,12 +1156,15 @@ reply_header_parse(struct http_get* hg, char* line, void* arg)
 		 * other: failure
 		 */
 		if(strncmp(line+9, "302", 3)==0 ||
+			strncmp(line+9, "301", 3)==0 ||
 			strncmp(line+9, "303", 3)==0 ||
 			strncmp(line+9, "305", 3)==0 ||
 			strncmp(line+9, "307", 3)==0) {
 			/* redirect 302 (temporary), 303 (see other),
 			 * 307(Temporariy Redirect). */
 			/* 305(proxy) we treat the same */
+			/* 301 moved permanently should not really be used
+			 * by a hot spot ..  */
 			hg->redirect_now = 1;
 		} else if(line[9] == '3') {
 			/* other redirect type codes, this means it fails 
