@@ -19,7 +19,7 @@ bssid=`/System/Library/PrivateFrameworks/Apple80211.framework/Versions/A/Resourc
 # and the DNS servers for that
 ips=""
 for i in $ifs; do
-	ips_i=`ipconfig getpacket $i | grep "domain_name_server" | sed -e 's/^.*{//' -e 's/,/ /' -e 's/}//' `
+	ips_i=`ipconfig getpacket $i | grep "domain_name_server" | sed -e 's/^.*{//' -e 's/,/ /g' -e 's/}//' `
 	ips="$ips $ips_i"
 done
 # fix whitespace
