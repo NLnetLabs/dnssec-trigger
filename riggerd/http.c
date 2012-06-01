@@ -407,6 +407,7 @@ static void http_probe_done_addr(struct http_general* hg,
 		if(hp->redirects++ > HTTP_MAX_REDIRECT) {
 			/* redirect is strdupped and needs to be free-ed */
 			free(redirect);
+			redirect = NULL;
 			reason = "too many http redirects";
 			connects = 1;
 		}
@@ -417,6 +418,10 @@ static void http_probe_done_addr(struct http_general* hg,
 		hp->got_addrs = 0;
 		http_probe_go_next_url(hg, hp, redirect);
 		return;
+	}
+	if(redirect) {
+		free(redirect);
+		redirect = NULL;
 	}
 
 	/* if we connected to some sort of server, then we do not need to
