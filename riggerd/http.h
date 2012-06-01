@@ -99,6 +99,8 @@ struct http_probe {
 	/* port number */
 	int port;
 
+	/* number of redirects we followed */
+	int redirects;
 	/* result: did we get addresses? */
 	int got_addrs;
 	/* result: does it connect? */
@@ -115,6 +117,9 @@ struct http_probe {
 /** max number of address queries for one name (all to different caches,
  * once for A then for AAAA, so double that number in sockets is needed). */
 #define HTTP_MAX_ADDR_QUERIES 5
+
+/** max number of redirects in sequence */
+#define HTTP_MAX_REDIRECT 8
 
 /**
  * create and randomise http general structure
@@ -171,6 +176,8 @@ struct http_get {
 
 	/* max data we want (0 is no max) */
 	size_t data_limit;
+	/* this is a redirect response */
+	int redirect_now;
 
 	/* the buffer with contents sent/received */
 	ldns_buffer* buf;

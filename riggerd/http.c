@@ -354,7 +354,7 @@ static void http_probe_done(struct http_general* hg,
 
 /** start resolving the hostname of the next url in the list */
 static void http_probe_go_next_url(struct http_general* hg,
-	struct http_probe* hp)
+	struct http_probe* hp, char* redirect_url)
 {
 	free(hp->url);
 	hp->url = NULL;
@@ -364,12 +364,29 @@ static void http_probe_go_next_url(struct http_general* hg,
 	hp->filename = NULL;
 	ldns_rr_list_deep_free(hp->addr);
 	hp->addr = NULL;
+	hp->num_addr_qs = 0;
+	hp->num_failed_addr_qs = 0;
 	hp->port = HTTP_PORT;
 
-	log_assert(hp->url_idx < hg->url_num);
-	if(!http_probe_setup_url(hg, hp, ++hp->url_idx)) {
-		http_probe_done(hg, hp, "out of memory or parse error");
-		return;
+	if(!redirect_url) {
+		hp->redirects = 0;
+		log_assert(hp->url_idx < hg->url_num);
+		if(!http_probe_setup_url(hg, hp, ++hp->url_idx)) {
+			http_probe_done(hg, hp, "out of memory or parse error");
+			return;
+		}
+	} else {
+		free(hp->url);
+		hp->url = NULL;
+		free(hp->hostname);
+		hp->hostname = NULL;
+		free(hp->filename);
+		hp->filename = NULL;
+		hp->url = redirect_url;
+		if(!parse_url(hp->url, &hp->hostname, &hp->filename)) {
+			http_probe_done(hg, hp, "out of memory or parse error");
+			return;
+		}
 	}
 	if(http_probe_hostname_has_addr(hp)) {
 		if(!hp->addr || ldns_rr_list_rr_count(hp->addr)==0) {
@@ -388,8 +405,26 @@ static void http_probe_go_next_url(struct http_general* hg,
 
 /** http probe is done with an address, check next addr */
 static void http_probe_done_addr(struct http_general* hg,
-	struct http_probe* hp, char* reason, int connects)
+	struct http_probe* hp, char* reason, int connects, char* redirect)
 {
+	/* if we have a redirect, then we should attempt to follow this,
+	 * if allowed to follow more redirects */
+	if(!reason && redirect) {
+		if(hp->redirects++ > HTTP_MAX_REDIRECT) {
+			/* redirect is strdupped and needs to be free-ed */
+			free(redirect);
+			reason = "too many http redirects";
+			connects = 1;
+		}
+	}
+	if(!reason && redirect) {
+		/* re-setup the URL */
+		hp->do_addr = 1;
+		hp->got_addrs = 0;
+		http_probe_go_next_url(hg, hp, redirect);
+		return;
+	}
+
 	/* if we connected to some sort of server, then we do not need to
 	 * attempt a different server - we are hotspotted or successed */
 	if(connects) {
@@ -412,7 +447,7 @@ static void http_probe_done_addr(struct http_general* hg,
 	}
 	/* no more addresses? try the next url */
 	if(hp->url_idx+1 < global_svr->http->url_num) {
-		http_probe_go_next_url(hg, hp);
+		http_probe_go_next_url(hg, hp, NULL);
 		return;
 	}
 	/* fail */
@@ -507,7 +542,7 @@ void http_probe_start_http_get(struct http_probe* hp)
 	if(!http_probe_create_get(hp, rr, &reason)) {
 		log_err("http_probe_create_get: %s", reason);
 		ldns_rr_free(rr);
-		http_probe_done_addr(global_svr->http, hp, reason, 0);
+		http_probe_done_addr(global_svr->http, hp, reason, 0, NULL);
 		return;
 	}
 	ldns_rr_free(rr);
@@ -690,7 +725,8 @@ void http_host_outq_done(struct probe_ip* p, const char* reason)
 			/* attempt to go to the next url or fail if no next url */
 			if(hp->url_idx+1 < global_svr->http->url_num) {
 				http_probe_remove_addr_lookups(hp);
-				http_probe_go_next_url(global_svr->http, hp);
+				http_probe_go_next_url(global_svr->http, hp,
+					NULL);
 			} else {
 				http_probe_done(global_svr->http, hp,
 					"cannot resolve domain name");
@@ -744,12 +780,15 @@ hg_check_data(ldns_buffer* data, char* result)
 
 /** http get is done (failure or success) */
 static void
-http_get_done(struct http_get* hg, char* reason, int connects)
+http_get_done(struct http_get* hg, char* reason, int connects, char* redirect)
 {
 	struct probe_ip* p;
 	struct http_probe* hp;
+	char* redirect_dup = NULL;
 	if(!hg->probe) {
 		/* update http_get */
+		if(redirect && !reason)
+			reason = "error redirect for selfupdate";
 		selfupdate_http_get_done(global_svr->update, hg, reason);
 		return;
 	}
@@ -763,7 +802,7 @@ http_get_done(struct http_get* hg, char* reason, int connects)
 		ldns_buffer_begin(hg->data)); */
 	if(!reason || connects)
 		hp->connects = 1;
-	if(!reason) {
+	if(!reason && !redirect) {
 		/* check the data */
 		if(!hg_check_data(hg->data,
 			global_svr->http->codes[hp->url_idx]))
@@ -771,12 +810,20 @@ http_get_done(struct http_get* hg, char* reason, int connects)
 		else 	verbose(VERB_ALGO, "correct page content from %s",
 				p->name);
 	}
+	if(redirect) {
+		redirect_dup = strdup(redirect);
+		if(!redirect_dup) reason = "out of memory";
+	}
 
-	verbose(VERB_OPS, "http_get_done: %s from %s: %s (%s)", hg->url, hg->dest,
+	verbose(VERB_OPS, "http_get_done: %s from %s: %s (%s%s%s)", hg->url, hg->dest,
 		reason?reason:"success",
-		!reason||connects?"connects":"noconnects");
-	if(!reason) {
+		!reason||connects?"connects":"noconnects",
+		redirect?" redirected to ":"",
+		redirect?redirect:"");
+	if(!reason && !redirect) {
 		p->works = 1;
+	} else if(redirect_dup) {
+		/* do not set p->works otherwise, dupped already */
 	} else {
 		p->works = 0;
 		p->reason = strdup(reason);
@@ -785,7 +832,8 @@ http_get_done(struct http_get* hg, char* reason, int connects)
 	http_get_delete(hg);
 	p->http = NULL;
 
-	http_probe_done_addr(global_svr->http, hp, reason, hp->connects);
+	http_probe_done_addr(global_svr->http, hp, reason, hp->connects,
+		redirect_dup);
 }
 
 /** handle timeout for the http_get operation */
@@ -794,7 +842,7 @@ http_get_timeout_handler(void* arg)
 {
 	struct http_get* hg = (struct http_get*)arg;
 	verbose(VERB_ALGO, "http_get timeout");
-	http_get_done(hg, "timeout", 0);
+	http_get_done(hg, "timeout", 0, NULL);
 }
 
 struct http_get* http_get_create(const char* url, struct comm_base* base,
@@ -943,7 +991,7 @@ static int hg_write_buf(struct http_get* hg, ldns_buffer* buf)
 			str = wsa_strerror(error);
 #endif /* USE_WINSOCK */
 			log_err("http connect: %s", str);
-			http_get_done(hg, str, 0);
+			http_get_done(hg, str, 0, NULL);
 			return 0;
 		}
 		/* no connect error */
@@ -972,7 +1020,7 @@ static int hg_write_buf(struct http_get* hg, ldns_buffer* buf)
 		str = wsa_strerror(WSAGetLastError());
 #endif
 		log_err("http write: %s", str);
-		http_get_done(hg, str, 0);
+		http_get_done(hg, str, 0, NULL);
 		return 0;
 	}
 	ldns_buffer_skip(buf, r);
@@ -1010,12 +1058,12 @@ static int hg_read_buf(struct http_get* hg, ldns_buffer* buf)
 		str = wsa_strerror(WSAGetLastError());
 #endif
 		log_err("http read: %s", str);
-		http_get_done(hg, str, 0);
+		http_get_done(hg, str, 0, NULL);
 		return 0;
 	}
 	if(r == 0) {
 		log_err("http read: stream closed");
-		http_get_done(hg, "stream closed", 0);
+		http_get_done(hg, "stream closed", 0, NULL);
 		return 0;
 	}
 	ldns_buffer_skip(buf, r);
@@ -1036,12 +1084,12 @@ hg_parse_lines(struct http_get* hg, ldns_buffer* src, size_t len,
 		/* safe because the source buffer is zero terminated for sure*/
 		char* eol = strstr((char*)ldns_buffer_at(src, pos), "\r\n");
 		if(!eol) {
-			http_get_done(hg, "header line without eol", 1);
+			http_get_done(hg, "header line without eol", 1, NULL);
 			return 0;
 		}
 		if(pos >= ldns_buffer_limit(src)) {
 			/* impossible, but check for robustness */
-			http_get_done(hg, "header line too long", 1);
+			http_get_done(hg, "header line too long", 1, NULL);
 			return 0;
 		}
 		if(eol > (char*)ldns_buffer_at(src, len)) {
@@ -1102,14 +1150,22 @@ reply_header_parse(struct http_get* hg, char* line, void* arg)
 		 * 3xx : redirect of some form - probably the hotspot.
 		 * other: failure
 		 */
-		if(line[9] == '3') {
-			/* redirect type codes, this means it fails 
+		if(strncmp(line+9, "302", 3)==0 ||
+			strncmp(line+9, "303", 3)==0 ||
+			strncmp(line+9, "305", 3)==0 ||
+			strncmp(line+9, "307", 3)==0) {
+			/* redirect 302 (temporary), 303 (see other),
+			 * 307(Temporariy Redirect). */
+			/* 305(proxy) we treat the same */
+			hg->redirect_now = 1;
+		} else if(line[9] == '3') {
+			/* other redirect type codes, this means it fails 
 			 * completely*/
 			char err[512];
 			snprintf(err, sizeof(err), "http redirect %s", line+9);
 			/* we connected to the server, this looks like a
 			 * hotspot that redirects */
-			http_get_done(hg, err, 1);
+			http_get_done(hg, err, 1, NULL);
 			return 0;
 		} else if(line[9] != '2') {
 			char err[512];
@@ -1120,13 +1176,18 @@ reply_header_parse(struct http_get* hg, char* line, void* arg)
 			/* because we pass noconnect, it will also try other
 			 * ip addresses for the server.  perhaps another server
 			 * does not give 404? */
-			http_get_done(hg, err, 0);
+			http_get_done(hg, err, 0, NULL);
 			return 0;
 		}
 	} else if(strncasecmp(line, "Content-Length: ", 16) == 0) {
 		*datalen = (size_t)atoi(line+16);
 	} else if(strncasecmp(line, "Transfer-Encoding: chunked", 19+7) == 0) {
 		*datalen = 0;
+	} else if(strncasecmp(line, "Location: ", 10) == 0
+		&& hg->redirect_now) {
+		hg->redirect_now = 0;
+		http_get_done(hg, NULL, 1, line+10);
+		return 0;
 	}
 	return 1;
 }
@@ -1144,7 +1205,7 @@ static int hg_handle_reply_header(struct http_get* hg)
 	if(!endstr) {
 		/* at end (with zero marker) */
 		if(ldns_buffer_remaining(hg->buf)-1 == 0) {
-			http_get_done(hg, "http headers too large", 1);
+			http_get_done(hg, "http headers too large", 1, NULL);
 			return 0;
 		}
 		return 0;
@@ -1164,12 +1225,12 @@ static int hg_handle_reply_header(struct http_get* hg)
 	/* if one data seg: see if data can fit into the buffer, or fail */
 	if(datalen != 0) {
 		if(hg->data_limit && datalen > hg->data_limit) {
-			http_get_done(hg, "http reply data too large", 1);
+			http_get_done(hg, "http reply data too large", 1, NULL);
 			return 0;
 		}
 		if(!ldns_buffer_reserve(hg->buf,
 			datalen - ldns_buffer_position(hg->buf)+1)) {
-			http_get_done(hg, "out of memory", 1);
+			http_get_done(hg, "out of memory", 1, NULL);
 			return 0;
 		}
 		hg->state = http_state_reply_data;
@@ -1187,11 +1248,11 @@ hg_add_data(struct http_get* hg, ldns_buffer* add, size_t len)
 {
 	if(hg->data_limit && ldns_buffer_position(hg->data) + len >
 		hg->data_limit) {
-		http_get_done(hg, "http data too large", 1);
+		http_get_done(hg, "http data too large", 1, NULL);
 		return 0;
 	}
 	if(!ldns_buffer_reserve(hg->data, len+1)) {
-		http_get_done(hg, "out of memory", 1);
+		http_get_done(hg, "out of memory", 1, NULL);
 		return 0;
 	}
 	ldns_buffer_write(hg->data, ldns_buffer_begin(add), len);
@@ -1216,7 +1277,7 @@ static int hg_handle_reply_data(struct http_get* hg)
 		return 0;
 	/* done with success with data */
 	verbose(VERB_ALGO, "http read completed");
-	http_get_done(hg, NULL, 1);
+	http_get_done(hg, NULL, 1, NULL);
 	return 0;
 }
 
@@ -1230,7 +1291,7 @@ chunk_header_parse(struct http_get* hg, char* line, void* arg)
 	verbose(VERB_ALGO, "http chunk header: '%s'", line);
 	v = (size_t)strtol(line, &e, 16);
 	if(e == line) {
-		http_get_done(hg, "could not parse chunk header", 1);
+		http_get_done(hg, "could not parse chunk header", 1, NULL);
 		return 0;
 	}
 	*chunklen = v;
@@ -1253,7 +1314,7 @@ static int hg_handle_chunk_header(struct http_get* hg)
 	if(!endstr) {
 		/* at end (with zero marker) */
 		if(ldns_buffer_remaining(hg->buf)-1 == 0) {
-			http_get_done(hg, "http chunk headers too large", 1);
+			http_get_done(hg, "http chunk headers too large", 1, NULL);
 			return 0;
 		}
 		return 0;
@@ -1268,19 +1329,19 @@ static int hg_handle_chunk_header(struct http_get* hg)
 		/* chunked read completed */
 		/* TODO there can be chunked trailer headers here .. */
 		verbose(VERB_ALGO, "http chunked read completed");
-		http_get_done(hg, NULL, 1);
+		http_get_done(hg, NULL, 1, NULL);
 		return 0;
 	}
 	/* move trailing part to front of data buffer (skip /r/n) */
 	hg_buf_move(hg->buf, headlen+2);
 	/* see if data can possibly fit */
 	if(hg->data_limit && chunklen > hg->data_limit) {
-		http_get_done(hg, "http reply chunk data too large", 1);
+		http_get_done(hg, "http reply chunk data too large", 1, NULL);
 		return 0;
 	}
 	if(!ldns_buffer_reserve(hg->buf,
 		chunklen - ldns_buffer_position(hg->buf)+1)) {
-		http_get_done(hg, "out of memory", 1);
+		http_get_done(hg, "out of memory", 1, NULL);
 		return 0;
 	}
 	hg->state = http_state_chunk_data;
@@ -1306,7 +1367,7 @@ static int hg_handle_chunk_data(struct http_get* hg)
 	verbose(VERB_ALGO, "datalen %d", (int)hg->datalen);
 	verbose(VERB_ALGO, "position %d", (int)ldns_buffer_position(hg->buf));
 	if(strncmp((char*)ldns_buffer_at(hg->buf, hg->datalen), "\r\n", 2)!=0) {
-		http_get_done(hg, "chunk data not terminated with eol", 1);
+		http_get_done(hg, "chunk data not terminated with eol", 1, NULL);
 		return 0;
 	}
 	/* remove trailing newline */
@@ -1327,7 +1388,7 @@ static int hg_handle_state(struct http_get* hg)
 	switch(hg->state) {
 		case http_state_none:
 			/* not possible */
-			http_get_done(hg, "got event while not connected", 0);
+			http_get_done(hg, "got event while not connected", 0, NULL);
 			return 0;
 		case http_state_request:
 			return hg_handle_request(hg);
@@ -1342,7 +1403,7 @@ static int hg_handle_state(struct http_get* hg)
 		default:
 			break;
 	}
-	http_get_done(hg, "unknown state", 0);
+	http_get_done(hg, "unknown state", 0, NULL);
 	return 0;
 }
 
