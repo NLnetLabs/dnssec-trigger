@@ -217,11 +217,13 @@ section "-hidden.postinstall"
 	File "..\LICENSE"
 	File "..\tmp.collect\README.txt"
 	File /oname=dnssec-triggerd-temp.exe "..\dnssec-triggerd.exe"
+	Delete dnssec-triggerd.exe
 	Rename dnssec-triggerd-temp.exe dnssec-triggerd.exe
 	File "..\dnssec-trigger-panel.exe"
 	File "..\dnssec-trigger-control.exe"
 	File "..\dnssec-trigger-keygen.exe"
 	File /oname=unbound-temp.exe "..\tmp.collect\unbound.exe"
+	Delete unbound.exe
 	Rename unbound-temp.exe unbound.exe
 	File "..\tmp.collect\unbound-control.exe"
 	File "..\tmp.collect\unbound-anchor.exe"
@@ -258,7 +260,9 @@ section "-hidden.postinstall"
 	IfSilent skip_config
 
 	DetailPrint "Setup config files"
+	Delete "$INSTDIR\unbound.conf"
 	Rename "$INSTDIR\unbound-new.conf" "$INSTDIR\unbound.conf"
+	Delete "$INSTDIR\dnssec-trigger.conf"
 	Rename "$INSTDIR\dnssec-trigger-new.conf" "$INSTDIR\dnssec-trigger.conf"
 	# setup unbound registry entries
 	WriteRegStr HKLM "Software\Unbound" "InstallLocation" "$INSTDIR"
