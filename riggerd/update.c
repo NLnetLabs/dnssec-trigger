@@ -754,6 +754,10 @@ osx_run_updater(char* filename)
 	case 0: /* child */
 		break;
 	}
+	/* become process leader so we are not killed by installer unload of
+	 * plist file */
+	if(setsid() == -1)
+		log_err("setsid failed: %s", strerror(errno));
 	/* run the install script */
 	if(execl(LIBEXEC_DIR "/dnssec-trigger-setdns.sh", 
 		 LIBEXEC_DIR "/dnssec-trigger-setdns.sh", "install", filename,
