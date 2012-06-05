@@ -17,7 +17,7 @@ function doinstall () {
 	rm -f $dmg
 	# wait for the old daemon to exit
 	for (( try=0 ; try <= 20 ; try++ )) ; do
-		if kill -0 $pid > /dev/null 2>&1; then
+		if kill -0 $pid >/dev/null 2>&1; then
 			:
 		else
 			# done, the old daemon is gone
