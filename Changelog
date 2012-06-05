@@ -1,3 +1,6 @@
+5 June 2012: Wouter
+	- wait for old daemon to stop in osx install at setdns.sh.
+
 1 June 2012: Wouter
 	- Http redirect support, for plain http check, in case hotspot has
 	  a proxy that starts giving the internet contents.

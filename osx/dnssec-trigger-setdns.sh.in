@@ -6,6 +6,7 @@
 
 # perform software upgrade install
 function doinstall () {
+	pid="`cat /var/run/dnssec-trigger.pid`"
 	dmg="$*"
 	mnt="/tmp/installdir.$$"
 	hdiutil attach "$dmg" -mountpoint "$mnt" -nobrowse -noautoopen -noverify
@@ -14,6 +15,17 @@ function doinstall () {
 	installer -pkg "$pkg" -target /
 	hdiutil detach "$mnt" -force
 	rm -f $dmg
+	# wait for the old daemon to exit
+	for (( try=0 ; try <= 20 ; try++ )) ; do
+		if kill -0 $pid > /dev/null 2>&1; then
+			:
+		else
+			# done, the old daemon is gone
+			break
+		fi
+		sleep 1
+	done
+	sleep 1
 	# make connected panels quit - the new daemon is up and new panel
 	# executables are started now by the plist once they quit.
 	dnssec-trigger-control stoppanels
