@@ -740,6 +740,51 @@ void selfupdate_outq_done(struct selfupdate* se, struct outq* outq,
 }
 
 #ifdef HOOKS_OSX
+/* close sockets on svr */
+static void
+svr_close_sockets(struct svr* svr)
+{
+	struct sslconn* b;
+	struct listen_list* l;
+	struct probe_ip* p;
+	/* do not cause traffic on the fds because the real daemon
+	 * is still using them */
+	for(b=svr->busy_list; b; b=b->next) {
+		if(b->c)
+			close(b->c->fd);
+	}
+	for(l=svr->listen; l; l=l->next) {
+		if(l->c)
+			close(l->c->fd);
+	}
+	for(p=probes; p; p=p->next) {
+		if(p->ds_c && p->ds_c->cp)
+			close(p->ds_c->c->fd);
+		if(p->dnskey_c && p->dnskey_c->cp)
+			close(p->dnskey_c->c->fd);
+		if(p->nsec3_c && p->nsec3_c->cp)
+			close(p->nsec3_c->c->fd);
+		if(p->host_c && p->host_c->cp)
+			close(p->host_c->c->fd);
+		if(p->http && p->http->cp)
+			close(p->http->cp->fd);
+	}
+	if(svr->update) {
+		if(svr->update->download_http4 &&
+			svr->update->download_http4->cp)
+			close(svr->update->download_http4->cp->fd);
+		if(svr->update->download_http6 &&
+			svr->update->download_http6->cp)
+			close(svr->update->download_http6->cp->fd);
+		if(svr->update->txt_query && svr->update->txt_query->cp)
+			close(svr->update->txt_query->cp->fd);
+		if(svr->update->addr_4 && svr->update->addr_4->cp)
+			close(svr->update->addr_4->cp->fd);
+		if(svr->update->addr_6 && svr->update->addr_6->cp)
+			close(svr->update->addr_6->cp->fd);
+	}
+}
+
 /* fork and exec the script that opens the dmg and runs installer */
 static void
 osx_run_updater(char* filename)
@@ -754,6 +799,8 @@ osx_run_updater(char* filename)
 	case 0: /* child */
 		break;
 	}
+	/* close our sockets */
+	svr_close_sockets(global_svr);
 	/* become process leader so we are not killed by installer unload of
 	 * plist file */
 	if(setsid() == -1)
