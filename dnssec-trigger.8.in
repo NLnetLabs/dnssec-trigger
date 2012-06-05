@@ -151,6 +151,13 @@ The url that is opened with the web browser.  Used as commandline argument.
 The files used for SSL secured communication with dnssec\-triggerd.  These
 files can be created with dnssec\-trigger\-control\-setup (run as root).
 .TP
+.B check\-updates: \fR<yes or no>
+Check for software updates, if there are, download them and present the user
+with a dialog that allows  them to run the installer to upgrade the software.
+It checks a SHA256 checksum on the download, the checksum is signed with
+DNSSEC (from a TXT record).  On windows and osx the default is yes.  On other
+systems the default is no (it'll download the source tarball if enabled).
+.TP
 .B url: \fR"http://example.com OK"
 This command adds an url to probe via HTTP (port 80). The first word, before
 the space is the url to resolve.  The remainder is the string that is expected
