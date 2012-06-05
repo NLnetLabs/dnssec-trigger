@@ -10,8 +10,10 @@ function doinstall () {
 	dmg="$*"
 	mnt="/tmp/installdir.$$"
 	logger "start setdns install"
+	# copy the dmg to a tempfile because the hdiutil needs exclusive access
+	cp $dmg $dmg.$$
 	for (( try=0 ; try <= 20 ; try++ )) ; do
-		hdiutil attach "$dmg" -mountpoint "$mnt" -nobrowse -noautoopen -noverify
+		hdiutil attach "$dmg.$$" -mountpoint "$mnt" -nobrowse -noautoopen -noverify
 		if test $? = 0 ; then
 			# it worked
 			break
@@ -25,7 +27,7 @@ function doinstall () {
 	logger "done installer setdns install"
 	hdiutil detach "$mnt" -force
 	logger "detached setdns install"
-	rm -f $dmg
+	rm -f $dmg $dmg.$$
 	# wait for the old daemon to exit
 	for (( try=0 ; try <= 20 ; try++ )) ; do
 		if kill -0 $pid >/dev/null 2>&1; then
