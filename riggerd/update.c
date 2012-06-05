@@ -758,13 +758,13 @@ svr_close_sockets(struct svr* svr)
 			close(l->c->fd);
 	}
 	for(p=svr->probes; p; p=p->next) {
-		if(p->ds_c && p->ds_c->cp)
+		if(p->ds_c && p->ds_c->c)
 			close(p->ds_c->c->fd);
-		if(p->dnskey_c && p->dnskey_c->cp)
+		if(p->dnskey_c && p->dnskey_c->c)
 			close(p->dnskey_c->c->fd);
-		if(p->nsec3_c && p->nsec3_c->cp)
+		if(p->nsec3_c && p->nsec3_c->c)
 			close(p->nsec3_c->c->fd);
-		if(p->host_c && p->host_c->cp)
+		if(p->host_c && p->host_c->c)
 			close(p->host_c->c->fd);
 		if(p->http && p->http->cp)
 			close(p->http->cp->fd);
@@ -776,12 +776,12 @@ svr_close_sockets(struct svr* svr)
 		if(svr->update->download_http6 &&
 			svr->update->download_http6->cp)
 			close(svr->update->download_http6->cp->fd);
-		if(svr->update->txt_query && svr->update->txt_query->cp)
-			close(svr->update->txt_query->cp->fd);
-		if(svr->update->addr_4 && svr->update->addr_4->cp)
-			close(svr->update->addr_4->cp->fd);
-		if(svr->update->addr_6 && svr->update->addr_6->cp)
-			close(svr->update->addr_6->cp->fd);
+		if(svr->update->txt_query && svr->update->txt_query->c)
+			close(svr->update->txt_query->c->fd);
+		if(svr->update->addr_4 && svr->update->addr_4->c)
+			close(svr->update->addr_4->c->fd);
+		if(svr->update->addr_6 && svr->update->addr_6->c)
+			close(svr->update->addr_6->c->fd);
 	}
 }
 
