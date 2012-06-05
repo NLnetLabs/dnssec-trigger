@@ -1,5 +1,6 @@
 5 June 2012: Wouter
 	- wait for old daemon to stop in osx install at setdns.sh.
+	- fix OSX unbound to be able to write root.key from the chroot.
 
 1 June 2012: Wouter
 	- Http redirect support, for plain http check, in case hotspot has
