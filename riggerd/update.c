@@ -757,7 +757,7 @@ svr_close_sockets(struct svr* svr)
 		if(l->c)
 			close(l->c->fd);
 	}
-	for(p=probes; p; p=p->next) {
+	for(p=svr->probes; p; p=p->next) {
 		if(p->ds_c && p->ds_c->cp)
 			close(p->ds_c->c->fd);
 		if(p->dnskey_c && p->dnskey_c->cp)
