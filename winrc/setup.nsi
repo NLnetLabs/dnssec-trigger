@@ -258,8 +258,8 @@ section "-hidden.postinstall"
 	IfSilent skip_config
 
 	DetailPrint "Setup config files"
-	Rename unbound-new.conf unbound.conf
-	Rename dnssec-trigger-new.conf dnssec-trigger.conf
+	Rename "$INSTDIR\unbound-new.conf" "$INSTDIR\unbound.conf"
+	Rename "$INSTDIR\dnssec-trigger-new.conf" "$INSTDIR\dnssec-trigger.conf"
 	# setup unbound registry entries
 	WriteRegStr HKLM "Software\Unbound" "InstallLocation" "$INSTDIR"
 	WriteRegStr HKLM "Software\Unbound" "ConfigFile" "$INSTDIR\unbound.conf"
