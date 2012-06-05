@@ -22,6 +22,7 @@ function doinstall () {
 	# run the installer from mnt/dnssectrigger-x.x-i386.mpkg
 	pkg="`ls -d $mnt/dnssectrigger-*.mpkg`"
 	installer -pkg "$pkg" -target /
+	logger "done installer setdns install"
 	hdiutil detach "$mnt" -force
 	logger "detached setdns install"
 	rm -f $dmg
