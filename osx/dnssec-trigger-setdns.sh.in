@@ -9,11 +9,21 @@ function doinstall () {
 	pid="`cat /var/run/dnssec-trigger.pid`"
 	dmg="$*"
 	mnt="/tmp/installdir.$$"
-	hdiutil attach "$dmg" -mountpoint "$mnt" -nobrowse -noautoopen -noverify
+	logger "start setdns install"
+	for (( try=0 ; try <= 20 ; try++ )) ; do
+		hdiutil attach "$dmg" -mountpoint "$mnt" -nobrowse -noautoopen -noverify
+		if test $? = 0 ; then
+			# it worked
+			break
+		fi
+		sleep 1
+	done
+	logger "mounted setdns install"
 	# run the installer from mnt/dnssectrigger-x.x-i386.mpkg
 	pkg="`ls -d $mnt/dnssectrigger-*.mpkg`"
 	installer -pkg "$pkg" -target /
 	hdiutil detach "$mnt" -force
+	logger "detached setdns install"
 	rm -f $dmg
 	# wait for the old daemon to exit
 	for (( try=0 ; try <= 20 ; try++ )) ; do
@@ -25,8 +35,10 @@ function doinstall () {
 		fi
 		sleep 1
 	done
+	logger "waited for old daemon to exit setdns install"
 	# wait for userspace panel to re-connect to new daemon.
 	sleep 5
+	logger "calling stoppanels setdns install"
 	# make connected panels quit - the new daemon is up and new panel
 	# executables are started now by the plist once they quit.
 	dnssec-trigger-control stoppanels
