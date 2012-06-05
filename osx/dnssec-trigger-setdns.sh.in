@@ -25,7 +25,8 @@ function doinstall () {
 		fi
 		sleep 1
 	done
-	sleep 1
+	# wait for userspace panel to re-connect to new daemon.
+	sleep 5
 	# make connected panels quit - the new daemon is up and new panel
 	# executables are started now by the plist once they quit.
 	dnssec-trigger-control stoppanels
