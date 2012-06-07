@@ -200,6 +200,9 @@ launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
 # but not after a reboot.  If as user, then it would show up after reboot.
 # but maybe not now, because sudo -u user is not good enough, thus this:
 
+# stop existing panels so they are restarted and updated.
+/usr/sbin/dnssec-trigger-control stoppanels
+
 # If possible, tell launchd to start the LaunchAgent. This will fail on 10.4.
 # \$F[0] is the pid
 # \$F[1] is the username

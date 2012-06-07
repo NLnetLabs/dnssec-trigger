@@ -2,6 +2,7 @@
 	- tag 0.11 release.
 	- trunk is 0.12 is development.
 	- log correct type in timeout for TXT.
+	- restart panels on install on OSX.
 
 6 June 2012: Wouter
 	- fix permissions on root key for OSX.
