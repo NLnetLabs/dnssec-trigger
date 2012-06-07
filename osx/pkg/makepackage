@@ -190,6 +190,7 @@ chown unbound /etc/unbound
 
 # start unbound
 launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
+sleep 1
 
 # start dnssec-trigger (-panel and -hooks)
 launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist

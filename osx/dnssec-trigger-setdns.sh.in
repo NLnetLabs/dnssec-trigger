@@ -40,7 +40,7 @@ function doinstall () {
 	done
 	logger "waited for old daemon to exit setdns install"
 	# wait for userspace panel to re-connect to new daemon.
-	sleep 5
+	sleep 2
 	logger "calling stoppanels setdns install"
 	# make connected panels quit - the new daemon is up and new panel
 	# executables are started now by the plist once they quit.
