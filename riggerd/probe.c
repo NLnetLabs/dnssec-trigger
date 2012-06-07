@@ -765,9 +765,10 @@ static int outq_settimeout_and_send(struct outq* outq)
 void outq_timeout(void* arg)
 {
 	struct outq* outq = (struct outq*)arg;
+	char *t = ldns_rr_type2str(outq->qtype);
 	verbose(VERB_ALGO, "%s %s: UDP timeout after %d msec",
-		outq->probe?outq->probe->name:outq->qname, outq->qtype==PROBE_NSEC3_QTYPE?"NSEC3":(
-		outq->qtype==LDNS_RR_TYPE_DNSKEY?"DNSKEY":"DS"), outq->timeout);
+		outq->probe?outq->probe->name:outq->qname, t, outq->timeout);
+	free(t);
 	if(outq->timeout > QUERY_END_TIMEOUT) {
 		/* too many timeouts */
 		outq_done(outq, "timeout");
