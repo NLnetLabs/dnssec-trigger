@@ -28,23 +28,6 @@ function doinstall () {
 	hdiutil detach "$mnt" -force
 	logger "detached setdns install"
 	rm -f $dmg $dmg.$$
-	# wait for the old daemon to exit
-	for (( try=0 ; try <= 20 ; try++ )) ; do
-		if kill -0 $pid >/dev/null 2>&1; then
-			:
-		else
-			# done, the old daemon is gone
-			break
-		fi
-		sleep 1
-	done
-	logger "waited for old daemon to exit setdns install"
-	# wait for userspace panel to re-connect to new daemon.
-	sleep 2
-	logger "calling stoppanels setdns install"
-	# make connected panels quit - the new daemon is up and new panel
-	# executables are started now by the plist once they quit.
-	dnssec-trigger-control stoppanels
 }
 
 cmd="$1"
