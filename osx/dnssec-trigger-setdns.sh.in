@@ -6,7 +6,6 @@
 
 # perform software upgrade install
 function doinstall () {
-	pid="`cat /var/run/dnssec-trigger.pid`"
 	dmg="$*"
 	mnt="/tmp/installdir.$$"
 	logger "start setdns install"
