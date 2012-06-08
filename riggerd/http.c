@@ -226,7 +226,7 @@ parse_http_addr(char* s, struct sockaddr_storage* addr, socklen_t* len,
 
 		/* extract address part */
 		*eb = 0;
-		strlcpy(temp, s+1, sizeof(temp));
+		(void)strlcpy(temp, s+1, sizeof(temp));
 		*eb = ']';
 
 		/* we know that eb[0] is ']' */
@@ -253,7 +253,7 @@ parse_http_addr(char* s, struct sockaddr_storage* addr, socklen_t* len,
 
 		/* extract address part */
 		*e = 0;
-		strlcpy(temp, s, sizeof(temp));
+		(void)strlcpy(temp, s, sizeof(temp));
 		*e = ':';
 
 		*port = atoi(e+1);
