@@ -1,5 +1,6 @@
 15 June 2012: Wouter
 	- Fix crash on read of ssl443 entry without a hash.
+	- Squelch address family not supported errors (on low verbosity).
 
 8 June 2012: Wouter
 	- Fix OSX user panel stop and start in reinstall, also fix for double

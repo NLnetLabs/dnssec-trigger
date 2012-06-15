@@ -922,12 +922,17 @@ http_get_connect(struct sockaddr_storage* addr, socklen_t addrlen, char** err)
 		fd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if(fd == -1) {
 #ifndef USE_WINSOCK
-		log_err("http_get: socket: %s", strerror(errno));
 		*err = strerror(errno);
+		if(!((errno == EAFNOSUPPORT || errno == EPROTONOSUPPORT) &&
+			verbosity <= 2))
+			log_err("http_get: socket: %s", strerror(errno));
 #else
 		*err = wsa_strerror(WSAGetLastError());
-		log_err("http_get: socket: %s",
-			wsa_strerror(WSAGetLastError()));
+		if(!((WSAGetLastError() == WSAEAFNOSUPPORT ||
+			WSAGetLastError() == WSAEPROTONOSUPPORT) &&
+			verbosity <= 2))
+			log_err("http_get: socket: %s",
+				wsa_strerror(WSAGetLastError()));
 #endif
 		return -1;
 	}

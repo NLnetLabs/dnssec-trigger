@@ -702,6 +702,22 @@ outq_create(const char* ip, int tp, const char* domain, int recurse,
 
 	fd = socket(strchr(ip, ':')?PF_INET6:PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if(fd == -1) {
+#ifndef USE_WINSOCK
+		if(errno == EAFNOSUPPORT || errno == EPROTONOSUPPORT) {
+			if(verbosity <= 2) {
+				free(outq);
+				return NULL;
+			}
+		}
+#else
+		if(WSAGetLastError() == WSAEAFNOSUPPORT ||
+			WSAGetLastError() == WSAEPROTONOSUPPORT) {
+			if(verbosity <= 2) {
+				free(outq);
+				return NULL;
+			}
+		}
+#endif
 		log_err("socket %s udp: %s", strchr(ip, ':')?"ip6":"ip4",
 			strerror(errno));
 		free(outq);
@@ -796,8 +812,19 @@ outq_tcp_take_into_use(struct outq* outq)
 		s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if(s == -1) {
 #ifndef USE_WINSOCK
+		if(errno == EAFNOSUPPORT || errno == EPROTONOSUPPORT) {
+			if(verbosity <= 2) {
+				return 0;
+			}
+		}
 		log_err("outgoing tcp: socket: %s", strerror(errno));
 #else
+		if(WSAGetLastError() == WSAEAFNOSUPPORT ||
+			WSAGetLastError() == WSAEPROTONOSUPPORT) {
+			if(verbosity <= 2) {
+				return 0;
+			}
+		}
 		log_err("outgoing tcp: socket: %s",
 			wsa_strerror(WSAGetLastError()));
 #endif
