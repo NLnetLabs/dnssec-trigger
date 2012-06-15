@@ -260,7 +260,7 @@ add_hashes(char* str, struct ssllist* e)
 {
 	char* arg1, *arg2;
 	/* skip whitespace */
-	while(isspace(*str))
+	while(str && isspace(*str))
 		str++;
 	while(str && *str) {
 		get_arg2(str, &arg1, &arg2);
