@@ -10,9 +10,16 @@ action="$2"
 
 # get ips from NetworkManager
 if test -x "`which $nmcli 2>&1`"; then
-ips="`$nmcli -f IP4-DNS,IP6-DNS dev list | awk '{print $2;}'`"
+	$nmcli -f IP4-DNS dev list > /dev/null 2>/dev/null
+	RETVAL=$?
+	if test $RETVAL = 0 ; then
+		# NM < 0.9.4
+		ips="`$nmcli -f IP4-DNS,IP6-DNS dev list | awk '{print $2;}'`"
+	else
+		ips="`$nmcli -f IP4,IP6 dev list | fgrep 'DNS' | awk '{print $2;}'`"
+	fi 
 else
-ips="`nm-tool | grep 'DNS:' | awk '{print $2;}'`"
+	ips="`nm-tool | grep 'DNS:' | awk '{print $2;}'`"
 fi
 # fix whitespace
 ips=`echo $ips`

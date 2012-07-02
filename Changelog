@@ -1,3 +1,7 @@
+2 July 2012: Wouter
+	- Fix networkmanager hook to detect if it has to use the new
+	  commandline syntax of networkmanager 0.9.4.
+
 15 June 2012: Wouter
 	- Fix crash on read of ssl443 entry without a hash.
 	- Squelch address family not supported errors (on low verbosity).
