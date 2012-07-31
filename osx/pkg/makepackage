@@ -104,6 +104,21 @@ tar xzopC / -f /tmp/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz
 tar tzf /tmp/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz > "${FILELIST}"
 echo "`dirname ${FILELIST}`" >> "${FILELIST}"
 
+# random guess for free id, but run script to find one
+freeid=2045
+getfreeid()
+{ :
+  MAXID=1000
+  freeid=\$(dscl localhost -list /Local/Default/Users UniqueID | awk '{ if ( \$2 > max && \$2<300 ) max = \$2 } END { print max+1 }' )
+  while [ \$freeid -le \$MAXID ]
+  do
+	  zgid=\$(dscl localhost -search /Local/Default/Groups PrimaryGroupID \$freeid)
+	  zuid=\$(dscl localhost -search /Local/Default/Users UniqueID \$freeid)
+	  if [ -z "\$zgid\$zuid" ]; then break; fi
+	  freeid=\$((\$freeid+1))
+  done
+}
+
 # add unbound user
 if [[ "\${OSVERS}" == '10.4' ]]; then
     # Tiger
@@ -111,20 +126,69 @@ if [[ "\${OSVERS}" == '10.4' ]]; then
     dscl / -create /Users/unbound UserShell /bin/nologin
 elif [[ "\${OSVERS}" == '10.5' ]]; then
     # Leopard
-    dscl localhost -create /Local/Default/Users/unbound
-    dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
+    if dscl localhost -read /Local/Default/Users/unbound UniqueID; then
+	    echo "unbound user already exists"
+    else
+	dscl localhost -create /Local/Default/Users/unbound
+	dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
+	dscl localhost -create /Local/Default/Users/unbound RealName "unbound daemon"
+	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /etc/unbound/
+	getfreeid
+	dscl localhost -create /Local/Default/Users/unbound PrimaryGroupID \$freeid
+	dscl localhost -create /Local/Default/Users/unbound UniqueID \$freeid
+    fi
 elif [[ "\${OSVERS}" == '10.6' ]]; then
     # SnowLeopard
-    dscl localhost -create /Local/Default/Users/unbound
-    dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
+    if dscl localhost -read /Local/Default/Users/unbound UniqueID; then
+	    echo "unbound user already exists"
+    else
+	dscl localhost -create /Local/Default/Users/unbound
+	dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
+	dscl localhost -create /Local/Default/Users/unbound RealName "unbound daemon"
+	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /etc/unbound/
+	getfreeid
+	dscl localhost -create /Local/Default/Users/unbound PrimaryGroupID \$freeid
+	dscl localhost -create /Local/Default/Users/unbound UniqueID \$freeid
+    fi
 elif [[ "\${OSVERS}" == '10.7' ]]; then
     # Lion
-    dscl localhost -create /Local/Default/Users/unbound
-    dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
+    if dscl localhost -read /Local/Default/Users/unbound UniqueID; then
+	    echo "unbound user already exists"
+    else
+	dscl localhost -create /Local/Default/Users/unbound
+	dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
+	dscl localhost -create /Local/Default/Users/unbound RealName "unbound daemon"
+	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /etc/unbound/
+	getfreeid
+	dscl localhost -create /Local/Default/Users/unbound PrimaryGroupID \$freeid
+	dscl localhost -create /Local/Default/Users/unbound UniqueID \$freeid
+    fi
+elif [[ "\${OSVERS}" == '10.8' ]]; then
+    # Mountain Lion
+    if dscl localhost -read /Local/Default/Users/unbound UniqueID; then
+	    echo "unbound user already exists"
+    else
+	dscl localhost -create /Local/Default/Users/unbound
+	dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
+	dscl localhost -create /Local/Default/Users/unbound RealName "unbound daemon"
+	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /etc/unbound/
+	getfreeid
+	dscl localhost -create /Local/Default/Users/unbound PrimaryGroupID \$freeid
+	dscl localhost -create /Local/Default/Users/unbound UniqueID \$freeid
+    fi
 else
     # guess
-    dscl localhost -create /Local/Default/Users/unbound
-    dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
+    if dscl localhost -read /Local/Default/Users/unbound UniqueID; then
+	    echo "unbound user already exists"
+    else
+	dscl localhost -create /Local/Default/Users/unbound
+	dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
+	dscl localhost -create /Local/Default/Users/unbound RealName "unbound daemon"
+	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /etc/unbound/
+	getfreeid
+	dscl localhost -create /Local/Default/Users/unbound PrimaryGroupID \$freeid
+	dscl localhost -create /Local/Default/Users/unbound UniqueID \$freeid
+    fi
 fi
 
 # write unbound launcher script

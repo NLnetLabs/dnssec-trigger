@@ -1,3 +1,7 @@
+31 July 2012: Wouter
+	- Fixup uniqueid for Mountain Lion OSX 10.8 release, you have to
+	  run the installer again (upgrade or uninstall-reinstall).
+
 2 July 2012: Wouter
 	- Fix networkmanager hook to detect if it has to use the new
 	  commandline syntax of networkmanager 0.9.4.
