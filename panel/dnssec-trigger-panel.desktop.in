@@ -8,7 +8,7 @@ Comment=Shows DNS state and warning dialog
 Exec=0bindir0/dnssec-trigger-panel
 Icon=0uidir0/status-icon.png
 Terminal=false
-Categories=Application;Utility;
+Categories=Utility;
 X-KDE-StartupNotify=false
 StartupNotify=false
 

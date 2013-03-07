@@ -1,3 +1,6 @@
+7 March 2013: Wouter
+	- bug 489: removed Application deprecated keyword from .desktop file.
+
 31 July 2012: Wouter
 	- Fixup uniqueid for Mountain Lion OSX 10.8 release, you have to
 	  run the installer again (upgrade or uninstall-reinstall).
