@@ -1,3 +1,6 @@
+26 March 2013: Wouter
+	- Update configure, install-sh with newer autoconf.
+
 7 March 2013: Wouter
 	- bug 489: removed Application deprecated keyword from .desktop file.
 
