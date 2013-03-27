@@ -77,13 +77,14 @@ error_cleanup () {
 check_svn_root () {
     # Check if SVNROOT is specified.
     if [ -z "$SVNROOT" ]; then
-        if test -f .svn/entries; then
-              eval `svn info | grep 'URL:' | sed -e 's/URL: /url=/' | head -1`
-              SVNROOT="$url"
-        fi
-        if test -z "$SVNROOT"; then
-            error "SVNROOT must be specified (using -d)"
-        fi
+	if svn info 2>&1 | grep "not a working copy" >/dev/null; then
+		if test -z "$SVNROOT"; then
+			error "SVNROOT must be specified (using -d)"
+		fi
+	else
+		eval `svn info | grep 'URL:' | sed -e 's/URL: /url=/' | head -1`
+		SVNROOT="$url"
+	fi
     fi
 }
 
@@ -199,7 +200,7 @@ if [ "$DOWIN" = "yes" ]; then
         info "Crosscompile windows dist"
         cross="yes"
         configure="mingw32-configure"
-        strip="i686-pc-mingw32-strip"
+	strip="i686-w64-mingw32-strip"
         makensis="makensis"     # from mingw32-nsis package
         # flags for crosscompiled dependency libraries
         cross_flag=""
@@ -220,7 +221,7 @@ if [ "$DOWIN" = "yes" ]; then
                 cd openssl-* || error_cleanup "no openssl-X dir in tarball"
                 # configure for crosscompile, without CAPI because it fails
                 # cross-compilation and it is not used anyway
-                sslflags="shared --cross-compile-prefix=i686-pc-mingw32- -DOPENSSL_NO_CAPIENG mingw"
+                sslflags="shared --cross-compile-prefix=i686-w64-mingw32- -DOPENSSL_NO_CAPIENG mingw"
                 info "winssl: Configure $sslflags"
                 ./Configure --prefix="$sslinstall" $sslflags || error_cleanup "OpenSSL Configure failed"
                 info "winssl: make"
@@ -320,7 +321,7 @@ if [ "$DOWIN" = "yes" ]; then
     # DLLs linked with the panel on windows (ship DLLs:)
     # libldns, libcrypto, libssl
     # openssl dlls
-    findpath="$sslinstall/bin $sslinstall/lib/engines $ldnsdir/lib $unbounddir/.libs /usr/bin /usr/i686-pc-mingw32/sys-root/mingw/bin /usr/i686-pc-mingw32/sys-root/mingw/lib/engines"
+    findpath="$sslinstall/bin $sslinstall/lib/engines $ldnsdir/lib $unbounddir/.libs /usr/bin /usr/i686-w64-mingw32/sys-root/mingw/bin /usr/i686-w64-mingw32/sys-root/mingw/lib/engines"
     # find a dll and copy it to local dir. $1 searchpath $2 name
     function find_dll () {
 	    for i in $1; do

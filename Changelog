@@ -1,3 +1,6 @@
+27 March 2013: Wouter
+	- update makedist for new svn and new crosscompile environment.
+
 26 March 2013: Wouter
 	- Update configure, install-sh with newer autoconf.
 
