@@ -32,11 +32,27 @@ function doinstall () {
 cmd="$1"
 shift
 if test "$cmd" = "set"; then
-	domain="$1"
+	domains="$1"
+	firstdomain="$1"
 	shift
 	# remaining arguments are the servers to set
 	servers="$*"
-	logger "dnssec-trigger-setdns to $domain and $servers"
+	logger "dnssec-trigger-setdns to $domains and $servers"
+elif test "$cmd" = "mset"; then
+	domains="$1"
+	firstdomain="$1"
+	shift
+	while test "$1" != "--"; do
+		domains="$domains $1"
+		shift
+	done
+	if test "$1" != "--"; then
+		echo >&2 "Usage: $0 mset domain [domain ..] -- server [server ..]"
+		exit 1
+	fi
+	shift # --
+	servers="$*"
+	logger "dnssec-trigger-setdns to $domains and $servers"
 elif test "$cmd" = "install"; then
 	doinstall "$*"
 	exit 0
@@ -44,10 +60,13 @@ else
 	if test "$cmd" = "uninit"; then
 		logger "dnssec-trigger-setdns uninit dns override"
 	else
-		echo "bad command: set domain [ip ..] | uninit"
+		echo >&2 "bad command: set | mset | uninit"
+		echo >&2 "  set domain [ip ..]"
+		echo >&2 "  mset domain [domain ..] -- ip [ip ..]"
 		exit 1
 	fi
-	domain=""
+	firstdomain=""
+	domains=""
 	servers=""
 fi
 
@@ -62,7 +81,8 @@ for i in $ids State:/Network/Global/DNS; do
 open
 d.init
 d.add ServerAddresses * $servers
-d.add DomainName $domain
+d.add SearchDomains * $domains
+d.add DomainName $firstdomain
 set $i
 quit
 END
@@ -71,15 +91,15 @@ done
 
 # set the DNS settings via networksetup
 nws="networksetup"
-if test -z "$domain"; then
-	domain="empty"
+if test -z "$domains"; then
+	domains="empty"
 fi
 if test -z "$servers"; then
 	servers="empty"
 fi
 $nws -listallnetworkservices 2>/dev/null | grep -v '*' | while read x ; do
 	#echo $x
-	$nws -setsearchdomains "$x" $domain
+	$nws -setsearchdomains "$x" $domains
 	# no quotes around servers: the IPs have to be separate arguments.
 	$nws -setdnsservers "$x" $servers
 done

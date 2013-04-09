@@ -1,5 +1,7 @@
 8 April 2013: Wouter
 	- OSX wake listener implementation.
+	- patch for OSX that passes all domains from search to the OS (from
+	  Phil Pennock).
 
 27 March 2013: Wouter
 	- update makedist for new svn and new crosscompile environment.

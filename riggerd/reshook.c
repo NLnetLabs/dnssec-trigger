@@ -60,17 +60,15 @@ set_dns_osx(struct cfg* cfg, char* iplist)
 {
 	char cmd[10240];
 	char dm[1024];
-	char* domain = "nothing.invalid";
+	char* domains = "nothing.invalid";
 	if(cfg->rescf_domain && cfg->rescf_domain[0])
-		domain = cfg->rescf_domain;
+		domains = cfg->rescf_domain;
 	else if(cfg->rescf_search && cfg->rescf_search[0]) {
 		snprintf(dm, sizeof(dm), "%s", cfg->rescf_search);
-		if(strchr(dm, ' '))
-			strchr(dm, ' ')[0] = 0; /* use first word as domain */
-		domain = dm;
+		domains = dm;
 	}
-	snprintf(cmd, sizeof(cmd), "%s/dnssec-trigger-setdns.sh set %s %s",
-		LIBEXEC_DIR, domain, iplist);
+	snprintf(cmd, sizeof(cmd), "%s/dnssec-trigger-setdns.sh mset %s -- %s",
+		LIBEXEC_DIR, domains, iplist);
 	verbose(VERB_QUERY, "%s", cmd);
 	system(cmd);
 }
