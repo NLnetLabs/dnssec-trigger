@@ -83,7 +83,7 @@ static void
 sleepcallback(void* ATTR_UNUSED(arg), io_service_t ATTR_UNUSED(service),
 	natural_t messageType, void* messageArgument )
 {
-	verbose(VERB_ALGO, "OSX sleepIO messageType %08lx, arg %08lx\n",
+	verbose(VERB_ALGO, "OSX ioservice messageType %08lx, arg %08lx\n",
 		(long unsigned int)messageType,
 		(long unsigned int)messageArgument );
 	if(messageType == kIOMessageCanSystemSleep) {
@@ -94,13 +94,24 @@ sleepcallback(void* ATTR_UNUSED(arg), io_service_t ATTR_UNUSED(service),
 		IOAllowPowerChange(root_port, (long)messageArgument);
 	} else if(messageType == kIOMessageSystemWillPowerOn) {
 		/* system has started the wake up process */
-		/* assume we are on a new network */
+
+		/* assume we are on a new network,
+		 * the ping times, and timeouts are no longer valid.
+		 * bogus information (due to timeouts) may no longer be,
+		 * and long-running timeouts on the request list removed. */
 		osx_ub_ctrl("flush_infra all");
 		osx_ub_ctrl("flush_bogus");
 		osx_ub_ctrl("flush_requestlist");
+
+		/* not sure if the ethernet device is already available
+		 * at this stage, but the finishwake is about 2 seconds
+		 * away, so this fits within 'normal' timeouts.
+		 * we flush the caches now so that unbound starts
+		 * giving responses during the wakeup. 
+		 * The DNS cache in unbound is left intact. */
+
 	} else if(messageType == kIOMessageSystemHasPoweredOn) {
 		/* system has finished the wake up process */
-		log_info("finishwake");
 	}
 }
 
@@ -154,7 +165,7 @@ void osx_wakelistener_start(struct cfg* cfg)
 		return;
 
 	/* copy cfg elements of interest for threadsafe access.
-	 * The cfg itself can be detroyed when sighup causes a reload. */
+	 * The cfg itself can be destroyed when sighup causes a reload. */
 	if(cfg->unbound_control)
 		unbound_control = strdup(cfg->unbound_control);
 	else	unbound_control = strdup("unbound-control");
