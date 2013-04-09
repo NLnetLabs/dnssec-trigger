@@ -69,9 +69,9 @@ osx_ub_ctrl(const char* cmd)
 
 	verbose(VERB_ALGO, "system %s %s", unbound_control, cmd);
 	snprintf(s, sizeof(s), "%s %s", unbound_control, cmd);
-	r = system(command);
+	r = system(s);
 	if(r == -1) {
-		log_err("system(%s) failed: %s", ctrl, strerror(errno));
+		log_err("system(%s) failed: %s", s, strerror(errno));
 	} else if(r != 0) {
 		log_warn("unbound-control exited with status %d, cmd: %s", r, s);
 	}
@@ -80,7 +80,7 @@ osx_ub_ctrl(const char* cmd)
 
 /* called when OSX power status changes notifications happen */
 static void
-sleepcallback(void* arg, io_service_t ATTR_UNUSED(service),
+sleepcallback(void* ATTR_UNUSED(arg), io_service_t ATTR_UNUSED(service),
 	natural_t messageType, void* messageArgument )
 {
 	verbose(VERB_ALGO, "OSX sleepIO messageType %08lx, arg %08lx\n",
