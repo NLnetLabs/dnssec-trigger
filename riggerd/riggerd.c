@@ -58,6 +58,9 @@
 #include "winrc/netlist.h"
 #include "winrc/win_svc.h"
 #endif
+#ifdef HOOKS_OSX
+#include "osx/wakelist.h"
+#endif
 
 /** print usage text */
 static void
@@ -268,6 +271,7 @@ do_main_work(const char* cfgfile, int nodaemonize, int verb)
 #endif
 #ifdef HOOKS_OSX
 	osx_probe_hook();
+	osx_wakelistener_start(cfg);
 #endif
 	while(1) {
 		svr_service(svr);
