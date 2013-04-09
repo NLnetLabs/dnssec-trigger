@@ -39,7 +39,7 @@
  * This file contains the OSX sleep and wakeup listener service.
  */
 
-#ifdef OSX_WAKELIST_H
+#ifndef OSX_WAKELIST_H
 #define OSX_WAKELIST_H
 struct svr;
 

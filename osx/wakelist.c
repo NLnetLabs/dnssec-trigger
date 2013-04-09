@@ -40,6 +40,7 @@
  */
 #include "config.h"
 #include "riggerd/cfg.h"
+#include "riggerd/log.h"
 #include "osx/wakelist.h"
 
 #include <pthread.h>
@@ -59,8 +60,8 @@
 static io_connect_t root_port; 
 
 static void
-sleepcallback(void* arg, io_service_t service, natural_t messageType,
-	void* messageArgument )
+sleepcallback(void* arg, io_service_t ATTR_UNUSED(service),
+	natural_t messageType, void* messageArgument )
 {
 	struct cfg* cfg = (struct cfg*)arg;
 	printf( "messageType %08lx, arg %08lx\n",
@@ -129,7 +130,7 @@ void osx_wakelistener_start(struct cfg* cfg)
 	/* TODO: copy cfg elements of interest for threadsafe access.
 	 * The cfg itself can be detroyed when sighup causes a reload. */
 
-	if(pthread_attr_inint(&attr) != 0)
+	if(pthread_attr_init(&attr) != 0)
 		fatal_exit("osxsleepwake: could not pthread_attr_init");
 	if(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) != 0)
 		fatal_exit("osxsleepwake: could not pthread_attr_setdetach");
