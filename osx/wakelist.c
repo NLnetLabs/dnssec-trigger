@@ -58,16 +58,34 @@
 
 /* a reference to the Root Power Domain IOService */
 static io_connect_t root_port; 
+static char* unbound_control;
 
+/* perform unbound command, from OSX thread */
+static void
+osx_ub_ctrl(const char* cmd)
+{
+	char s[12000];
+	int r;
+
+	verbose(VERB_ALGO, "system %s %s", unbound_control, cmd);
+	snprintf(s, sizeof(s), "%s %s", unbound_control, cmd);
+	r = system(command);
+	if(r == -1) {
+		log_err("system(%s) failed: %s", ctrl, strerror(errno));
+	} else if(r != 0) {
+		log_warn("unbound-control exited with status %d, cmd: %s", r, s);
+	}
+
+}
+
+/* called when OSX power status changes notifications happen */
 static void
 sleepcallback(void* arg, io_service_t ATTR_UNUSED(service),
 	natural_t messageType, void* messageArgument )
 {
-	struct cfg* cfg = (struct cfg*)arg;
-	printf( "messageType %08lx, arg %08lx\n",
+	verbose(VERB_ALGO, "OSX sleepIO messageType %08lx, arg %08lx\n",
 		(long unsigned int)messageType,
 		(long unsigned int)messageArgument );
-
 	if(messageType == kIOMessageCanSystemSleep) {
 		/* allow the system to sleep */
 		IOAllowPowerChange(root_port, (long)messageArgument);
@@ -76,7 +94,10 @@ sleepcallback(void* arg, io_service_t ATTR_UNUSED(service),
 		IOAllowPowerChange(root_port, (long)messageArgument);
 	} else if(messageType == kIOMessageSystemWillPowerOn) {
 		/* system has started the wake up process */
-		log_info("startwake");
+		/* assume we are on a new network */
+		osx_ub_ctrl("flush_infra all");
+		osx_ub_ctrl("flush_bogus");
+		osx_ub_ctrl("flush_requestlist");
 	} else if(messageType == kIOMessageSystemHasPoweredOn) {
 		/* system has finished the wake up process */
 		log_info("finishwake");
@@ -84,7 +105,7 @@ sleepcallback(void* arg, io_service_t ATTR_UNUSED(service),
 }
 
 static void*
-osx_wakesleep_thread(void* arg)
+osx_wakesleep_thread(void* ATTR_UNUSED(arg))
 {
 	/* attach sleep and wake listener as described in apple note QA1340.
 	 * http://developer.apple.com/library/mac/#qa/qa1340/_index.html
@@ -99,7 +120,7 @@ osx_wakesleep_thread(void* arg)
 	io_object_t notifierObject; 
 
 	/* register to receive system sleep notifications */
-	root_port = IORegisterForSystemPower(arg, &notifyPortRef,
+	root_port = IORegisterForSystemPower(NULL/*myarg*/, &notifyPortRef,
 		sleepcallback, &notifierObject);
 	if(!root_port) {
 		/* could this be a permission issue? if so, just exit thread,
@@ -115,6 +136,8 @@ osx_wakesleep_thread(void* arg)
 	/* run the loop to get notifications. */
 	CFRunLoopRun();
 
+	/* free(unbound_control) */
+	/* deregister and cleanup notification */
 	/* ENOTREACH */
 	return NULL;
 }
@@ -127,14 +150,22 @@ void osx_wakelistener_start(struct cfg* cfg)
     	pthread_attr_t attr;
         pthread_t id;
 
-	/* TODO: copy cfg elements of interest for threadsafe access.
+	if(cfg->noaction)
+		return;
+
+	/* copy cfg elements of interest for threadsafe access.
 	 * The cfg itself can be detroyed when sighup causes a reload. */
+	if(cfg->unbound_control)
+		unbound_control = strdup(cfg->unbound_control);
+	else	unbound_control = strdup("unbound-control");
+	if(!unbound_control)
+		fatal_exit("malloc failure");
 
 	if(pthread_attr_init(&attr) != 0)
 		fatal_exit("osxsleepwake: could not pthread_attr_init");
 	if(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) != 0)
 		fatal_exit("osxsleepwake: could not pthread_attr_setdetach");
-	if(pthread_create(&id, &attr, osx_wakesleep_thread, cfg) != 0)
+	if(pthread_create(&id, &attr, osx_wakesleep_thread, NULL) != 0)
 		fatal_exit("osxsleepwake: could not pthread_create");
 	if(pthread_attr_destroy(&attr) != 0)
 		fatal_exit("osxsleepwake: could not pthread_attr_destroy");
