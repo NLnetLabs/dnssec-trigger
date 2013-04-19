@@ -147,8 +147,9 @@ void hook_unbound_cache_list(struct cfg* cfg, struct probe_ip* list)
 			int len;
 			if(left < strlen(list->name)+3)
 				break; /* no space for more */
-			len = snprintf(now, left, "%s%s",
+			snprintf(now, left, "%s%s",
 				(now==buf)?"":" ", list->name);
+			len = strlen(now);
 			left -= len;
 			now += len;
 		}
@@ -211,8 +212,8 @@ static void append_str_port(char* buf, char** now, size_t* left,
 	int len;
 	if(*left < strlen(str)+3)
 		return; /* no more space */
-	len = snprintf(*now, *left, "%s%s@%d",
-		*now == buf?"":" ", str, port);
+	snprintf(*now, *left, "%s%s@%d", *now == buf?"":" ", str, port);
+	len = strlen(*now);
 	(*left) -= len;
 	(*now) += len;
 }

@@ -1,3 +1,6 @@
+19 April 2013: Wouter
+	- Fixup snprintf return value usage.
+
 8 April 2013: Wouter
 	- OSX wake listener implementation.
 	- patch for OSX that passes all domains from search to the OS (from

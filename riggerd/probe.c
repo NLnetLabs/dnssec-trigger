@@ -275,10 +275,10 @@ match_hash(struct hashlist* he, X509* x)
 		size_t blen = sizeof(buf);
 		unsigned int i;
 		for(i=0; i<len; i++) {
-			int a = snprintf(at, blen, "%2.2X%s",
+			snprintf(at, blen, "%2.2X%s",
 			    (unsigned int)hash[i], (i==len-1)?"":":");
-			at += a; 
-			blen -= a;
+			blen -= strlen(at);
+			at += strlen(at); 
 		}
 		log_info("the ssl fingerprint of the server is %s", buf);
 	}

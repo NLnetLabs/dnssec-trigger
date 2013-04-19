@@ -456,24 +456,29 @@ void fetch_proberesults(char* buf, size_t len, const char* lf)
 
 	buf[0] = 0; /* safe start */
 	buf[len-1] = 0; /* no buffer overflow */
-	n=snprintf(pos, left, "%s%sresults from probe ", PACKAGE_STRING, lf);
+	snprintf(pos, left, "%s%sresults from probe ", PACKAGE_STRING, lf);
+	n = strlen(pos);
 	pos += n; left -= n;
 
 	feed->lock();
 	p = feed->results;
 	if(p && strncmp(p->str, "at ", 3) == 0) {
-		n=snprintf(pos, left, "%s", p->str);
+		snprintf(pos, left, "%s", p->str);
+		n = strlen(pos);
 		pos += n; left -= n;
 		p=p->next;
 	}
-	n=snprintf(pos, left, "%s%s", lf, lf);
+	snprintf(pos, left, "%s%s", lf, lf);
+	n = strlen(pos);
 	pos += n; left -= n;
 	if(!feed->connected) {
-		n=snprintf(pos, left, "error: %s%s", feed->connect_reason, lf);
+		snprintf(pos, left, "error: %s%s", feed->connect_reason, lf);
+		n = strlen(pos);
 		pos += n; left -= n;
-		n=snprintf(pos, left, 
+		snprintf(pos, left, 
 		"cannot connect to the dnssec-trigger service, DNSSEC%s"
 		"status cannot be read.%s", lf, lf);
+		n = strlen(pos);
 		pos += n; left -= n;
 		p = NULL;
 	}
@@ -481,53 +486,56 @@ void fetch_proberesults(char* buf, size_t len, const char* lf)
 	for(; p; p=p->next) {
 		if(!p->next) {
 			/* last line */
-			n=snprintf(pos, left, "%s", lf);
+			snprintf(pos, left, "%s", lf);
+			n = strlen(pos);
 			pos += n; left -= n;
 			if(strstr(p->str, "cache"))
-				n=snprintf(pos, left, 
+				snprintf(pos, left, 
 		"DNSSEC results fetched from (DHCP) cache(s)%s", lf);
 			else if(strstr(p->str, "auth"))
-				n=snprintf(pos, left, 
+				snprintf(pos, left, 
 		"DNSSEC results fetched direct from authorities%s", lf);
 			else if(strstr(p->str, "tcp"))
-				n=snprintf(pos, left, 
+				snprintf(pos, left, 
 		"DNSSEC results fetched from open resolvers over TCP%s", lf);
 			else if(strstr(p->str, "ssl"))
-				n=snprintf(pos, left, 
+				snprintf(pos, left, 
 		"DNSSEC results fetched from open resolvers over SSL%s", lf);
 			else if(strstr(p->str, "disconnected"))
-				n=snprintf(pos, left, 
+				snprintf(pos, left, 
 		"The network seems to be disconnected. A local cache of DNS%s"
 		"results is used, but no queries are made.%s", lf, lf);
 			else if(strstr(p->str, "forced_insecure"))
-				n=snprintf(pos, left, 
+				snprintf(pos, left, 
 		"DNS queries are sent to INSECURE servers, because of%s"
 		"Hotspot Signon. Select Reprobe (from menu) after signon.%s"
 		"Please, be careful out there.%s", lf, lf, lf);
 			else if(strstr(p->str, "http_insecure") &&
 				strstr(p->str, "insecure_mode")==NULL)
-				n=snprintf(pos, left, 
+				snprintf(pos, left, 
 		"DNS queries are stopped until user confirmation.%s"
 		"There is no web access, asking if user wants to do%s"
 		"hotspot signon in insecure mode.%s", lf, lf, lf);
 			else if(strstr(p->str, "http_insecure") &&
 				strstr(p->str, "insecure_mode"))
-				n=snprintf(pos, left, 
+				snprintf(pos, left, 
 		"DNS queries are sent to INSECURE servers. There is%s"
 		"no web access, perhaps you must do hotspot signon.%s"
 		"Please, be careful out there.%s", lf, lf, lf);
 			else if(strstr(p->str, "nodnssec") && !strstr(p->str,
 				"insecure"))
-				n=snprintf(pos, left, 
+				snprintf(pos, left, 
 		"A local cache of DNS results is used but no queries%s"
 		"are made, because DNSSEC is intercepted on this network.%s"
 		"(DNS is stopped)%s", lf, lf, lf);
-			else 	n=snprintf(pos, left, 
+			else 	snprintf(pos, left, 
 		"DNS queries are sent to INSECURE servers.%s"
 		"Please, be careful out there.%s", lf, lf);
+			n = strlen(pos);
 			pos += n; left -= n;
 		} else {
-			n=snprintf(pos, left, "%s%s", p->str, lf);
+			snprintf(pos, left, "%s%s", p->str, lf);
+			n = strlen(pos);
 			pos += n; left -= n;
 		}
 	}

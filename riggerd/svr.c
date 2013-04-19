@@ -730,8 +730,9 @@ void cmd_reprobe(void)
 			int len;
 			if(left < strlen(p->name)+3)
 				break; /* no space for more */
-			len = snprintf(now, left, "%s%s",
+			snprintf(now, left, "%s%s",
 				(now==buf)?"":" ", p->name);
+			len = strlen(now);
 			left -= len;
 			now += len;
 		}
