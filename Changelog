@@ -1,3 +1,7 @@
+22 April 2013: Wouter
+	- Fixup OSX backquote backslashes.  Removed wrong OSX version from
+	  its installer text.
+
 19 April 2013: Wouter
 	- Fixup snprintf return value usage.
 
