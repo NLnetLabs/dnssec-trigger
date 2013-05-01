@@ -763,7 +763,9 @@ do_main_work(const char* cfgfile, int debug)
 #ifdef USE_WINSOCK
 	if(call_lock) g_mutex_free(call_lock);
 #endif
-	if(feed_lock) g_mutex_free(feed_lock);
+	/* do not free this mutex, because the attach.c:check_for_event
+	 * may still be using it, gets cleaned up by system on exit 
+	 * if(feed_lock) g_mutex_free(feed_lock); */
 }
 
 

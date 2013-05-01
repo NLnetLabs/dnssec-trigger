@@ -155,8 +155,11 @@ dealloc
 {
 	if(verb) printf("dealloc routine\n");
 	attach_stop();
-	[feed_lock release];
-	free(feed);
+	/* [feed_lock release]; do not dealloc but let system
+	   reclaim these resources, the attach.c:check_for_event may
+	   still need to unlock this feed_lock 
+	   free(feed);
+	   */
 	[alert_lock release];
 	[icon release];
 	[icon_alert release];
