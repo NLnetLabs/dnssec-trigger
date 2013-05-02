@@ -164,18 +164,18 @@ static RETSIGTYPE record_sigh(int sig)
 }
 
 /** the lock for the feed structure */
-static GMutex* feed_lock = NULL;
+static GMutex feed_lock;
 
 /** callback that locks feedlock */
 static void lock_feed_lock(void)
 {
-	g_mutex_lock(feed_lock);
+	g_mutex_lock(&feed_lock);
 }
 
 /** callback that unlocks feedlock */
 static void unlock_feed_lock(void)
 {
-	g_mutex_unlock(feed_lock);
+	g_mutex_unlock(&feed_lock);
 }
 
 /** callback that quits the program */
@@ -200,14 +200,14 @@ spawn_feed(struct cfg* cfg)
 	GError* err=NULL;
 	GThread* thr;
 	attach_create();
-	feed_lock = g_mutex_new();
+	g_mutex_init(&feed_lock);
 	feed->lock = &lock_feed_lock;
 	feed->unlock = &unlock_feed_lock;
 	feed->quit = &feed_quit;
 	feed->alert = &feed_alert;
 	feed->update_alert = &feed_update_alert;
 
-	thr = g_thread_create(&feed_thread, cfg, FALSE, &err);
+	thr = g_thread_new("feedfromdaemon", &feed_thread, cfg);
 	if(!thr) fatal_exit("cannot create thread: %s", err->message);
 }
 
@@ -510,7 +510,8 @@ void on_login_button_clicked(GtkButton *ATTR_UNUSED(button), gpointer
 
 #ifdef USE_WINSOCK
 /* the parameters for the panel alert state */
-static GMutex* call_lock = NULL;
+static int call_lock_inited = 0;
+static GMutex call_lock;
 static struct alert_arg cp_arg;
 static char* cp_new_version = NULL;
 
@@ -518,9 +519,9 @@ gboolean call_alert(gpointer ATTR_UNUSED(arg))
 {
 	/* get params */
 	struct alert_arg a;
-	g_mutex_lock(call_lock);
+	g_mutex_lock(&call_lock);
 	a = cp_arg;
-	g_mutex_unlock(call_lock);
+	g_mutex_unlock(&call_lock);
 	panel_alert_state(&a);
 	/* only call once, remove call_alert from the glib mainloop */
 	return FALSE;
@@ -529,13 +530,14 @@ gboolean call_alert(gpointer ATTR_UNUSED(arg))
 /* schedule a call to the panel alert state from the main thread */
 void call_panel_alert_state(struct alert_arg* a)
 {
-	if(!call_lock) {
-		call_lock = g_mutex_new();
+	if(!call_lock_inited) {
+		call_lock_inited = 1;
+		g_mutex_init(&call_lock);
 	}
 	/* store parameters */
-	g_mutex_lock(call_lock);
+	g_mutex_lock(&call_lock);
 	cp_arg = *a;
-	g_mutex_unlock(call_lock);
+	g_mutex_unlock(&call_lock);
 	/* the  call_alert function will run from the main thread, because
 	 * GTK+ is not threadsafe on windows */
 	g_idle_add(&call_alert, NULL);
@@ -545,10 +547,10 @@ gboolean call_update_alert(gpointer ATTR_UNUSED(arg))
 {
 	/* get params */
 	char* vs;
-	g_mutex_lock(call_lock);
+	g_mutex_lock(&call_lock);
 	vs = cp_new_version;
 	cp_new_version = NULL;
-	g_mutex_unlock(call_lock);
+	g_mutex_unlock(&call_lock);
 	panel_update_alert(vs);
 	/* only call once, remove call_alert from the glib mainloop */
 	return FALSE;
@@ -557,14 +559,15 @@ gboolean call_update_alert(gpointer ATTR_UNUSED(arg))
 /* schedule a call to the panel software alert from the main thread */
 void call_panel_update_alert(char* a)
 {
-	if(!call_lock) {
-		call_lock = g_mutex_new();
+	if(!call_lock_inited) {
+		call_lock_inited = 1;
+		g_mutex_init(&call_lock);
 	}
 	/* store parameters */
-	g_mutex_lock(call_lock);
+	g_mutex_lock(&call_lock);
 	free(cp_new_version);
 	cp_new_version = a;
-	g_mutex_unlock(call_lock);
+	g_mutex_unlock(&call_lock);
 	/* the  call_alert function will run from the main thread, because
 	 * GTK+ is not threadsafe on windows */
 	g_idle_add(&call_update_alert, NULL);
@@ -761,11 +764,11 @@ do_main_work(const char* cfgfile, int debug)
 	stop_gui();
 	attach_stop(); /* stop the other thread */
 #ifdef USE_WINSOCK
-	if(call_lock) g_mutex_free(call_lock);
+	if(call_lock_inited) g_mutex_clear(&call_lock);
 #endif
 	/* do not free this mutex, because the attach.c:check_for_event
 	 * may still be using it, gets cleaned up by system on exit 
-	 * if(feed_lock) g_mutex_free(feed_lock); */
+	 * if(feed_lock) g_mutex_clear(&feed_lock); */
 }
 
 
@@ -853,7 +856,10 @@ int main(int argc, char *argv[])
 	}
 #endif
 
+#ifndef GLIB_VERSION_2_32
+	/* before 2_32 init threads */
        	g_thread_init(NULL);
+#endif
 	gdk_threads_init();
 	gtk_init(&argc, &argv);
 

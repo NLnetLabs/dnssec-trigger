@@ -1,3 +1,6 @@
+2 May 2013: Wouter
+	- Fixup new glib deprecated calls.
+
 1 May 2013: Wouter
 	- Let system dealloc feed and feed_lock on OSX and Linux/BSD.
 
