@@ -1,3 +1,6 @@
+3 May 2013: Wouter
+	- Update acx_nlnetlabs.m4 to deal with newer mingw and sleep.
+
 2 May 2013: Wouter
 	- Fixup new glib deprecated calls.
 
