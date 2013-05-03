@@ -40,8 +40,10 @@
  * dnssec-trigger-panel that shows the state of dnssec.
  */
 #include "config.h"
-#define _WIN32_IE 0x0502
 #include <windows.h>
+#ifndef _WIN32_IE
+#define _WIN32_IE 0x0502
+#endif
 #include <windowsx.h>
 #include <shellapi.h>
 #include <commctrl.h>
