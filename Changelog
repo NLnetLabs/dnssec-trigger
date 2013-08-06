@@ -1,3 +1,8 @@
+6 August 2013: Wouter
+	- Patch from Tomas Hozza to improve the networkmanager connect
+	  script for VPN connections.  It adds forward zones for the VPN
+	  over the VPN connection.
+
 3 May 2013: Wouter
 	- Update acx_nlnetlabs.m4 to deal with newer mingw and sleep.
 

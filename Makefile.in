@@ -197,7 +197,7 @@ networkmanager-hook:	01-dnssec-trigger-hook
 
 01-dnssec-trigger-hook:	$(srcdir)/01-dnssec-trigger-hook.sh.in Makefile
 	rm -f $@
-	sed -e 's?0SHELL0?$(SHELL)?' -e 's?0sbindir0?$(sbindir)?' < $(srcdir)/01-dnssec-trigger-hook.sh.in > $@
+	sed -e 's?0SHELL0?$(SHELL)?' -e 's?0sbindir0?$(sbindir)?' -e 's?0bindir0?$(bindir)?' < $(srcdir)/01-dnssec-trigger-hook.sh.in > $@
 	chmod +x $@
 
 osx/RiggerStatusItem/log.c:	$(srcdir)/riggerd/log.c osx/RiggerStatusItem
