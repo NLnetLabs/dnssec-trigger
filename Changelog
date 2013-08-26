@@ -1,3 +1,6 @@
+26 August 2013: Wouter
+	- Fix#522: Errors found by static analysis of source from Tomas Hozza.
+
 6 August 2013: Wouter
 	- Patch from Tomas Hozza to improve the networkmanager connect
 	  script for VPN connections.  It adds forward zones for the VPN

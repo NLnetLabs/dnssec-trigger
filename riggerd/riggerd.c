@@ -110,6 +110,7 @@ static RETSIGTYPE record_sigh(int sig)
 #ifdef SIGHUP
 	case SIGHUP:
 		sig_reload = 1;
+		/* fall through and exit commbase with reload boolean set */
 #endif
 	case SIGTERM:
 #ifdef SIGQUIT

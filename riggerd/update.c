@@ -573,6 +573,7 @@ selfupdate_write_file(struct selfupdate* se, struct http_get* hg)
 		out)) {
 		log_err("cannot write to file %s: %s", se->download_file,
 			strerror(errno));
+		fclose(out);
 		goto fail;
 	}
 	fclose(out);
