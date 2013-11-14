@@ -1,3 +1,7 @@
+14 November 2013: Wouter
+	- Fix NM dispatcher script to work with NM >= 0.9.9.0 (Thanks Tomas
+	  Hozza).
+
 26 August 2013: Wouter
 	- Fix#522: Errors found by static analysis of source from Tomas Hozza.
 

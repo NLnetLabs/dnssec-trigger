@@ -33,8 +33,17 @@ esac
 
 #########################
 # get global nameservers
-if [ -x "`which $nmcli 2>&1`" ]; then
-    global_nameservers="`$nmcli -f IP4,IP6 dev list | fgrep 'DNS' | awk '{print $2;}'`"
+# try to get nmcli version
+NMCLI_VER="`nmcli -v 2> /dev/null | sed 's/.*version \([0-9]\)\.\([0-9]\)\.\([0-9]\)\.\([0-9]\).*/\1\2\3\4/'`"
+# if nmcli exists
+if [ -n $NMCLI_VER ]; then
+    # if the version is greater or equal 0.9.9.0
+    if [ $NMCLI_VER -ge 0990 ]; then
+        global_nameservers="`nmcli -f IP4,IP6 dev show | fgrep 'DNS' | awk '{print $2;}'`"
+    else
+        global_nameservers="`nmcli -f IP4,IP6 dev list | fgrep 'DNS' | awk '{print $2;}'`"
+    fi
+# nmcli does not exist
 else
     global_nameservers="`nm-tool | grep 'DNS:' | awk '{print $2;}'`"
 fi
