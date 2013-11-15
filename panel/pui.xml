@@ -4,7 +4,7 @@
   <object class="GtkDialog" id="hotsign_dialog">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
-    <property name="title" translatable="yes">Hotspot Signon</property>
+    <property name="title" translatable="yes">Disable DNSSEC for Hotspot Sign On</property>
     <property name="type_hint">dialog</property>
     <signal name="delete-event" handler="on_hotsign_dialog_delete_event" swapped="no"/>
     <child internal-child="vbox">
@@ -16,10 +16,15 @@
           <object class="GtkLabel" id="label2">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Some networks need insecure signon. After you log in to the
-network via its portal page, select &lt;i&gt;Reprobe&lt;/i&gt; to get secure again.
+            <property name="label" translatable="yes">Some networks, such as Hotspots, require you to sign on, or register,
+before allowing full network access. By clicking &lt;i&gt;OK&lt;/i&gt;, DNSSEC will be
+disabled to allow you to connect to the captive portal's sign-on
+page. After you have signed on and full network access has been enabled,
+DNSSEC-trigger should detect this and enable DNSSEC again. You can also
+select &lt;i&gt;Reprobe&lt;/i&gt; to attempt to establish a secure connection to a DNSSEC
+capable name server.
 
-&lt;i&gt;Please, stay safe out there.&lt;/i&gt;</property>
+&lt;i&gt;A red exclamation mark in the icon warns you when DNSSEC is disabled.&lt;/i&gt;</property>
             <property name="use_markup">True</property>
           </object>
           <packing>
@@ -138,10 +143,10 @@ network via its portal page, select &lt;i&gt;Reprobe&lt;/i&gt; to get secure aga
           <object class="GtkLabel" id="label3">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">There is no web access on this network. Do you have to login for that?
+            <property name="label" translatable="yes">There is no access to external websites from this network. Do you have to login for that?
 
-While you login you are &lt;i&gt;insecure&lt;/i&gt;, for backwards compatibility, until
-dnssec-trigger can detect web access.
+When you select &lt;i&gt;Log in&lt;/i&gt;, DNSSEC will be disabled for backwards compatibility reasons, until
+DNSSEC-trigger can detect web access.
 
 &lt;i&gt;Skip&lt;/i&gt; this if you do not have to log in on this network.</property>
             <property name="use_markup">True</property>
@@ -162,7 +167,7 @@ dnssec-trigger can detect web access.
   <object class="GtkDialog" id="result_dialog">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
-    <property name="title" translatable="yes">probe dnssec results</property>
+    <property name="title" translatable="yes">Results of DNSSEC probe</property>
     <property name="default_width">400</property>
     <property name="default_height">280</property>
     <property name="type_hint">normal</property>
@@ -251,7 +256,7 @@ dnssec-trigger can detect web access.
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="use_action_appearance">False</property>
-        <property name="label" translatable="yes">Hotspot signon</property>
+        <property name="label" translatable="yes">Hotspot sign-on</property>
         <property name="use_underline">True</property>
         <signal name="activate" handler="on_hotspotsignon_activate" swapped="no"/>
       </object>
@@ -331,28 +336,29 @@ dnssec-trigger can detect web access.
           <object class="GtkLabel" id="label1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">&lt;b&gt;The Network Fails to Support DNSSEC&lt;/b&gt;
+            <property name="label" translatable="yes">&lt;b&gt;This Network Fails to Support DNSSEC&lt;/b&gt;
 
-The network you are connected to does not allow DNSSEC, via
-the provided DNS caches, nor via contacting servers on the
-internet directly (it filters traffic to this end).  It is not possible
-to provide DNSSEC security, but you can connect insecurely.
+The network you are connected to does not allow DNS Security
+Extensions (DNSSEC) via the provided DNS caches, nor via contacting
+DNS name servers on the Internet directly (it filters traffic
+to this end). It is not possible to provide DNSSEC, but you can
+connect insecurely.
 
 Do you want to connect insecurely?
 
-* if you choose &lt;b&gt;Disconnect&lt;/b&gt; then DNS is disabled. It is safe,
-but there is very little that works.
+* if you choose &lt;b&gt;Disconnect&lt;/b&gt; then DNS is disabled.
+It is safe, but there is very little that works.
 
-* if you choose &lt;b&gt;Insecure&lt;/b&gt; then the DNSSEC security is lost.
+* if you choose &lt;b&gt;Insecure&lt;/b&gt; then the DNSSEC is lost.
 You can connect and work. But there is no safety. The network
 interferes with DNSSEC, it may also interfere with other things.
 Have caution and work with sensitive personal and financial
 things some other time.
 
-Some hotspots may work after you have gained access via
-its signon page. Then use &lt;i&gt;Reprobe&lt;/i&gt; from the menu to retry. 
+Some Hotspots may work after you have gained access via
+its sign-on page. Then use &lt;i&gt;Reprobe&lt;/i&gt; from the menu to retry. 
 
-&lt;i&gt;Stay safe out there!&lt;/i&gt;</property>
+&lt;i&gt;A red exclamation mark in the icon warns you when DNSSEC is disabled.&lt;/i&gt;</property>
             <property name="use_markup">True</property>
           </object>
           <packing>
@@ -383,7 +389,7 @@ its signon page. Then use &lt;i&gt;Reprobe&lt;/i&gt; from the menu to retry.
           <object class="GtkLabel" id="update_label">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">There is a software update available for dnssec-trigger.
+            <property name="label" translatable="yes">There is a software update available for DNSSEC-trigger.
 Do you wish to install the update?</property>
             <property name="use_markup">True</property>
           </object>
