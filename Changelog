@@ -1,3 +1,8 @@
+25 November 2013: Wouter
+	- Added fedora/dnssec-trigger-resolvconf-handle.sh from Tomas
+	  Hozza, that will backup and restore resolv.conf for use in
+	  systemd.service scripts and networkmanager scripts.
+
 15 November 2013: Wouter
 	- Patch from Tomas Hozza that improves text in dialogs (on linux).
 
