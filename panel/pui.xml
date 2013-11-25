@@ -349,7 +349,7 @@ Do you want to connect insecurely?
 * if you choose &lt;b&gt;Disconnect&lt;/b&gt; then DNS is disabled.
 It is safe, but there is very little that works.
 
-* if you choose &lt;b&gt;Insecure&lt;/b&gt; then the DNSSEC is lost.
+* if you choose &lt;b&gt;Insecure&lt;/b&gt; then DNSSEC is disabled and security is lost.
 You can connect and work. But there is no safety. The network
 interferes with DNSSEC, it may also interfere with other things.
 Have caution and work with sensitive personal and financial
