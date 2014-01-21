@@ -1,3 +1,6 @@
+21 January 2014: Wouter
+	- Added contrib networkmanager dispatcher script from Tomas Hozza.
+
 25 November 2013: Wouter
 	- Added fedora/dnssec-trigger-resolvconf-handle.sh from Tomas
 	  Hozza, that will backup and restore resolv.conf for use in
