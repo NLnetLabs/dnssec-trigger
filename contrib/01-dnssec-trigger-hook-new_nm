@@ -15,7 +15,8 @@ import sys
 
 
 # DO NOT CHANGE THE VALUE HERE, CHANGE IT IN **DNSSEC_CONF** file
-DEFAULT_VALIDATE_FORWARD_ZONES = False
+DEFAULT_VALIDATE_FORWARD_ZONES = True
+DEFAULT_ADD_WIFI_PROVIDED_ZONES = False
 
 STATE_DIR = "/var/run/dnssec-trigger"
 DNSSEC_CONF = "/etc/dnssec.conf"
@@ -27,15 +28,31 @@ DNSSEC_TRIGGER_CONTROL = "/usr/sbin/dnssec-trigger-control"
 PIDOF = "/usr/sbin/pidof"
 
 
-class ActiveConnection:
+class FZonesConfig:
 
     """
-    Simple class representing NM Active Connection with information relenat
-    fot this script.
+    Class representing dnssec-trigger script forward zones behaviour
+    configuration.
     """
 
     def __init__(self):
-        self.is_vpn = False
+        self.validate_fzones = DEFAULT_VALIDATE_FORWARD_ZONES
+        self.add_wifi_zones = DEFAULT_ADD_WIFI_PROVIDED_ZONES
+
+
+class ActiveConnection:
+
+    """
+    Simple class representing NM Active Connection with information relevant
+    for this script.
+    """
+
+    TYPE_WIFI = "WIFI"
+    TYPE_VPN = "VPN"
+    TYPE_OTHER = "OTHER"
+
+    def __init__(self):
+        self.type = self.TYPE_OTHER
         self.is_default = False
         self.nameservers = []
         self.domains = []
@@ -44,7 +61,7 @@ class ActiveConnection:
 
     def __str__(self):
         string = "UUID: " + self.get_uuid() + "\n"
-        string += "VPN: " + str(self.get_is_vpn()) + "\n"
+        string += "TYPE: " + str(self.get_type()) + "\n"
         string += "DEFAULT: " + str(self.get_is_default()) + "\n"
         string += "NS: " + str(self.get_nameservers()) + "\n"
         string += "DOMAINS: " + str(self.get_domains())
@@ -53,8 +70,8 @@ class ActiveConnection:
     def get_uuid(self):
         return self.uuid
 
-    def get_is_vpn(self):
-        return self.is_vpn
+    def get_type(self):
+        return self.type
 
     def get_is_default(self):
         return self.is_default
@@ -68,8 +85,13 @@ class ActiveConnection:
     def set_uuid(self, uuid=""):
         self.uuid = uuid
 
-    def set_is_vpn(self, is_vpn=True):
-        self.is_vpn = is_vpn
+    def set_type(self, conn_type=TYPE_OTHER):
+        if conn_type == self.TYPE_VPN:
+            self.type = self.TYPE_VPN
+        elif conn_type == self.TYPE_WIFI:
+            self.type = self.TYPE_WIFI
+        else:
+            self.type = self.TYPE_OTHER
 
     def set_is_default(self, is_default=True):
         self.is_default = is_default
@@ -96,26 +118,34 @@ def ip6_to_str(ip6):
     return socket.inet_ntop(socket.AF_INET6, addr_struct)
 
 
-def get_if_validate_fzones_from_conf(conf_file=""):
+def get_fzones_settings_from_conf(conf_file=""):
     """
-    Reads if to validate forward zones from passed config file.
+    Reads the forward zones behaviour config from file.
     """
-    validate = DEFAULT_VALIDATE_FORWARD_ZONES
+    config = FZonesConfig()
+
     try:
         with open(conf_file, "r") as f:
-            for line in f.readlines():
-                option_line = line.strip().split("=")
+            lines = [l.strip()
+                     for l in f.readlines() if l.strip() and not l.strip().startswith("#")]
+            for line in lines:
+                option_line = line.split("=")
                 if option_line:
                     if option_line[0].strip() == "validate_connection_provided_zones":
                         if option_line[1].strip() == "yes":
-                            validate = True
+                            config.validate_fzones = True
                         else:
-                            validate = False
+                            config.validate_fzones = False
+                    elif option_line[0].strip() == "add_wifi_provided_zones":
+                        if option_line[1].strip() == "yes":
+                            config.add_wifi_zones = True
+                        else:
+                            config.add_wifi_zones = False
     except IOError:
         # we don't mind if the config file does not exist
         pass
 
-    return validate
+    return config
 
 
 def get_nm_active_connections():
@@ -133,14 +163,26 @@ def get_nm_active_connections():
         # get the UUID
         new_connection.set_uuid(connection.get_uuid())
 
-        # Find out if the ActiveConnection is VPN
-        # new_connection.set_is_vpn(connection.get_vpn())
+        # Find out if the ActiveConnection is VPN, WIFI or OTHER
         try:
             connection.get_vpn_state()
         except AttributeError:
-            new_connection.set_is_vpn(False)
+            # We don't need to change anything
+            pass
         else:
-            new_connection.set_is_vpn(True)
+            new_connection.set_type(ActiveConnection.TYPE_VPN)
+
+        # if the connection is NOT VPN, then check if it's WIFI
+        if new_connection.get_type() != ActiveConnection.TYPE_VPN:
+            try:
+                device_type = connection.get_devices()[
+                    0].get_device_type().value_name
+            except AttributeError:
+                # We don't need to change anything
+                pass
+            else:
+                if device_type == "NM_DEVICE_TYPE_WIFI":
+                    new_connection.set_type(ActiveConnection.TYPE_WIFI)
 
         # Finc out if default connection for IP4 or IP6
         if connection.get_default() or connection.get_default6():
@@ -159,13 +201,12 @@ def get_nm_active_connections():
             for ip4 in ips4_int:
                 ips.append(ip4_to_str(ip4))
         try:
-            ips6_int = connection.get_ip6_config().get_nameservers()
+            num = connection.get_ip6_config().get_num_nameservers()
+            for i in range(0,num):
+                ips.append(ip6_to_str(connection.get_ip6_config().get_nameserver(i)))
         except AttributeError:
             # we don't mind if there are no IP6 nameservers
             pass
-        else:
-            for ip6 in ips6_int:
-                ips.append(ip6_to_str(ip6))
         new_connection.set_nameservers(ips)
 
         # Get domains (IP4 + IP6)
@@ -257,7 +298,7 @@ def unbound_add_forward_zone(domain="", servers=[], secure=DEFAULT_VALIDATE_FORW
 
         if ret == 0:
             syslog.syslog(
-                syslog.LOG_INFO, "Added " + validated + " connection provided forward zone '" + domain + "' with NS: " + servers_list)            
+                syslog.LOG_INFO, "Added " + validated + " connection provided forward zone '" + domain + "' with NS: " + servers_list)
         else:
             syslog.syslog(
                 syslog.LOG_ERR, "NOT added connection provided forward zone '" + domain + "' with NS: " + servers_list)
@@ -419,13 +460,21 @@ def configure_global_forwarders(active_connections=[]):
 ##############################################################################
 
 
-def configure_forward_zones(active_connections=[], secure=DEFAULT_VALIDATE_FORWARD_ZONES):
+def configure_forward_zones(active_connections=[], fzones_config=None):
     """
     Configures forward zones in the unbound using unbound-control.
-    """    
-    
+    """
+    # Filter out WIFI connections if desirable
+    if not fzones_config.add_wifi_zones:
+        connections = filter(
+            lambda x: x.get_type() != ActiveConnection.TYPE_WIFI, active_connections)
+    else:
+        connections = active_connections
+    # If validate forward zones
+    secure = fzones_config.validate_fzones
+
     # Filter active connections with domain(s)
-    conns_with_domains = filter(lambda x: x.get_domains(), active_connections)
+    conns_with_domains = filter(lambda x: x.get_domains(), connections)
     fzones_from_ac = {}
     # Construct dict of domain -> active connection
     for conn in conns_with_domains:
@@ -434,9 +483,10 @@ def configure_forward_zones(active_connections=[], secure=DEFAULT_VALIDATE_FORWA
             # if there is already such a domain
             if domain in fzones_from_ac:
                 # if the "conn" is VPN and the conn for existing domain is not
-                if not fzones_from_ac[domain].get_is_vpn() and conn.get_is_vpn():
+                if fzones_from_ac[domain].get_type() != ActiveConnection.TYPE_VPN and conn.get_type() == ActiveConnection.TYPE_VPN:
                     fzones_from_ac[domain] = conn
-                # if none of there connections are VPNs or both are VPNs, prefer the default one
+                # if none of there connections are VPNs or both are VPNs,
+                # prefer the default one
                 elif not fzones_from_ac[domain].get_is_default() and conn.get_is_default():
                     fzones_from_ac[domain] = conn
             else:
@@ -480,18 +530,17 @@ def configure_forward_zones(active_connections=[], secure=DEFAULT_VALIDATE_FORWA
 
 if __name__ == "__main__":
     if not is_running(DNSSEC_TRIGGER):
-        syslog.syslog(
-            syslog.LOG_ERR, "dnssec-triggerd daemon is not runnning!")
+        syslog.syslog(syslog.LOG_ERR, "dnssec-triggerd daemon is not running!")
         sys.exit(1)
     if not is_running(UNBOUND):
-        syslog.syslog(syslog.LOG_ERR, "unbound server daemon is not runnning!")
+        syslog.syslog(syslog.LOG_ERR, "unbound server daemon is not running!")
         sys.exit(1)
 
-    validate_fzones = get_if_validate_fzones_from_conf(DNSSEC_CONF)
+    fzones_config = get_fzones_settings_from_conf(DNSSEC_CONF)
 
     # Get all actove connections from NM
     ac = get_nm_active_connections()
     # Configure global forwarders
     configure_global_forwarders(ac)
     # Configure forward zones
-    configure_forward_zones(ac, validate_fzones)
+    configure_forward_zones(ac, fzones_config)

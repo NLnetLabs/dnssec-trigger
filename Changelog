@@ -1,3 +1,7 @@
+28 January 2014: Wouter
+	- Added patch to networkmanager dispatcher script and also
+	  an example dnssec.conf file from Tomas Hozza.
+
 21 January 2014: Wouter
 	- Added contrib networkmanager dispatcher script from Tomas Hozza.
 

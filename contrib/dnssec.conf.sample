@@ -1,0 +1,54 @@
+# validate_connection_provided_zones:
+# -----------------------------------
+# Setts if forward zones added into unbound by dnssec-trigger script
+# will be DNSSEC validated or NOT. Note that this setting is global
+# for all added forward zones..
+# Possible options are:
+#
+# validate_connection_provided_zones=yes - All connection provided zones
+#                                          configured as forward zones into
+#                                          unbound WILL BE DNSSEC validated
+#                                          (NOTE: If connection provided DNS
+#                                          servers are NOT DNSSEC capable, the
+#                                          resolving of provided zones will
+#                                          NOT work!)
+#
+# validate_connection_provided_zones=no - All connection provided zones
+#                                         configured as forward zones into
+#                                         unbound will NOT be DNSSEC validated
+#
+#
+# NOTICE: if you turn the validation OFF then all forward zones added by
+# dnssec-trigger script will NOT be DNSSEC validated. If you turn the
+# validation ON, only newly added forward zones will be DNSSEC validated.
+# Forward zones added before the change will still NOT be DNSSEC validated.
+# To force validation of previously added forward zone you need to restart
+# it. For VPNs this can be done by restart NetworkManager.
+validate_connection_provided_zones=yes
+
+# add_wifi_provided_zones:
+# ------------------------
+# Setts if domains provided by WiFi connection are configured as forward zones
+# into unbound.
+# Possible options are:
+#
+# add_wifi_provided_zones=yes - Domains provided by ANY WiFi connection will
+#                               be configured as forward zones into unbound.
+#                               (NOTE: See the possible security implications
+#                               stated below!)
+#
+# add_wifi_provided_zones=no - Domains provided by ANY WiFi connection will
+#                              NOT be configured as forward zones into unbound.
+#                              (NOTE: Forward zones will be still configured
+#                              for any other type of connection!)
+#
+# NOTICE: Turning ON the addition of WiFi provided domains as forward zones
+# into unbound may have SECURITY implications such as:
+# - A WiFi access point can intentionally provide you a domain via DHCP for
+#   which it does not have authority and route all your DNS queries to its
+#   DNS servers.
+# - In addition to the previous point, if you have the DNSSEC validation
+#   of forward zones turned OFF, the WiFi provided DNS servers can spoof
+#   the IP address for domain names from the provided domain WITHOUT YOU
+#   KNOWING IT! 
+add_wifi_provided_zones=no

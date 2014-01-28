@@ -3,4 +3,6 @@ distribution but may be helpful.
 
 * 01-dnssec-trigger-hook-new_nm : replacement of the networkmanager dispatcher
 script.  Uses python and needs 0.9.9.0-git version of NM (fedora 20+).
+* dnssec.conf.sample : example of dnssec.conf configuration file read by the
+01-dnssec-trigger-hook-new_nm dispatcher script.
 
