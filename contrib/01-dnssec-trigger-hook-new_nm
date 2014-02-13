@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2
 # -*- coding: utf-8 -*-
 """
 @author: Tomas Hozza <thozza@redhat.com>
@@ -177,6 +177,10 @@ def get_nm_active_connections():
             try:
                 device_type = connection.get_devices()[
                     0].get_device_type().value_name
+            except IndexError:
+                # if there is no device for a connection, the connection
+                # is going down so ignore it...
+                continue
             except AttributeError:
                 # We don't need to change anything
                 pass

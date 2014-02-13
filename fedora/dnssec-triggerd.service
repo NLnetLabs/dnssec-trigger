@@ -3,16 +3,20 @@ Description=Reconfigure local DNS(SEC) resolver on network change
 After=syslog.target network.target
 After=dnssec-triggerd-keygen.service
 Wants=dnssec-triggerd-keygen.service
+After=dnssec-triggerd-resolvconf-handle.service
+Wants=dnssec-triggerd-resolvconf-handle.service
 After=unbound.service
 Wants=unbound.service
 
 [Service]
-PIDFile=/var/run/dnssec-triggerd.pid
+Type=simple
+Restart=always
 #EnvironmentFile=-/etc/sysconfig/dnssec-trigger
 ExecStart=/usr/sbin/dnssec-triggerd -d
 ExecStartPost=/etc/NetworkManager/dispatcher.d/01-dnssec-trigger-hook
-Restart=always
 RestartSec=0
+ExecStopPost=/usr/bin/chattr -i /etc/resolv.conf
 
 [Install]
 WantedBy=multi-user.target
+Alias=dnssec-trigger.service
