@@ -1,0 +1,11 @@
+[Unit]
+Description=Backups and restores /etc/resolv.conf after dnssec-trigger starts/stops
+PartOf=dnssec-triggerd.service
+
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+ExecStart=/usr/libexec/dnssec-triggerd-resolvconf-handle.sh backup
+ExecStop=/usr/libexec/dnssec-triggerd-resolvconf-handle.sh restore
