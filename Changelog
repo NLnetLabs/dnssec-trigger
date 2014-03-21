@@ -1,3 +1,7 @@
+21 March 2014: Wouter
+	- Patch from Pavel Simerda: better integration with NetworkManager and
+	  distributions, added in contrib.
+
 13 February 2014: Wouter
 	- Patches from Tomass Hozza; Explicitly-use-Python2-interpreter,
 	  Fix-situation-when-connection-is-going-down,

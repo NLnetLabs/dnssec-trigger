@@ -1,0 +1,16 @@
+#!/bin/sh
+#
+# Script to notify dnssec-trigger that the DNS configuration in NetworkManager
+# may have changed.
+
+# Future versions of NetworkManager will have an active unbound/dnssec-trigger
+# plugin. Don't intervene when the new plugin is being used.
+if [ -e /etc/NetworkManager/NetworkManager.conf ]; then
+    grep -q '^dns=unbound\>' /etc/NetworkManager/NetworkManager.conf && exit 0
+fi
+
+# Exec the dnssec-trigger update script that uses NetworkManager API to gather
+# all the necessary information.
+if [ -x /usr/libexec/dnssec-trigger-script ]; then
+    exec /usr/libexec/dnssec-trigger-script --update
+fi
