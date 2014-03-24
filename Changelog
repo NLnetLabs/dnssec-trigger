@@ -1,3 +1,20 @@
+24 March 2014: Wouter
+	- Removed files obsoleted by patch from Pavel Simerda:
+	  contrib/01-dnssec-trigger-hook-new_nm
+	  (replaced with dnssec-trigger-script and 01-dnssec-trigger)
+	  fedora/dnssec-triggerd.service
+	  (new version in contrib)
+	  fedora/dnssec-triggerd-resolvconf-handle.service
+	  (handled by dnssec-triggerd.service directly)
+	  fedora/dnssec-trigger.spec
+	  (spec files are maintained separately)
+	  fedora/dnssec-triggerd-keygen.service
+	  (new version in contrib)
+	  fedora/dnssec-triggerd-resolvconf-handle.sh
+	  (handled by dnssec-trigger-script directly)
+	  fedora/dnssec-triggerd.init
+	  (only used in epel6 which hasn't been updated for ages)
+
 21 March 2014: Wouter
 	- Patch from Pavel Simerda: better integration with NetworkManager and
 	  distributions, added in contrib.
