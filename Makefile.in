@@ -193,11 +193,11 @@ none-hook:
 
 windows-hook:	dnssec-trigger-keygen$(EXEEXT)
 
-networkmanager-hook:	01-dnssec-trigger-hook
+networkmanager-hook:	01-dnssec-trigger
 
-01-dnssec-trigger-hook:	$(srcdir)/01-dnssec-trigger-hook.sh.in Makefile
+01-dnssec-trigger:	$(srcdir)/01-dnssec-trigger.in Makefile
 	rm -f $@
-	sed -e 's?0SHELL0?$(SHELL)?' -e 's?0sbindir0?$(sbindir)?' -e 's?0bindir0?$(bindir)?' < $(srcdir)/01-dnssec-trigger-hook.sh.in > $@
+	sed -e 's?0SHELL0?$(SHELL)?' -e 's?0sbindir0?$(sbindir)?' -e 's?0bindir0?$(bindir)?' < $(srcdir)/01-dnssec-trigger.in > $@
 	chmod +x $@
 
 osx/RiggerStatusItem/log.c:	$(srcdir)/riggerd/log.c osx/RiggerStatusItem
@@ -308,7 +308,7 @@ clean:
 	rm -f *.o *.d *.lo *~ tags
 	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
 	rm -f dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT)
-	rm -f 01-dnssec-trigger-hook dnssec-trigger-osx.sh nl.nlnetlabs.dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf nl.nlnetlabs.dnssec-triggerd.plist nl.nlnetlabs.dnssec-trigger-panel.plist dnssec-trigger-setdns.sh osx/osx-riggerapp
+	rm -f 01-dnssec-trigger dnssec-trigger-osx.sh nl.nlnetlabs.dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf nl.nlnetlabs.dnssec-triggerd.plist nl.nlnetlabs.dnssec-trigger-panel.plist dnssec-trigger-setdns.sh osx/osx-riggerapp
 	rm -f dnssec-trigger-panel.desktop dnssec-trigger.8 dnssec-trigger-keygen$(EXEEXT)
 	rm -rf autom4te.cache build osx/RiggerStatusItem/build
 
@@ -348,12 +348,12 @@ windows-hook-uninstall:
 
 networkmanager-hook-install:
 	$(INSTALL) -m 755 -d $(DESTDIR)$(networkmanager_dispatcher_dir)
-	$(INSTALL) -c -m 755 01-dnssec-trigger-hook $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger-hook
+	$(INSTALL) -c -m 755 01-dnssec-trigger $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger
 
 networkmanager-hook-uninstall:
 	@echo "attempt to restore resolv.conf mutability"
 	$(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT) -u
-	rm -f $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger-hook
+	rm -f $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger
 
 osx-hook-install:
 	$(INSTALL) -m 755 -d $(DESTDIR)$(osx_launchdaemons_dir)
