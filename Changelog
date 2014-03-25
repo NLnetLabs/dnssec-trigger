@@ -1,6 +1,7 @@
 24 March 2014: Wouter
 	- Renamed 01-dnssec-trigger-hook to 01-dnssec-trigger with the
 	  networkmanager naming scheme.  (From Pavel Simerda).
+	- put contrib/01-dnssec-trigger into 01-dnssec-trigger.in
 
 24 March 2014: Wouter
 	- Removed files obsoleted by patch from Pavel Simerda:
