@@ -1,3 +1,8 @@
+8 April 2014: Wouter
+	- Patch for dnssec-trigger-script.in --async flag from Pavel Simerda,
+	  stops dnssec-trigger-script to block on networkmanager, which is
+	  good in cases when networkmanager blocks on the script.
+
 28 March 2014: Wouter
 	- Patch from Pavel Simerda that incorporates contrib items into
 	  the build install system.  Systemd scripts, dnssec-trigger-script,

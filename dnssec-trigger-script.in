@@ -284,6 +284,10 @@ class Application:
         if len(argv) > 1 and argv[1] == '--debug':
             argv.pop(1)
             log.setLevel(logging.DEBUG)
+        if len(argv) > 1 and argv[1] == '--async':
+            argv.pop(1)
+            if os.fork():
+                sys.exit()
         if len(argv) < 2 or not argv[1].startswith('--'):
             self.usage()
         try:
@@ -305,7 +309,7 @@ class Application:
         return True
 
     def usage(self):
-        raise UserError("Usage: dnssec-trigger-script [--debug] --prepare|--update|--update-global-forwarders|--update-connection-zones|--cleanup")
+        raise UserError("Usage: dnssec-trigger-script [--debug] [--async] --prepare|--update|--update-global-forwarders|--update-connection-zones|--cleanup")
 
     def run(self):
         log.debug("Running: {}".format(self.method.__name__))
