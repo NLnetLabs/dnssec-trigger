@@ -245,6 +245,25 @@ section "-hidden.postinstall"
 	# uninstaller
 	WriteUninstaller "uninst.exe"
 
+	# see if we are overwriting old IPs version
+	Var /GLOBAL replaceconfig
+	ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DnssecTrigger" "DisplayName"
+	# copy 19 characters "DnssecTigger 0.11x" for snapshots and rc versions.
+	StrCpy $1 $0 19
+	StrCmp $1 "DnssecTrigger 0.11" replace_ips no_replace_ips
+	StrCmp $1 "DnssecTrigger 0.10" replace_ips no_replace_ips
+	StrCmp $1 "DnssecTrigger 0.11_" replace_ips no_replace_ips
+	StrCmp $1 "DnssecTrigger 0.10_" replace_ips no_replace_ips
+	StrCmp $1 "DnssecTrigger 0.11r" replace_ips no_replace_ips
+	StrCmp $1 "DnssecTrigger 0.10r" replace_ips no_replace_ips
+replace_ips:
+	StrCpy $replaceconfig "yes"
+	goto replace_check_done
+no_replace_ips:
+	StrCpy $replaceconfig "no"
+	goto replace_check_done
+replace_check_done:
+
 	# register uninstaller
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DnssecTrigger" "DisplayName" "DnssecTrigger ${VERSION}"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DnssecTrigger" "UninstallString" "$\"$INSTDIR\uninst.exe$\""
@@ -257,7 +276,11 @@ section "-hidden.postinstall"
 	# for a silent install (upgrade) config file changes make no
 	# sense, right now.  If we change the registry entries,
 	# this will have to be fixed up here.
+	# If the config file contains old IP addresses, then we have to setup
+	# the config again.
+	StrCmp $replaceconfig "yes" do_config_anyway
 	IfSilent skip_config
+do_config_anyway:
 
 	DetailPrint "Setup config files"
 	Delete "$INSTDIR\unbound.conf"

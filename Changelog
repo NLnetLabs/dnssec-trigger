@@ -1,3 +1,10 @@
+15 April 2014: Wouter
+	- Change the ip-address of tcp and ssl service from broer.nlnetlabs.nl
+	  to zus.nlnetlabs.nl (we changed netblocks).  The new ip address
+	  and new certificate fingerprint (because of ssl heartbleed vuln)
+	  are in the example.conf file.  The cert was only used for transport
+	  and not for authentication, so its change was low priority.
+
 8 April 2014: Wouter
 	- Patch for dnssec-trigger-script.in --async flag from Pavel Simerda,
 	  stops dnssec-trigger-script to block on networkmanager, which is

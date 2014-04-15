@@ -237,9 +237,21 @@ if [[ ! -f /etc/dnssec-trigger/dnssec-trigger.conf ]]; then
 	cp /etc/dnssec-trigger/dnssec-trigger.conf-default /etc/dnssec-trigger/dnssec-trigger.conf
 else
 	if grep ssl443 /etc/dnssec-trigger/dnssec-trigger.conf >/dev/null && grep "url:" /etc/dnssec-trigger/dnssec-trigger.conf >/dev/null && grep "login-location" /etc/dnssec-trigger/dnssec-trigger.conf >/dev/null; then
-		:
+		# config looks okay, check more
+		if grep 185.49.140.67 /etc/dnssec-trigger/dnssec-trigger.conf >/dev/null; then
+			:
+		else
+			# need new IPs. add them, keeps existing settings
+			mv /etc/dnssec-trigger/dnssec-trigger.conf /etc/dnssec-trigger/dnssec-trigger.conf.old
+			grep -v -e "213.154.224.3" -e "2001:7b8:206:1:bb::" < /etc/dnssec-trigger/dnssec-trigger.conf.old > /etc/dnssec-trigger/dnssec-trigger.conf
+			echo "tcp80: 185.49.140.67" >> /etc/dnssec-trigger/dnssec-trigger.conf
+			echo "tcp80: 2a04:b900::10:0:0:67" >> /etc/dnssec-trigger/dnssec-trigger.conf
+			echo "ssl443: 185.49.140.67 7E:CF:B4:BE:B9:9A:56:0D:F7:3B:40:51:A4:78:E6:A6:FD:66:0F:10:58:DC:A8:2E:C0:43:D4:77:5A:71:8A:CF" >> /etc/dnssec-trigger/dnssec-trigger.conf
+			echo "ssl443: 2a04:b900::10:0:0:67 7E:CF:B4:BE:B9:9A:56:0D:F7:3B:40:51:A4:78:E6:A6:FD:66:0F:10:58:DC:A8:2E:C0:43:D4:77:5A:71:8A:CF" >> /etc/dnssec-trigger/dnssec-trigger.conf
+		fi
 	else
 		# need the new setting, copy anyway.
+		cp /etc/dnssec-trigger/dnssec-trigger.conf /etc/dnssec-trigger/dnssec-trigger.conf.old
 		cp /etc/dnssec-trigger/dnssec-trigger.conf-default /etc/dnssec-trigger/dnssec-trigger.conf
 		runsetupi="yes"
 	fi
