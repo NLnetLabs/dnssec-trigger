@@ -178,50 +178,61 @@ class Connection:
 class UnboundZoneConfig:
     """A dictionary-like proxy object for Unbound's forward zone configuration."""
 
-    def __init__(self, secure=True):
+    def __init__(self):
         subprocess.check_call(["unbound-control", "status"], stdout=DEVNULL, stderr=DEVNULL)
-        self.secure = secure
         self.cache = {}
         for line in subprocess.check_output(["unbound-control", "list_forwards"]).decode().split('\n'):
-            fields = line.split(" ")
-            self.cache[fields[0][:-1]] = set(fields[3:])
+            if line:
+                fields = line.split(" ")
+                name = fields.pop(0)[:-1]
+                if fields[0] == 'IN':
+                    fields.pop(0)
+                if fields.pop(0) in ('forward', 'forward:'):
+                    fields.pop(0)
+                secure = False
+                if fields[0] == '+i':
+                    secure = True
+                    fields.pop(0)
+                self.cache[name] = set(fields[3:]), secure
         log.debug(self)
 
     def __repr__(self):
-        return "<UnboundZoneConfig(secure={secure} data={cache})>".format(**vars(self))
+        return "<UnboundZoneConfig(data={cache})>".format(**vars(self))
 
     def __iter__(self):
         return iter(self.cache)
 
-    def add(self, zone, servers):
+    def add(self, zone, servers, secure):
         """Install a forward zone into Unbound."""
 
-        self._commit(zone, set(servers))
+        self._commit(zone, set(servers), secure)
 
-        secure = "validated" if self.secure else "insecure"
-        log.info("Connection provided zone '{}' ({}): {}".format(zone, secure, ', '.join(servers)))
+        log.info("Connection provided zone '{}' ({}): {}".format(
+            zone, "validated" if secure else "insecure", ', '.join(servers)))
 
     def remove(self, zone):
         """Remove a forward zone from Unbound."""
 
-        self._commit(zone, None)
+        self._commit(zone, None, None)
 
-    def _commit(self, zone, servers):
+    def _commit(self, name, servers, secure):
         # Check the list of servers.
         #
-        # TODO: We should also check the secure/insecure flag of the Unbound zone but that's currently
-        # not possible because Unbound doesn't provide a way to get it.
-        if self.cache.get(zone, []) == servers:
-            log.debug("Connection provided zone '{}' already set to {}".format(zone, servers))
+        # Older versions of unbound don't print +i and so we can't distinguish
+        # secure and insecure zones properly. Therefore we need to ignore the
+        # insecure flag which leads to not being able to switch the zone
+        # between secure and insecure unless it's removed or its servers change.
+        if self.cache.get(name, [None])[0] == servers:
+            log.debug("Connection provided zone '{}' already set to {} ({})".format(name, servers, 'secure' if servers else 'insecure'))
             return
 
         if servers:
-            self.cache[zone] = servers
-            self._control(["forward_add"] + ([] if self.secure else ["+i"]) + [zone] + list(servers))
+            self.cache[name] = servers, secure
+            self._control(["forward_add"] + ([] if secure else ["+i"]) + [name] + list(servers))
         else:
-            del self.cache[zone]
-            self._control(["forward_remove", zone])
-        self._control(["flush_zone", zone])
+            del self.cache[name]
+            self._control(["forward_remove", name])
+        self._control(["flush_zone", name])
         self._control(["flush_requestlist"])
 
         log.debug(self)
@@ -229,14 +240,15 @@ class UnboundZoneConfig:
     def _control(self, args):
         subprocess.check_call(["unbound-control"] + args, stdout=DEVNULL, stderr=DEVNULL)
 
-class ZoneStore:
-    """A proxy object to access stored zones."""
+class Store:
+    """A proxy object to access stored zones or global servers."""
 
-    path = "/var/run/dnssec-trigger/zones"
-    path_tmp = path + ".tmp"
-
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         self.cache = set()
+        self.path = os.path.join("/var/run/dnssec-trigger", name)
+        self.path_tmp = self.path + ".tmp"
+
         try:
             with open(self.path) as zone_file:
                 for line in zone_file:
@@ -248,17 +260,26 @@ class ZoneStore:
         log.debug(self)
 
     def __repr__(self):
-        return "<ZoneStore({})>".format(self.cache)
+        return "<Store(name={name}, {cache})>".format(**vars(self))
 
     def __iter__(self):
         # Don't return the set itself, as it doesn't support update during
         # iteration.
         return iter(list(self.cache))
 
+    def __bool__(self):
+        return bool(self.cache)
+
     def add(self, zone):
         """Add zone to the cache."""
 
         self.cache.add(zone)
+        log.debug(self)
+
+    def update(self, zones):
+        """Commit a new zone list."""
+
+        self.cache = set(zones)
         log.debug(self)
 
     def remove(self, zone):
@@ -278,6 +299,18 @@ class ZoneStore:
             for zone in self.cache:
                 zone_file.write("{}\n".format(zone))
         os.rename(self.path_tmp, self.path)
+
+class GlobalForwarders:
+    def __init__(self):
+        self.cache = set()
+        try:
+            with open(self.path) as zone_file:
+                for line in zone_file:
+                    line = line.strip()
+                    if line:
+                        self.cache.add(line)
+        except FileNotFoundError:
+            pass
 
 class Application:
     def __init__(self, argv):
@@ -325,7 +358,7 @@ class Application:
     def run_cleanup(self):
         """Clean up after dnssec-trigger."""
 
-        stored_zones = ZoneStore()
+        stored_zones = Store('zones')
         unbound_zones = UnboundZoneConfig()
 
         log.debug("clearing unbound configuration")
@@ -355,19 +388,20 @@ class Application:
         subprocess.check_call(["dnssec-trigger-control", "status"], stdout=DEVNULL, stderr=DEVNULL)
 
         default_connections = ConnectionList(only_default=True)
+        servers = Store('servers')
 
-        servers = sum((connection.servers for connection in default_connections), [])
-
-        if servers:
-            subprocess.check_call(["dnssec-trigger-control", "submit"] + servers)
-            log.info("Global forwarders: {}".format(' '.join(servers)))
+        if servers.update(sum((connection.servers for connection in default_connections), [])):
+            subprocess.check_call(["unbound-control", "flush_zone", "."])
+            subprocess.check_call(["dnssec-trigger-control", "submit"] + list(servers))
+            servers.commit()
+        log.info("Global forwarders: {}".format(' '.join(servers)))
 
     def run_update_connection_zones(self):
         """Configures forward zones in the unbound using unbound-control."""
 
         connections = ConnectionList(skip_wifi=not self.config.add_wifi_provided_zones).get_zone_connection_mapping()
-        unbound_zones = UnboundZoneConfig(secure=self.config.validate_connection_provided_zones)
-        stored_zones = ZoneStore()
+        unbound_zones = UnboundZoneConfig()
+        stored_zones = Store('zones')
 
         # The purpose of the zone store is to keep the list of Unbound zones
         # that are managed by dnssec-trigger-script. We don't want to track
@@ -385,19 +419,13 @@ class Application:
         # reinstall zones that are already managed by dnssec-trigger in case their
         # list of nameservers was changed.
         #
-        # TODO: Unbound currently doesn't update zones where only the
-        # secure/insecure flag was changed, see TODO in UnboundZoneConfig.
-        # We may want to work around it adding an additional field to the
-        # ZoneStore and forcing the reconfiguration in UnboundZoneConfig
-        # when appropriate.
-        #
         # TODO: In some cases, we don't seem to flush Unbound cache properly,
         # even when Unbound is restarted (and dnssec-trigger as well, because
         # of dependency).
         log.debug("installing connection provided zones")
         for zone in connections:
             if zone in stored_zones or zone not in unbound_zones:
-                unbound_zones.add(zone, connections[zone].servers)
+                unbound_zones.add(zone, connections[zone].servers, secure=self.config.validate_connection_provided_zones)
                 stored_zones.add(zone)
 
         stored_zones.commit()

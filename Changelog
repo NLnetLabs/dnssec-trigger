@@ -1,3 +1,8 @@
+7 May 2014: Wouter
+	- Updated dnssec-trigger-script.in to distinguish secure and
+	  insecure zones, and to flush the unbound cache on DNS server
+	  list changes. (from Pavel Simerda).
+
 15 April 2014: Wouter
 	- Change the ip-address of tcp and ssl service from broer.nlnetlabs.nl
 	  to zus.nlnetlabs.nl (we changed netblocks).  The new ip address
