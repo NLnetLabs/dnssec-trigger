@@ -1,6 +1,8 @@
 22 May 2014: Wouter
 	- release 0.12.
 	- trunk is 0.13 in development.
+	- updated authority server addresses builtin to dnssec-trigger for
+	  d root server (ipv4) and c root server (ipv6) for its tests.
 
 7 May 2014: Wouter
 	- Updated dnssec-trigger-script.in to distinguish secure and

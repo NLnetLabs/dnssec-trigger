@@ -172,7 +172,7 @@ get_random_auth_ip4(void)
 		"198.41.0.4", /* a */
 		"192.228.79.201", /* b */
 		"192.33.4.12", /* c */
-		"128.8.10.90", /* d */
+		"199.7.91.13", /* d */
 		"192.203.230.10", /* e */
 		"192.5.5.241", /* f */
 		"192.112.36.4", /* g */
@@ -193,6 +193,7 @@ get_random_auth_ip6(void)
 	/* list of root servers */
 	const char* choices[] = {
 		"2001:503:ba3e::2:30", /* a */
+		"2001:500:2::c", /* c */
 		"2001:500:2d::d", /* d */
 		"2001:500:2f::f", /* f */
 		"2001:500:1::803f:235", /* h */
@@ -202,7 +203,7 @@ get_random_auth_ip6(void)
 		"2001:500:3::42", /* l */
 		"2001:dc3::35" /* m */
 	};
-	return choices[ ldns_get_random() % 9 ];
+	return choices[ ldns_get_random() % 10 ];
 }
 
 static const char* get_random_tcp80_ip4(struct cfg* cfg)
