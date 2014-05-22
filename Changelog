@@ -1,5 +1,6 @@
 22 May 2014: Wouter
 	- release 0.12.
+	- trunk is 0.13 in development.
 
 7 May 2014: Wouter
 	- Updated dnssec-trigger-script.in to distinguish secure and
