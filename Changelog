@@ -1,3 +1,12 @@
+4 June 2014: Wouter
+	- Patch from Pavel Simerda. This, among other things, allows to
+	  restart unbound and/or dnssec-trigger without restarting
+	  NetworkManager when it's configured not to touch the DNS.
+	  And, avoid Filenotfounderror not available in python 2,
+	  https://bugzilla.redhat.com/show_bug.cgi?id=1100794
+	  And fix unbound output parser
+	  https://bugzilla.redhat.com/show_bug.cgi?id=1100796
+
 22 May 2014: Wouter
 	- release 0.12.
 	- trunk is 0.13 in development.

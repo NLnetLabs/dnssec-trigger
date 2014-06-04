@@ -10,6 +10,8 @@ import os, sys, shutil, subprocess
 import logging, logging.handlers
 import socket, struct
 
+
+
 DEVNULL = open("/dev/null", "wb")
 
 log = logging.getLogger()
@@ -190,7 +192,7 @@ class UnboundZoneConfig:
                 if fields.pop(0) in ('forward', 'forward:'):
                     fields.pop(0)
                 secure = False
-                if fields[0] == '+i':
+                if fields and fields[0] == '+i':
                     secure = True
                     fields.pop(0)
                 self.cache[name] = set(fields[3:]), secure
@@ -255,7 +257,7 @@ class Store:
                     line = line.strip()
                     if line:
                         self.cache.add(line)
-        except FileNotFoundError:
+        except IOError:
             pass
         log.debug(self)
 
@@ -309,7 +311,7 @@ class GlobalForwarders:
                     line = line.strip()
                     if line:
                         self.cache.add(line)
-        except FileNotFoundError:
+        except IOError:
             pass
 
 class Application:
@@ -335,7 +337,7 @@ class Application:
         try:
             with open("/etc/NetworkManager/NetworkManager.conf") as nm_config_file:
                 for line in nm_config_file:
-                    if line.strip == "dns=none":
+                    if line.strip() in ("dns=none", "dns=unbound"):
                         return False
         except IOError:
             pass
