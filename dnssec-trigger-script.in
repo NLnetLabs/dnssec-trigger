@@ -6,7 +6,7 @@
 """
 
 from gi.repository import NMClient
-import os, sys, shutil, subprocess
+import os, sys, shutil, glob, subprocess
 import logging, logging.handlers
 import socket, struct
 
@@ -17,8 +17,7 @@ DEVNULL = open("/dev/null", "wb")
 log = logging.getLogger()
 log.setLevel(logging.INFO)
 log.addHandler(logging.handlers.SysLogHandler())
-if sys.stderr.isatty():
-    log.addHandler(logging.StreamHandler())
+log.addHandler(logging.StreamHandler())
 
 # NetworkManager reportedly doesn't pass the PATH environment variable.
 os.environ['PATH'] = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
@@ -55,11 +54,10 @@ class ConnectionList:
 
     nm_connections = None
 
-    def __init__(self, only_default=False, skip_wifi=False):
+    def __init__(self, client, only_default=False, skip_wifi=False):
         # Cache the active connection list in the class
         if self.nm_connections is None:
-            self.__class__.client = NMClient.Client()
-            self.__class__.nm_connections = self.client.get_active_connections()
+            self.__class__.nm_connections = client.get_active_connections()
         self.skip_wifi = skip_wifi
         self.only_default = only_default
         log.debug(self)
@@ -279,10 +277,16 @@ class Store:
         log.debug(self)
 
     def update(self, zones):
-        """Commit a new zone list."""
+        """Commit a new set of items and return True when it differs"""
 
-        self.cache = set(zones)
-        log.debug(self)
+        zones = set(zones)
+
+        if zones != self.cache:
+            self.cache = set(zones)
+            log.debug(self)
+            return True
+
+        return False
 
     def remove(self, zone):
         """Remove zone from the cache."""
@@ -330,17 +334,24 @@ class Application:
         except AttributeError:
             self.usage()
         self.config = Config()
+        self.client = NMClient.Client()
+
+        self.resolvconf = "/etc/resolv.conf"
+        self.resolvconf_backup = "/var/run/dnssec-trigger/resolv.conf.bak"
 
     def nm_handles_resolv_conf(self):
-        if subprocess.call(["pidof", "NetworkManager"], stdout=DEVNULL, stderr=DEVNULL) != 0:
+        if not self.client.get_manager_running():
+            log.debug("NetworkManager is not running")
             return False
         try:
             with open("/etc/NetworkManager/NetworkManager.conf") as nm_config_file:
                 for line in nm_config_file:
                     if line.strip() in ("dns=none", "dns=unbound"):
+                        log.debug("NetworkManager doesn't handle /etc/resolv.conf")
                         return False
         except IOError:
             pass
+        log.debug("NetworkManager handles /etc/resolv.conf")
         return True
 
     def usage(self):
@@ -353,9 +364,19 @@ class Application:
     def run_prepare(self):
         """Prepare for dnssec-trigger."""
 
+        old_zones = glob.glob("/var/run/dnssec-trigger/????????-????-????-????-????????????")
+        if old_zones:
+            log.info("Converting to new zone cache format")
+            with open("/var/run/dnssec-trigger/zones", "a") as target:
+                for filename in old_zones:
+                    with open(filename) as source:
+                        for line in source:
+                            print(line.strip(), file=target)
+                    os.remove(filename)
+
         if not self.nm_handles_resolv_conf():
             log.info("Backing up /etc/resolv.conf")
-            shutil.copy("/etc/resolv.conf", "/var/run/dnssec-trigger/resolv.conf.bak")
+            shutil.copy(self.resolvconf, self.resolvconf_backup)
 
     def run_cleanup(self):
         """Clean up after dnssec-trigger."""
@@ -372,7 +393,10 @@ class Application:
         log.debug("recovering /etc/resolv.conf")
         subprocess.check_call(["chattr", "-i", "/etc/resolv.conf"])
         if not self.nm_handles_resolv_conf():
-            shutil.copy("/var/run/dnssec-trigger/resolv.conf.bak", "/etc/resolv.conf")
+            try:
+                shutil.copy(self.resolvconf_backup, self.resolvconf)
+            except IOError as error:
+                log.warning("Cannot restore resolv.conf from {!r}: {}".format(self.resolvconf_backup, error.strerror))
         # NetworkManager currently doesn't support explicit /etc/resolv.conf
         # write out. For now we simply restart the daemon.
         elif os.path.exists("/sys/fs/cgroup/systemd"):
@@ -389,7 +413,7 @@ class Application:
 
         subprocess.check_call(["dnssec-trigger-control", "status"], stdout=DEVNULL, stderr=DEVNULL)
 
-        default_connections = ConnectionList(only_default=True)
+        default_connections = ConnectionList(self.client, only_default=True)
         servers = Store('servers')
 
         if servers.update(sum((connection.servers for connection in default_connections), [])):
@@ -401,7 +425,7 @@ class Application:
     def run_update_connection_zones(self):
         """Configures forward zones in the unbound using unbound-control."""
 
-        connections = ConnectionList(skip_wifi=not self.config.add_wifi_provided_zones).get_zone_connection_mapping()
+        connections = ConnectionList(self.client, skip_wifi=not self.config.add_wifi_provided_zones).get_zone_connection_mapping()
         unbound_zones = UnboundZoneConfig()
         stored_zones = Store('zones')
 

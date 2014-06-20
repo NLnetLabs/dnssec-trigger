@@ -1,3 +1,13 @@
+20 June 2014: Wouter
+	- Patches from Pavel Simerda:
+	  fix bug that prevents calling dnssec-trigger-control
+	  submit (https://bugzilla.redhat.com/show_bug.cgi?id=1105896)
+	  avoid dependency on pidof
+	  handle missing resolv.conf backup gracefully
+	  upgrade zone cache format at startup (
+	  https://bugzilla.redhat.com/show_bug.cgi?id=1111143)
+	  always log to stderr
+
 4 June 2014: Wouter
 	- Patch from Pavel Simerda. This, among other things, allows to
 	  restart unbound and/or dnssec-trigger without restarting
