@@ -1,3 +1,6 @@
+23 June 2014: Wouter
+	- Patch from Pavel Simerda: Fixup for python2.
+
 20 June 2014: Wouter
 	- Patches from Pavel Simerda:
 	  fix bug that prevents calling dnssec-trigger-control

@@ -5,12 +5,12 @@
 @author: Pavel Šimerda <psimerda@redhat.com>
 """
 
+from __future__ import print_function
+
 from gi.repository import NMClient
 import os, sys, shutil, glob, subprocess
 import logging, logging.handlers
 import socket, struct
-
-
 
 DEVNULL = open("/dev/null", "wb")
 
