@@ -3,6 +3,8 @@
 	  Fixup for python2.
 	  fix a race condition with NetworkManager restart.
 	  don't fail on empty connection list.
+	  move legacy connection handling to the cleanup phase.
+	  don't block on systemctl restart NetworkManager.
 
 20 June 2014: Wouter
 	- Patches from Pavel Simerda:

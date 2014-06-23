@@ -5,8 +5,6 @@
 @author: Pavel Šimerda <psimerda@redhat.com>
 """
 
-from __future__ import print_function
-
 from gi.repository import NMClient
 import os, sys, shutil, glob, subprocess
 import logging, logging.handlers
@@ -364,16 +362,6 @@ class Application:
     def run_prepare(self):
         """Prepare for dnssec-trigger."""
 
-        old_zones = glob.glob("/var/run/dnssec-trigger/????????-????-????-????-????????????")
-        if old_zones:
-            log.info("Converting to new zone cache format")
-            with open("/var/run/dnssec-trigger/zones", "a") as target:
-                for filename in old_zones:
-                    with open(filename) as source:
-                        for line in source:
-                            print(line.strip(), file=target)
-                    os.remove(filename)
-
         if not self.nm_handles_resolv_conf():
             log.info("Backing up /etc/resolv.conf")
             shutil.copy(self.resolvconf, self.resolvconf_backup)
@@ -383,6 +371,18 @@ class Application:
 
         stored_zones = Store('zones')
         unbound_zones = UnboundZoneConfig()
+
+        # provide upgrade path for previous versions
+        old_zones = glob.glob("/var/run/dnssec-trigger/????????-????-????-????-????????????")
+        if old_zones:
+            log.info("Reading zones from the legacy zone store")
+            with open("/var/run/dnssec-trigger/zones", "a") as target:
+                for filename in old_zones:
+                    with open(filename) as source:
+                        log.debug("Reading zones from {}".format(filename))
+                        for line in source:
+                            stored_zones.add(line.strip())
+                        os.remove(filename)
 
         log.debug("clearing unbound configuration")
         for zone in stored_zones:
@@ -400,7 +400,7 @@ class Application:
         # NetworkManager currently doesn't support explicit /etc/resolv.conf
         # write out. For now we simply restart the daemon.
         elif os.path.exists("/sys/fs/cgroup/systemd"):
-            subprocess.check_call(["systemctl", "try-restart", "NetworkManager.service"])
+            subprocess.check_call(["systemctl", "--no-block", "try-restart", "NetworkManager.service"])
         else:
             subprocess.check_call(["/etc/init.d/NetworkManager", "restart"])
 
