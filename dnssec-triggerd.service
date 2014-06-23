@@ -1,6 +1,6 @@
 [Unit]
 Description=Reconfigure local DNSSEC resolver on connectivity changes
-After=unbound.service dnssec-triggerd-keygen.service
+After=NetworkManager.service unbound.service dnssec-triggerd-keygen.service
 Requires=unbound.service
 Wants=dnssec-triggerd-keygen.service
 
