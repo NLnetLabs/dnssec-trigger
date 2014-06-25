@@ -9,6 +9,7 @@ from gi.repository import NMClient
 import os, sys, shutil, glob, subprocess
 import logging, logging.handlers
 import socket, struct
+import lockfile
 
 DEVNULL = open("/dev/null", "wb")
 
@@ -356,8 +357,9 @@ class Application:
         raise UserError("Usage: dnssec-trigger-script [--debug] [--async] --prepare|--update|--update-global-forwarders|--update-connection-zones|--cleanup")
 
     def run(self):
-        log.debug("Running: {}".format(self.method.__name__))
-        self.method()
+        with lockfile.FileLock("/var/run/dnssec-trigger/dnssec-trigger"):
+            log.debug("Running: {}".format(self.method.__name__))
+            self.method()
 
     def run_prepare(self):
         """Prepare for dnssec-trigger."""
@@ -400,7 +402,7 @@ class Application:
         # NetworkManager currently doesn't support explicit /etc/resolv.conf
         # write out. For now we simply restart the daemon.
         elif os.path.exists("/sys/fs/cgroup/systemd"):
-            subprocess.check_call(["systemctl", "--no-block", "try-restart", "NetworkManager.service"])
+            subprocess.check_call(["systemctl", "--ignore-dependencies", "try-restart", "NetworkManager.service"])
         else:
             subprocess.check_call(["/etc/init.d/NetworkManager", "restart"])
 
