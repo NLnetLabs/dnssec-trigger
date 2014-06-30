@@ -1,3 +1,8 @@
+30 June 2014: Wouter
+	- Add --with-pidof=/usr/sbin/pidof where you can set the location
+	  of the pidof command to use in the Networkmanager script,
+	  /usr/bin/pidof or /usr/sbin/pidof (depending no your distribution).
+
 25 June 2014: Wouter
 	- Patches from Pavel Simerda:
 	  improve systemctl call.
