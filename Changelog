@@ -1,3 +1,7 @@
+1 July 2014: Wouter
+	- Better fix for pidof that sets PATH for networkmanager dispatcher
+	  script (from Ondrej Sury).
+
 30 June 2014: Wouter
 	- Add --with-pidof=/usr/sbin/pidof where you can set the location
 	  of the pidof command to use in the Networkmanager script,

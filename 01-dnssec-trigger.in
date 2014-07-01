@@ -20,10 +20,8 @@ fi
 #
 # NetworkManager trigger for in dispatcher.d
 # config items
-alias unbound-control="0sbindir0/unbound-control"
-alias dnssec-trigger-control="0sbindir0/dnssec-trigger-control"
-alias pidof="0pidof0"
-alias nmcli="0bindir0/nmcli"
+# set PATH correctly instead of absolute paths to binaries
+PATH="0sbindir0:0bindir0:/sbin:/usr/sbin:/bin:/usr/bin"
 
 state_dir="/var/run/dnssec-trigger"
 validate_forward_zones="no"

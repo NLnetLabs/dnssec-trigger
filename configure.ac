@@ -458,15 +458,6 @@ fi
 AC_DEFINE_UNQUOTED([CHECK_UPDATES], ["$check_updates"], [default value for check-updates config option])
 AC_SUBST(check_updates)
 
-AC_SUBST(pidof)
-AC_ARG_WITH([pidof], AC_HELP_STRING([--with-pidof],
-[Set where to find the pidof command, default is prefix/usr/sbin/pidof]),, withval="")
-if test -n "$withval" -a "$withval" != "yes"; then
-	pidof="$withval"
-else
-	pidof=`eval echo "$sbindir"`"/pidof"
-fi
-
 AC_ARG_WITH([keydir], AC_HELP_STRING([--with-keydir=path],
 [Set the directory where ssl key files are kept, read by daemon and other tools, default prefix/etc]),, withval="")
 keydir=`eval echo "$sysconfdir"`

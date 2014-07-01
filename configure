@@ -630,7 +630,6 @@ pidfile
 configfile
 uidir
 keydir
-pidof
 check_updates
 login_location
 login_command
@@ -715,7 +714,6 @@ with_xdg_autostart
 with_login_command
 with_login_location
 with_check_updates
-with_pidof
 with_keydir
 with_uidir
 with_configfile
@@ -1377,8 +1375,6 @@ Optional Packages:
   --with-login-location   Set the url location to login, default 'auto'
   --with-check-updates=yesno
                           Set default value for check-updates config option
-  --with-pidof            Set where to find the pidof command, default is
-                          prefix/usr/sbin/pidof
   --with-keydir=path      Set the directory where ssl key files are kept, read
                           by daemon and other tools, default prefix/etc
   --with-uidir=path       Set the directory where ui files (icon,xml) are
@@ -7242,21 +7238,6 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-
-
-
-# Check whether --with-pidof was given.
-if test "${with_pidof+set}" = set; then :
-  withval=$with_pidof;
-else
-  withval=""
-fi
-
-if test -n "$withval" -a "$withval" != "yes"; then
-	pidof="$withval"
-else
-	pidof=`eval echo "$sbindir"`"/pidof"
-fi
 
 
 # Check whether --with-keydir was given.
