@@ -1,4 +1,4 @@
-#!0SHELL0
+#!@SHELL@
 #
 # dnssec trigger for netconfig
 # if we are in alternate root
@@ -27,5 +27,5 @@ done
 ips=`echo $ips`
 
 logger "dnssec-trigger(netconfig) detected $ifs DNS $ips"
-0sbindir0/dnssec-trigger-control submit "$ips"
+@sbindir@/dnssec-trigger-control submit "$ips"
 exit 0

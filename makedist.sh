@@ -548,7 +548,7 @@ if [ "$RECONFIGURE" = "yes" ]; then
 fi
 
 # fix date at date of tarball release.
-replace_text "dnssec-trigger.8.in" "0DATE0" "`date +%F`"
+replace_text "dnssec-trigger.8.in" "[@]DATE[@]" "`date +%F -r Changelog`"
 
 info "Renaming directory to dnssec-trigger-$version."
 cd ..

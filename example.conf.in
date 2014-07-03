@@ -1,11 +1,11 @@
-# config for dnssec-trigger 0VERSION0.
+# config for dnssec-trigger @VERSION@.
 # this is a comment. there must be one statement per line.
 
 # logging detail, 0=only errors, 1=operations, 2=detail, 3,4 debug detail.
 # verbosity: 1
 
 # pidfile location
-# pidfile: "0pidfile0"
+# pidfile: "@pidfile@"
 
 # log to a file instead of syslog, default is to syslog
 # logfile: "/var/log/dnssec-trigger.log"
@@ -18,7 +18,7 @@
 
 # the unbound-control binary if not found in PATH.
 # commandline options can be appended "unbound-control -c my.conf" if you wish.
-# unbound-control: "0unbound_control_path0"
+# unbound-control: "@unbound_control_path@"
 
 # where is resolv.conf to edit.
 # resolvconf: "/etc/resolv.conf"
@@ -32,10 +32,10 @@
 
 # the command to run to open login pages on hot spots, a web browser.
 # empty string runs no command.
-# login-command: "0login_command0"
+# login-command: "@login_command@"
 
 # the url to open to get hot spot login, it gets overridden by the hotspot.
-# login-location: "0login_location0"
+# login-location: "@login_location@"
 
 # do not perform actions (unbound-control or resolv.conf), for a dry-run.
 # noaction: no
@@ -45,13 +45,13 @@
 
 # these keys and certificates can be generated with the script
 # dnssec-trigger-control-setup
-# server-key-file: "0keydir0/dnssec_trigger_server.key"
-# server-cert-file: "0keydir0/dnssec_trigger_server.pem"
-# control-key-file: "0keydir0/dnssec_trigger_control.key"
-# control-cert-file: "0keydir0/dnssec_trigger_control.pem"
+# server-key-file: "@keydir@/dnssec_trigger_server.key"
+# server-cert-file: "@keydir@/dnssec_trigger_server.pem"
+# control-key-file: "@keydir@/dnssec_trigger_control.key"
+# control-cert-file: "@keydir@/dnssec_trigger_control.pem"
 
 # check for updates, download and ask to install them (for Windows, OSX).
-# check-updates: 0check_updates0
+# check-updates: @check_updates@
 
 # webservers that are probed to see if internet access is possible.
 # They serve a simple static page over HTTP port 80.  It probes a random url:

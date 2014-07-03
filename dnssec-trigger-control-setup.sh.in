@@ -1,4 +1,4 @@
-#!0SHELL0
+#!@SHELL@
 #
 # dnssec-trigger-setup.sh - set up SSL certificates for dnssec-trigger
 #
@@ -36,9 +36,9 @@
 # settings:
 
 # directory for files
-DESTDIR=0keydir0
+DESTDIR=@keydir@
 # for domain and search options with -i.
-configfile=0configfile0
+configfile=@configfile@
 
 # issuer and subject name for certificates
 SERVERNAME=dnssec-trigger

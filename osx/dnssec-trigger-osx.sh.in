@@ -1,4 +1,4 @@
-#!0SHELL0
+#!@SHELL@
 #
 # dnssec trigger for OSX
 

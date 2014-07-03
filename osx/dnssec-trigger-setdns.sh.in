@@ -1,4 +1,4 @@
-#!0SHELL0
+#!@SHELL@
 # dnssec-trigger shell script to set DNS servers on OSX.
 # must run as root.
 #

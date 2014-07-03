@@ -9,7 +9,7 @@
 	<string>nl.nlnetlabs.dnssec-trigger-panel</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>0libexecdir0/RiggerStatusItem.app/Contents/MacOS/RiggerStatusItem</string>
+		<string>@libexecdir@/RiggerStatusItem.app/Contents/MacOS/RiggerStatusItem</string>
 	</array>
 </dict>
 </plist>

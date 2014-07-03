@@ -5,6 +5,8 @@
 	  system).
 	  Fix IndexError in dnssec-trigger-script, when there less then 4
 	  resolvers since you use 3xfields.pop(0) before that.
+	  Fix release date in makedist manpage to be more stable.
+	  Do substitutions in makefile, more autoconf'y
 
 1 July 2014: Wouter
 	- Better fix for pidof that sets PATH for networkmanager dispatcher

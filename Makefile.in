@@ -54,6 +54,23 @@ pidfile=@pidfile@
 login_command=@login_command@
 login_location=@login_location@
 unbound_control_path=@unbound_control_path@
+DATE=$(shell date +%F -r $(srcdir)/Changelog)
+
+do_subst = sed -e 's,[@]SHELL[@],$(SHELL),g' \
+	       -e 's,[@]PACKAGE[@],$(PACKAGE),g' \
+	       -e 's,[@]VERSION[@],$(VERSION),g' \
+	       -e 's,[@]libexecdir[@],$(libexecdir),g' \
+	       -e 's,[@]sbindir[@],$(sbindir),g' \
+	       -e 's,[@]keydir[@],$(keydir),g' \
+	       -e 's,[@]pidfile[@],$(pidfile),g' \
+	       -e 's,[@]unbound_control_path[@],$(unbound_control_path),g' \
+	       -e 's,[@]login_command[@],$(login_command),g' \
+	       -e 's,[@]login_location[@],$(login_location),g' \
+	       -e 's,[@]check_updates[@],$(check_updates),g' \
+	       -e 's,[@]DATE[@],$(DATE),g' \
+	       -e 's,[@]configfile[@],$(configfile),g' \
+	       -e 's,[@]bindir[@],$(bindir),g' \
+	       -e 's,[@]uidir[@],$(uidir),g'
 
 # override $U variable which is used by autotools for deansification (for
 # K&R C compilers), but causes problems if $U is defined in the env).
@@ -167,20 +184,29 @@ test:
 
 example.conf:	$(srcdir)/example.conf.in Makefile
 	rm -f $@
-	sed -e 's?0VERSION0?$(VERSION)?' -e 's?0keydir0?$(keydir)?' -e 's?0pidfile0?$(pidfile)?' -e 's?0unbound_control_path0?$(unbound_control_path)?' -e 's?0login_command0?$(login_command)?' -e 's?0login_location0?$(login_location)?' -e 's?0check_updates0?@check_updates@?' < $(srcdir)/example.conf.in > $@
+	$(do_subst) < $(srcdir)/example.conf.in > $@
 
 dnssec-trigger.8:	$(srcdir)/dnssec-trigger.8.in Makefile
 	rm -f $@
-	sed -e 's?0VERSION0?$(VERSION)?' -e 's?0DATE0?'"`date +%F`"'?' -e 's?0keydir0?$(keydir)?' -e 's?0pidfile0?$(pidfile)?' -e 's?0configfile0?$(configfile)?' -e 's?0login_command0?$(login_command)?' -e 's?0login_location0?$(login_location)?' -e 's?0check_updates0?@check_updates@?' < $(srcdir)/dnssec-trigger.8.in > $@
+	$(do_subst) < $(srcdir)/dnssec-trigger.8.in > $@
 
 dnssec-trigger-control-setup:	$(srcdir)/dnssec-trigger-control-setup.sh.in Makefile
 	rm -f $@
-	sed -e 's?0SHELL0?$(SHELL)?' -e 's?0keydir0?$(keydir)?' -e 's?0configfile0?$(configfile)?' < $(srcdir)/dnssec-trigger-control-setup.sh.in > $@
+	$(do_subst) < $(srcdir)/dnssec-trigger-control-setup.sh.in > $@
 	chmod +x $@
+
+01-dnssec-trigger:	$(srcdir)/01-dnssec-trigger.in Makefile
+	rm -f $@
+	$(do_subst) < $(srcdir)/01-dnssec-trigger.in > $@
+	chmod +x $@
+
+dnssec-trigger-service:	$(srcdir)/dnssec-triggerd.in Makefile
+	rm -f $@
+	$(do_subst) < $(srcdir)/dnssec-triggerd.in > $@
 
 dnssec-trigger-panel.desktop:	$(srcdir)/panel/dnssec-trigger-panel.desktop.in Makefile
 	rm -f $@
-	sed -e 's?0bindir0?$(bindir)?' -e 's?0uidir0?$(uidir)?' < $(srcdir)/panel/dnssec-trigger-panel.desktop.in > $@
+	$(do_subst) < $(srcdir)/panel/dnssec-trigger-panel.desktop.in > $@
 
 windows-gui:	dnssec-trigger-panel$(EXEEXT)
 
@@ -243,31 +269,31 @@ osx-hook:	nl.nlnetlabs.dnssec-trigger-hook.plist dnssec-trigger-osx.sh nl.nlnetl
 
 nl.nlnetlabs.dnssec-trigger-hook.plist:	$(srcdir)/osx/nl.nlnetlabs.dnssec-trigger-hook.plist.in Makefile
 	rm -f $@
-	sed -e 's?0libexecdir0?$(libexecdir)?' < $(srcdir)/osx/nl.nlnetlabs.dnssec-trigger-hook.plist.in > $@
+	$(do_subst) < $(srcdir)/osx/nl.nlnetlabs.dnssec-trigger-hook.plist.in > $@
 
 nl.nlnetlabs.dnssec-trigger-panel.plist:	$(srcdir)/osx/nl.nlnetlabs.dnssec-trigger-panel.plist.in Makefile
 	rm -f $@
-	sed -e 's?0libexecdir0?$(libexecdir)?' < $(srcdir)/osx/nl.nlnetlabs.dnssec-trigger-panel.plist.in > $@
+	$(do_subst) < $(srcdir)/osx/nl.nlnetlabs.dnssec-trigger-panel.plist.in > $@
 
 nl.nlnetlabs.dnssec-triggerd.plist:	$(srcdir)/osx/nl.nlnetlabs.dnssec-triggerd.plist.in Makefile
 	rm -f $@
-	sed -e 's?0sbindir0?$(sbindir)?' < $(srcdir)/osx/nl.nlnetlabs.dnssec-triggerd.plist.in > $@
+	$(do_subst) < $(srcdir)/osx/nl.nlnetlabs.dnssec-triggerd.plist.in > $@
 
 dnssec-trigger-osx.sh:	$(srcdir)/osx/dnssec-trigger-osx.sh.in Makefile
 	rm -f $@
-	sed -e 's?0SHELL0?$(SHELL)?' -e 's?0sbindir0?$(sbindir)?' < $(srcdir)/osx/dnssec-trigger-osx.sh.in > $@
+	$(do_subst) < $(srcdir)/osx/dnssec-trigger-osx.sh.in > $@
 	chmod +x $@
 
 dnssec-trigger-setdns.sh:	$(srcdir)/osx/dnssec-trigger-setdns.sh.in Makefile
 	rm -f $@
-	sed -e 's?0SHELL0?$(SHELL)?' < $(srcdir)/osx/dnssec-trigger-setdns.sh.in > $@
+	$(do_subst) < $(srcdir)/osx/dnssec-trigger-setdns.sh.in > $@
 	chmod +x $@
 
 netconfig-hook:	dnssec-trigger-netconfig-hook
 
 dnssec-trigger-netconfig-hook:	$(srcdir)/dnssec-trigger-netconfig-hook.sh.in Makefile
 	rm -f $@
-	sed -e 's?0SHELL0?$(SHELL)?' -e 's?0sbindir0?$(sbindir)?' < $(srcdir)/dnssec-trigger-netconfig-hook.sh.in > $@
+	$(do_subst) < $(srcdir)/dnssec-trigger-netconfig-hook.sh.in > $@
 	chmod +x $@
 
 dnssec-triggerd$(EXEEXT):	$(RIGGERD_OBJ)

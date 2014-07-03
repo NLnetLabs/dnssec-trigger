@@ -1,4 +1,4 @@
-.TH "dnssec-trigger" "8" "0DATE0" "NLnet Labs" "dnssec-trigger 0VERSION0"
+.TH "dnssec-trigger" "8" "@DATE@" "NLnet Labs" "dnssec-trigger @VERSION@"
 .\"
 .\" dnssec-trigger.8 -- dnssec trigger manual
 .\"
@@ -64,7 +64,7 @@ running on 127.0.0.1.  And resolv.conf is modified to point to 127.0.0.1.
 .TP
 .B \-c\fI cfgfile
 Set the config file with settings for the dnssec\-triggerd to read
-instead of reading the file at the default location, \fI0configfile0\fR. The
+instead of reading the file at the default location, \fI@configfile@\fR. The
 syntax is described below.
 .TP
 .B \-d
@@ -87,7 +87,7 @@ Amount of logging, 1 is default. 0 is only errors, 2 is more detail,
 4 for debug.
 .TP
 .B pidfile: \fR"<file>"
-The filename where the pid of the dnssec\-triggerd is stored.  Default is 0pidfile0.
+The filename where the pid of the dnssec\-triggerd is stored.  Default is @pidfile@.
 .TP
 .B logfile: \fR"<file>"
 Log to a file instead of syslog, default is to syslog.
@@ -131,23 +131,23 @@ uses 127.0.0.1 (the loopback interface).  SSL is used to secure it,
 and the keys are stored on the disk (see below).  The other tools read this
 config file to find the port number and key locations.
 .TP
-.B login\-command: \fR"0login_command0"
+.B login\-command: \fR"@login_command@"
 The command that is run when the user clicks Login on the no web access
 dialog.  That is supposedly a web browser, that is aimed to open some url
 so that the hot-spot network login can intercept and show its login page.
 The default is a detected generic web browser.  The "" empty string turns off
 this feature and no command gets run.
 .TP
-.B login\-location: \fR"0login_location0"
+.B login\-location: \fR"@login_location@"
 The url that is opened with the web browser.  Used as commandline argument.
 .TP
-.B server\-key\-file: \fR"0keydir0/dnssec_trigger_server.key"
+.B server\-key\-file: \fR"@keydir@/dnssec_trigger_server.key"
 .TP
-.B server\-cert\-file: \fR"0keydir0/dnssec_trigger_server.pem"
+.B server\-cert\-file: \fR"@keydir@/dnssec_trigger_server.pem"
 .TP
-.B control\-key\-file: \fR"0keydir0/dnssec_trigger_control.key"
+.B control\-key\-file: \fR"@keydir@/dnssec_trigger_control.key"
 .TP
-.B control\-cert\-file: \fR"0keydir0/dnssec_trigger_control.pem"
+.B control\-cert\-file: \fR"@keydir@/dnssec_trigger_control.pem"
 The files used for SSL secured communication with dnssec\-triggerd.  These
 files can be created with dnssec\-trigger\-control\-setup (run as root).
 .TP
@@ -276,13 +276,13 @@ review them or perform configuration manually.
 With \fB\-u\fR it removes the options it enabled in \fIunbound.conf\fR(5).
 .SH "FILES"
 .TP
-.I 0configfile0
+.I @configfile@
 The default configuration file.
 .TP
-.I 0keydir0
+.I @keydir@
 Directory with keys used for SSL connections to dnssec\-triggerd.
 .TP
-.I 0pidfile0
+.I @pidfile@
 Default pidfile with the pid of the running dnssec\-triggerd.
 .SH "SEE ALSO"
 \fIunbound\fR(8),
