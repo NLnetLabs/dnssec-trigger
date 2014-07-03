@@ -177,7 +177,7 @@ $(BUILD)%.o:    $(srcdir)/%.c
 	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
 	$Q$(COMPILE) -o $@ -c $<
 
-all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-control$(EXEEXT) dnssec-trigger-control-setup $(makehook) $(makegui) example.conf dnssec-trigger.8
+all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-control$(EXEEXT) dnssec-trigger-control-setup $(makehook) $(makegui) example.conf dnssec-trigger.8 dnssec-triggerd.service
 
 test:	
 	@echo done
@@ -200,9 +200,9 @@ dnssec-trigger-control-setup:	$(srcdir)/dnssec-trigger-control-setup.sh.in Makef
 	$(do_subst) < $(srcdir)/01-dnssec-trigger.in > $@
 	chmod +x $@
 
-dnssec-trigger-service:	$(srcdir)/dnssec-triggerd.in Makefile
+dnssec-triggerd.service:	$(srcdir)/dnssec-triggerd.service.in Makefile
 	rm -f $@
-	$(do_subst) < $(srcdir)/dnssec-triggerd.in > $@
+	$(do_subst) < $(srcdir)/dnssec-triggerd.service.in > $@
 
 dnssec-trigger-panel.desktop:	$(srcdir)/panel/dnssec-trigger-panel.desktop.in Makefile
 	rm -f $@

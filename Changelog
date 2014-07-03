@@ -7,6 +7,7 @@
 	  resolvers since you use 3xfields.pop(0) before that.
 	  Fix release date in makedist manpage to be more stable.
 	  Do substitutions in makefile, more autoconf'y
+	  Fixup dnssec-triggerd.service from Makefile.in
 
 1 July 2014: Wouter
 	- Better fix for pidof that sets PATH for networkmanager dispatcher
