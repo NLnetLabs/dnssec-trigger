@@ -333,7 +333,7 @@ clean:
 	rm -f *.o *.d *.lo *~ tags
 	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
 	rm -f dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT)
-	rm -f 01-dnssec-trigger dnssec-trigger-script dnssec-trigger-osx.sh nl.nlnetlabs.dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf nl.nlnetlabs.dnssec-triggerd.plist nl.nlnetlabs.dnssec-trigger-panel.plist dnssec-trigger-setdns.sh osx/osx-riggerapp
+	rm -f 01-dnssec-trigger dnssec-trigger-script dnssec-trigger-osx.sh nl.nlnetlabs.dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf nl.nlnetlabs.dnssec-triggerd.plist nl.nlnetlabs.dnssec-trigger-panel.plist dnssec-trigger-setdns.sh osx/osx-riggerapp dnssec-triggerd.service
 	rm -f dnssec-trigger-panel.desktop dnssec-trigger.8 dnssec-trigger-keygen$(EXEEXT)
 	rm -rf autom4te.cache build osx/RiggerStatusItem/build
 
