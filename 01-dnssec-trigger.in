@@ -11,8 +11,8 @@ fi
 
 # Exec the dnssec-trigger update script that uses NetworkManager API to gather
 # all the necessary information.
-if [ -x /usr/libexec/dnssec-trigger-script ]; then
-    exec /usr/libexec/dnssec-trigger-script --update
+if [ -x @libexecdir@/dnssec-trigger-script ]; then
+    exec @libexecdir@/dnssec-trigger-script --update
 fi
 
 # When dnssec-trigger-script is absent or not executable, the original
@@ -21,7 +21,7 @@ fi
 # NetworkManager trigger for in dispatcher.d
 # config items
 # set PATH correctly instead of absolute paths to binaries
-PATH="0sbindir0:0bindir0:/sbin:/usr/sbin:/bin:/usr/bin"
+PATH="@sbindir@:@bindir@:/sbin:/usr/sbin:/bin:/usr/bin"
 
 state_dir="/var/run/dnssec-trigger"
 validate_forward_zones="no"
@@ -82,7 +82,7 @@ if [ -n "`pidof unbound`" ]; then
     if [ -r "$conn_zones_file" ]; then
         for domain in `cat $conn_zones_file`; do
             # Remove forward zone from unbound
-            if [ "$validate_forward_zones" == "no" ]; then
+            if [ "$validate_forward_zones" = "no" ]; then
             	unbound-control forward_remove +i $domain &> /dev/null
 	    else
             	unbound-control forward_remove $domain &> /dev/null
@@ -97,11 +97,11 @@ if [ -n "`pidof unbound`" ]; then
         rm -f $conn_zones_file &> /dev/null
     fi
 
-    if [ "$action" == "vpn-up" ] || [ "$action" == "up" ]; then
+    if [ "$action" = "vpn-up" -o "$action" = "up" ]; then
         if [ -n "$domains" ]; then
             for domain in $domains; do
                 # Add forward zone into unbound
-                if [ "$validate_forward_zones" == "no" ]; then
+                if [ "$validate_forward_zones" = "no" ]; then
                     unbound-control forward_add +i $domain $nameservers &> /dev/null
                 else
                     unbound-control forward_add $domain $nameservers &> /dev/null
@@ -110,6 +110,7 @@ if [ -n "`pidof unbound`" ]; then
                 unbound-control flush_requestlist &> /dev/null
 
                 # Create zone info file
+                mkdir -p $(dirname $conn_zones_file)
                 echo $domain >> $conn_zones_file
 
                 logger "dnssec-trigger-hook(networkmanager) $ifname $action added forward DNS zone $domain $nameservers"

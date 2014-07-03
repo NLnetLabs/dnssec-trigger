@@ -192,7 +192,7 @@ class UnboundZoneConfig:
                 if fields and fields[0] == '+i':
                     secure = True
                     fields.pop(0)
-                self.cache[name] = set(fields[3:]), secure
+                self.cache[name] = set(fields), secure
         log.debug(self)
 
     def __repr__(self):

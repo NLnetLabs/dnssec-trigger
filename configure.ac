@@ -678,7 +678,10 @@ AHX_CONFIG_W32_FD_SET_T
 DATE=`date +%x`
 AC_SUBST(DATE)
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile
+		 dnssec-triggerd.service
+		 01-dnssec-trigger
+		 ])
 AC_OUTPUT
 
 if test "$hooks" = "none"; then

@@ -1,3 +1,11 @@
+3 July 2014: Wouter
+	- Patches from Ondrej Sury (from the Debian package):
+	  Remove some ugly bashisms from the script.
+	  Fixes static paths that right be mismatched (f.e. on multiarch
+	  system).
+	  Fix IndexError in dnssec-trigger-script, when there less then 4
+	  resolvers since you use 3xfields.pop(0) before that.
+
 1 July 2014: Wouter
 	- Better fix for pidof that sets PATH for networkmanager dispatcher
 	  script (from Ondrej Sury).

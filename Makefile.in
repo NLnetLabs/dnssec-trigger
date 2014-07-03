@@ -195,11 +195,6 @@ windows-hook:	dnssec-trigger-keygen$(EXEEXT)
 
 networkmanager-hook:	01-dnssec-trigger dnssec-trigger-script
 
-01-dnssec-trigger:	$(srcdir)/01-dnssec-trigger.in Makefile
-	rm -f $@
-	sed -e 's?0SHELL0?$(SHELL)?' -e 's?0sbindir0?$(sbindir)?' -e 's?0bindir0?$(bindir)?' < $(srcdir)/01-dnssec-trigger.in > $@
-	chmod +x $@
-
 dnssec-trigger-script:	$(srcdir)/dnssec-trigger-script.in Makefile
 	cp $< $@
 	chmod +x $@
