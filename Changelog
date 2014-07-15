@@ -1,3 +1,7 @@
+15 July 2014: Wouter
+	- Fix NetworkManager script fails t parse nmcli version as of
+	  0.9.10.0, patch from Gerald Turner.
+
 3 July 2014: Wouter
 	- Patches from Ondrej Sury (from the Debian package):
 	  Remove some ugly bashisms from the script.
