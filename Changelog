@@ -1,3 +1,7 @@
+31 July 2014: Wouter
+	- Patch from Pavel Simerda: improve dnssec-trigger-script locking and
+	  avoid a dependency.
+
 15 July 2014: Wouter
 	- Fix NetworkManager script fails t parse nmcli version as of
 	  0.9.10.0, patch from Gerald Turner.

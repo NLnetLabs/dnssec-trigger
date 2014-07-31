@@ -6,10 +6,9 @@
 """
 
 from gi.repository import NMClient
-import os, sys, shutil, glob, subprocess
+import os, sys, fcntl, shutil, glob, subprocess
 import logging, logging.handlers
 import socket, struct
-import lockfile
 
 DEVNULL = open("/dev/null", "wb")
 
@@ -23,6 +22,24 @@ os.environ['PATH'] = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/b
 
 class UserError(Exception):
     pass
+
+class Lock:
+    """Lock used to serialize the script"""
+
+    path = "/var/run/dnssec-trigger/lock"
+
+    def __init__(self):
+        # We don't use os.makedirs(..., exist_ok=True) to ensure Python 2 compatibility
+        dirname = os.path.dirname(self.path)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+        self.lock = open(self.path, "w")
+
+    def __enter__(self):
+        fcntl.lockf(self.lock, fcntl.LOCK_EX)
+
+    def __exit__(self, t, v, tb):
+        fcntl.lockf(self.lock, fcntl.LOCK_UN)
 
 class Config:
     """Global configuration options"""
@@ -357,7 +374,7 @@ class Application:
         raise UserError("Usage: dnssec-trigger-script [--debug] [--async] --prepare|--update|--update-global-forwarders|--update-connection-zones|--cleanup")
 
     def run(self):
-        with lockfile.FileLock("/var/run/dnssec-trigger/dnssec-trigger"):
+        with Lock():
             log.debug("Running: {}".format(self.method.__name__))
             self.method()
 
