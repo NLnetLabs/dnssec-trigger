@@ -39,6 +39,7 @@
 			This change might need to be revisited to see
 			whether we need to check both known wildcard
 			and known non-wildcard domains.
+	- Fix #629: bad if test in net_help for ctx_load_verify_locations.
 
 31 July 2014: Wouter
 	- Patch from Pavel Simerda: improve dnssec-trigger-script locking and
