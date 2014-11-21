@@ -1,3 +1,45 @@
+21 November 2014: Wouter
+	- Patches from Pavel Simerda:
+		dnssec-trigger-script: lock --update-* methods only
+			The original locking was a bit too broad for future
+			development.
+		dnssec-trigger-script: improve /etc/dnssec.conf handling
+			Minor changes that make future /etc/dnssec.conf
+			extensions easier.
+		dnssec-trigger-script: support 'debug' option in
+		  /etc/dnssec.conf
+			With that you can get the debugging output even
+			for instances run by systemd, dnssec-triggerd
+			and NetworkManager dispatcher.
+		dnssec-trigger-script: clean up resolv.conf backup and
+		  restore
+			Clean up the code a bit so that later additions
+			dont turn it into a mess.
+		dnssec-trigger-script: use
+		  /var/run/NetworkManager/resolv.conf.default
+			Avoid restarting NetworkManager just to restore
+			/etc/resolv.conf when a simple symlink would
+			do. This is only done when the NetworkManager's
+			private resolv.conf actually exists.
+		allow the resolv.conf hooks be handled by
+		  dnssec-trigger-script
+		dnssec-trigger-script: handle resolv.conf events from the
+		  daemon
+			The new implementation doesn't write directly to
+			/etc/resolv.conf and instead it writes a temporary
+			file and then replaces the /etc/resolv.conf
+			using POSIX `rename()`.
+		dnssec-trigger-script: support /etc/resolv.conf and
+		  /etc/resolv-secure.conf symlinks
+			This is an experimental feature and is
+			turned off by default. You need to put the
+			following to /etc/dnssec.conf to activate it:
+			use_resolv_conf_symlink=yes
+		probe: use wildcard probing domains
+			This change might need to be revisited to see
+			whether we need to check both known wildcard
+			and known non-wildcard domains.
+
 31 July 2014: Wouter
 	- Patch from Pavel Simerda: improve dnssec-trigger-script locking and
 	  avoid a dependency.

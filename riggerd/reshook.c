@@ -256,6 +256,9 @@ void hook_resolv_localhost(struct cfg* cfg)
 	win_set_resolv("127.0.0.1");
 #else /* not on windows */
 #  ifndef HOOKS_OSX /* on Linux/BSD */
+	if (system("/usr/libexec/dnssec-trigger-script --setup") == 0)
+		return;
+
 	if(really_set_to_localhost(cfg)) {
 		/* already done, do not do it again, that would open
 		 * a brief moment of mutable resolv.conf */
@@ -281,6 +284,9 @@ void hook_resolv_iplist(struct cfg* cfg, struct probe_ip* list)
 #if defined(HOOKS_OSX) || defined(USE_WINSOCK)
 	char iplist[10240];
 	iplist[0] = 0;
+#else
+	if (system("/usr/libexec/dnssec-trigger-script --restore") == 0)
+		return;
 #endif
 	set_to_localhost = 0;
 	if(cfg->noaction)
