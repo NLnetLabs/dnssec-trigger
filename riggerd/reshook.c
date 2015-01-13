@@ -329,7 +329,8 @@ void hook_resolv_flush(struct cfg* cfg)
 	(void)cfg;
 #ifdef HOOKS_OSX
 	/* dscacheutil on 10.5 an later, lookupd before that */
-	system("dscacheutil -flushcache || lookupd -flushcache");
+	system("dscacheutil -flushcache || lookupd -flushcache || discoveryutil udnsflushcaches");
+	system("discoveryutil mdnsflushcache");
 #elif defined(USE_WINSOCK)
 	win_run_cmd("ipconfig /flushdns");
 #else

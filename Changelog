@@ -1,3 +1,8 @@
+13 January 2015: Wouter
+	- Update OSX resolvehook to flush dns caches for new OSX release
+	  with "discoveryutil udnsflushcaches" and "discoveryutil
+	  mdnsflushcache".
+
 21 November 2014: Wouter
 	- Patches from Pavel Simerda:
 		dnssec-trigger-script: lock --update-* methods only
