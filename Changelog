@@ -2,6 +2,22 @@
 	- Update OSX resolvehook to flush dns caches for new OSX release
 	  with "discoveryutil udnsflushcaches" and "discoveryutil
 	  mdnsflushcache".
+	- Patches from Pavel Simerda:
+		dnssec-trigger-script: The accepted version of NetworkManager
+			patch uses `resolv.conf` instead of
+			`resolv.conf.default`,
+			https://bugzilla.gnome.org/show_bug.cgi?id=732941
+		dnssec-trigger-script: Leaking file descriptors is bad,
+			especially when selinux or similar tool is used.
+			https://bugzilla.redhat.com/show_bug.cgi?id=1147705
+		dnssec-trigger-script: Use a regular file unless
+			use_resolv_secure_conf_symlink is set. Always
+			install /var/run/dnssec-trigger/resolv.conf for
+			comparison.  Guard all of those regular files using
+			immutable attribute.  
+			https://bugzilla.redhat.com/show_bug.cgi?id=1165126
+		dnssec-trigger-script: fix desktop file paths.
+			
 
 21 November 2014: Wouter
 	- Patches from Pavel Simerda:
