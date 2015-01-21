@@ -1,3 +1,8 @@
+21 January 2015: Wouter
+	- Patches from Pavel Simerda:
+		dnssec-trigger-script: clean up servers as well, for restart
+		dnssec-trigger-script: prefer VPN nameservers over default ones
+
 13 January 2015: Wouter
 	- Update OSX resolvehook to flush dns caches for new OSX release
 	  with "discoveryutil udnsflushcaches" and "discoveryutil

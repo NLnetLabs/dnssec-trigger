@@ -54,6 +54,7 @@ class Config:
         "debug": False,
         "validate_connection_provided_zones": True,
         "add_wifi_provided_zones": False,
+        "use_vpn_global_forwarders": False,
         "use_resolv_conf_symlink": False,
         "use_resolv_secure_conf_symlink": False,
     }
@@ -81,7 +82,7 @@ class ConnectionList:
 
     nm_connections = None
 
-    def __init__(self, client, only_default=False, skip_wifi=False):
+    def __init__(self, client, only_default=False, only_vpn=False, skip_wifi=False):
         # Cache the active connection list in the class
         if not client.get_manager_running():
             raise UserError("NetworkManager is not running.")
@@ -89,10 +90,11 @@ class ConnectionList:
             self.__class__.nm_connections = client.get_active_connections()
         self.skip_wifi = skip_wifi
         self.only_default = only_default
+        self.only_vpn = only_vpn
         log.debug(self)
 
     def __repr__(self):
-        return "<ConnectionList(only_default={only_default}, skip_wifi={skip_wifi}, connections={})>".format(list(self), **vars(self))
+        return "<ConnectionList(only_default={only_default}, only_vpn={only_vpn}, skip_wifi={skip_wifi}, connections={})>".format(list(self), **vars(self))
 
     def __iter__(self):
         for item in self.nm_connections:
@@ -108,6 +110,8 @@ class ConnectionList:
                 continue
             # Skip non-default connections if appropriate
             if self.only_default and not connection.is_default:
+                continue
+            if self.only_vpn and not connection.is_vpn:
                 continue
             yield connection
 
@@ -503,6 +507,7 @@ class Application:
         self.run_restore()
 
         stored_zones = Store('zones')
+        stored_servers = Store('servers')
         unbound_zones = UnboundZoneConfig()
 
         # provide upgrade path for previous versions
@@ -521,7 +526,10 @@ class Application:
         for zone in stored_zones:
             unbound_zones.remove(zone)
             stored_zones.remove(zone)
+        for server in stored_servers:
+            stored_servers.remove(server)
         stored_zones.commit()
+        stored_servers.commit()
 
     def run_update(self):
         """Update unbound and dnssec-trigger configuration."""
@@ -535,10 +543,15 @@ class Application:
         with Lock():
             subprocess.check_call(["dnssec-trigger-control", "status"], stdout=DEVNULL, stderr=DEVNULL)
 
-            default_connections = ConnectionList(self.client, only_default=True)
+            connections = None
+            if self.config.use_vpn_global_forwarders:
+                connections = list(ConnectionList(self.client, only_vpn=True))
+            if not connections:
+                connections = list(ConnectionList(self.client, only_default=True))
+
             servers = Store('servers')
 
-            if servers.update(sum((connection.servers for connection in default_connections), [])):
+            if servers.update(sum((connection.servers for connection in connections), [])):
                 subprocess.check_call(["unbound-control", "flush_zone", "."])
                 subprocess.check_call(["dnssec-trigger-control", "submit"] + list(servers))
                 servers.commit()
