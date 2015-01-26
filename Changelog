@@ -1,3 +1,23 @@
+26 January 2015: Wouter
+	- Patches from Pavel Simerda:
+		dnssec-trigger-script: check for paths, not files
+			https://bugzilla.redhat.com/show_bug.cgi?id=1183975
+		dnssec-trigger-script: fix secure/insecure forward zone
+			switching
+			https://bugzilla.redhat.com/show_bug.cgi?id=1185796
+		dnssec.conf: clean up the dnssec.conf comments
+		dnssec-trigger-script: log dnssec-trigger-control and
+			unbound-control calls
+		dnssec-trigger-script: use a global config object
+		dnssec-trigger-script: add option to set search domains
+			in /etc/resolv.conf
+			https://bugzilla.redhat.com/show_bug.cgi?id=1130502
+		dnssec-trigger-script: add (undocumented) option to avoid
+			flushing positive answers
+			https://bugzilla.redhat.com/show_bug.cgi?id=1105685
+		dnssec-trigger-script: use private address ranges
+			https://bugzilla.redhat.com/show_bug.cgi?id=1128310
+
 21 January 2015: Wouter
 	- Patches from Pavel Simerda:
 		dnssec-trigger-script: clean up servers as well, for restart
