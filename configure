@@ -626,6 +626,7 @@ DATE
 LDNSLIBS
 ldnsdir
 unbound_control_path
+PYTHON
 pidfile
 configfile
 uidir
@@ -718,6 +719,7 @@ with_keydir
 with_uidir
 with_configfile
 with_pidfile
+with_python
 with_unbound_control
 with_ldns
 enable_rpath
@@ -1383,6 +1385,8 @@ Optional Packages:
                           keydir/dnssec-trigger.conf
   --with-pidfile=path     set the pidfile to use, default
                           /var/run/dnssec-trigger.pid
+  --with-python=path      set the path to Python interpreter to use for Python
+                          scripts, defaults /usr/bin/python
   --with-unbound-control=path
                           set the unbound-control to use, default what
                           configure finds in its path
@@ -7331,6 +7335,27 @@ pidfile_esc="`echo $pidfile | sed -e 's/\\\\/\\\\\\\\/g'`"
 
 cat >>confdefs.h <<_ACEOF
 #define PIDFILE "$pidfile_esc"
+_ACEOF
+
+
+
+
+# Check whether --with-python was given.
+if test "${with_python+set}" = set; then :
+  withval=$with_python;
+else
+  withval=""
+fi
+
+PYTHON="/usr/bin/python"
+if test -n "$withval"; then
+	PYTHON="$withval"
+fi
+python_esc="`echo $PYTHON | sed -e 's/\\\\/\\\\\\\\/g'`"
+
+
+cat >>confdefs.h <<_ACEOF
+#define PYTHON "$python_esc"
 _ACEOF
 
 

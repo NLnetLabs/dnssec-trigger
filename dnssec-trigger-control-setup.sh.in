@@ -48,7 +48,9 @@ CLIENTNAME=dnssec-trigger-control
 DAYS=7200
 
 # size of keys in bits
-BITS=1536
+# recommendation for new systems is to use at least 3072 bits
+# http://www.enisa.europa.eu/activities/identity-and-trust/library/deliverables/algorithms-key-sizes-and-parameters-report
+BITS=3072
 
 # hash algorithm
 HASH=sha256

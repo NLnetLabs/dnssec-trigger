@@ -1,3 +1,13 @@
+12 March 2015: Wouter
+	- Patches from Tomas Hozza (7):
+		dnssec-trigger-script: Fix wrong default value in configuration
+		dnssec-trigger-script: Fix formatting errors
+		dnssec-trigger-script: Remove unused class
+		Allow to select the default Python interpretter during build
+		Fix 01-dnssec-trigger NOT to hardcode shell path
+		dnssec-trigger-script: Fix typo when adding search domains
+		dnssec-trigger-control-setup: Use 3072 bit keys
+
 26 January 2015: Wouter
 	- Patches from Pavel Simerda:
 		dnssec-trigger-script: check for paths, not files

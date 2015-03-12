@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!@PYTHON@
 # -*- coding: utf-8 -*-
 """
 @author: Tomas Hozza <thozza@redhat.com>
@@ -57,7 +57,7 @@ class Config:
         "use_vpn_global_forwarders": False,
         "use_resolv_conf_symlink": False,
         "use_resolv_secure_conf_symlink": False,
-        "use_private_address_ranges": TRUE,
+        "use_private_address_ranges": True,
         "set_search_domains": False,
         "keep_positive_answers": False,
     }
@@ -86,7 +86,7 @@ class Config:
 
 config = Config()
 if config.debug:
-    log.setLevel(logging.DEBUG);
+    log.setLevel(logging.DEBUG)
 
 class ConnectionList:
     """List of NetworkManager active connections"""
@@ -186,7 +186,7 @@ class Connection:
             pass
         try:
             self.servers += [self.ip6_to_str(connection.get_ip6_config().get_nameserver(i))
-                    for i in range(connection.get_ip6_config().get_num_nameservers())]
+                for i in range(connection.get_ip6_config().get_num_nameservers())]
         except AttributeError:
             pass
 
@@ -353,17 +353,6 @@ class Store:
                 zone_file.write("{}\n".format(zone))
         os.rename(self.path_tmp, self.path)
 
-class GlobalForwarders:
-    def __init__(self):
-        self.cache = set()
-        try:
-            with open(self.path) as zone_file:
-                for line in zone_file:
-                    line = line.strip()
-                    if line:
-                        self.cache.add(line)
-        except IOError:
-            pass
 
 class Application:
     resolvconf = "/etc/resolv.conf"
@@ -490,7 +479,7 @@ class Application:
         Called by dnssec-trigger.
         """
 
-        if config.add_search_domains:
+        if config.set_search_domains:
             zones = set(sum((connection.zones for connection in ConnectionList(self.client)), []))
             log.info("Search domains: " + ' '.join(zones))
             self.resolvconf_localhost_contents = self.__class__.resolvconf_localhost_contents

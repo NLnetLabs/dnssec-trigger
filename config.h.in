@@ -258,6 +258,9 @@
 /* default pidfile name for dnssec-trigger */
 #undef PIDFILE
 
+/* default Python interpreter path for all Python scripts */
+#undef PYTHON
+
 /* Define as the return type of signal handlers (`int' or `void'). */
 #undef RETSIGTYPE
 

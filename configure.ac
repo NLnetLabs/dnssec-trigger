@@ -504,6 +504,16 @@ ACX_ESCAPE_BACKSLASH($pidfile, pidfile_esc)
 AC_DEFINE_UNQUOTED([PIDFILE], ["$pidfile_esc"], [default pidfile name for dnssec-trigger])
 AC_SUBST(pidfile)
 
+AC_ARG_WITH([python], AC_HELP_STRING([--with-python=path],
+[set the path to Python interpreter to use for Python scripts, defaults /usr/bin/python]),, withval="")
+PYTHON="/usr/bin/python"
+if test -n "$withval"; then
+	PYTHON="$withval"
+fi
+ACX_ESCAPE_BACKSLASH($PYTHON, python_esc)
+AC_DEFINE_UNQUOTED([PYTHON], ["$python_esc"], [default Python interpreter path for all Python scripts])
+AC_SUBST(PYTHON)
+
 AC_ARG_WITH([unbound-control], AC_HELP_STRING([--with-unbound-control=path],
 [set the unbound-control to use, default what configure finds in its path]),, withval="")
 AC_MSG_CHECKING([for unbound-control])
