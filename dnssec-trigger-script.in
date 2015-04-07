@@ -611,21 +611,30 @@ class Application:
                     unbound_zones.add(zone, connections[zone].servers, secure=config.validate_connection_provided_zones)
                     stored_zones.add(zone)
 
-            # Install zones for reverse name resolution of private addresses
-            # except those already provided by connections and those installed
-            # by other means than dnssec-trigger-script.
+            # Configure forward zones for reverse name resolution of private addresses.
+            # RFC1918 zones will be installed, except those already provided by connections
+            # and those installed by other means than by dnssec-trigger-script.
+            # RFC19118 zones will be removed if there are no global forwarders.
             if self.rfc1918_reverse_zones:
-                log.debug("adding RFC 1918 private zones not present in unbound or connections")
-                global_forwarders = self.global_forwarders
+                log.debug("configuring RFC 1918 private zones")
                 for zone in self.rfc1918_reverse_zones:
                     # Ignore a connection provided zone as it's been already
                     # processed.
                     if zone in connections:
                         continue
-                    # Reinstall a known zone or install a new zone.
-                    if zone in stored_zones or zone not in unbound_zones:
-                        unbound_zones.add(zone, global_forwarders, secure=False)
-                        stored_zones.add(zone)
+                    if self.global_forwarders:
+                        # Reinstall a known zone or install a new zone.
+                        log.debug("Installing RFC 1918 private zone '%s' not present in unbound or connections", zone)
+                        if zone in stored_zones or zone not in unbound_zones:
+                            unbound_zones.add(zone, self.global_forwarders, secure=False)
+                            stored_zones.add(zone)
+                    else:
+                        # There are no global forwarders, therefore remove the zone
+                        log.debug("Removing RFC 1918 private zone '%s' since there are no global forwarders", zone)
+                        if zone in unbound_zones:
+                            unbound_zones.remove(zone)
+                        if zone in stored_zones:
+                            stored_zones.remove(zone)
 
             stored_zones.commit()
 

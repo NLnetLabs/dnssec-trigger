@@ -1,3 +1,8 @@
+7 April 2015: Wouter
+	- Patch from Tomas Hozza:
+		dnssec-trigger-script: Don't configure RFC1918 zones
+		if there are no global forwarders.
+
 12 March 2015: Wouter
 	- Patches from Tomas Hozza (7):
 		dnssec-trigger-script: Fix wrong default value in configuration
