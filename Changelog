@@ -1,3 +1,10 @@
+8 April 2015: Wouter
+	- Patches from Tomas Hozza for dnssec-trigger-script:
+	  Add newlines between classes to conform with PEP-8 and
+	   increase readability.
+	  Add/remove local zones in Unbound when configuring
+	   reverse addr forward zones.
+
 7 April 2015: Wouter
 	- Patch from Tomas Hozza:
 		dnssec-trigger-script: Don't configure RFC1918 zones

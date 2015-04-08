@@ -24,8 +24,10 @@ log.addHandler(logging.StreamHandler())
 # NetworkManager reportedly doesn't pass the PATH environment variable.
 os.environ['PATH'] = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
+
 class UserError(Exception):
     pass
+
 
 class Lock:
     """Lock used to serialize the script"""
@@ -44,6 +46,7 @@ class Lock:
 
     def __exit__(self, t, v, tb):
         fcntl.lockf(self.lock, fcntl.LOCK_UN)
+
 
 class Config:
     """Global configuration options"""
@@ -84,9 +87,11 @@ class Config:
     def flush_command(self):
         return "flush_negative" if self.keep_positive_answers else "flush_zone"
 
+
 config = Config()
 if config.debug:
     log.setLevel(logging.DEBUG)
+
 
 class ConnectionList:
     """List of NetworkManager active connections"""
@@ -150,6 +155,7 @@ class ConnectionList:
             return first
         # Prefer first connection
         return first
+
 
 class Connection:
     """Representation of a NetworkManager active connection"""
@@ -216,6 +222,7 @@ class Connection:
     @property
     def is_wifi(self):
         return self.type == "wifi"
+
 
 class UnboundZoneConfig:
     """A dictionary-like proxy object for Unbound's forward zone configuration."""
@@ -286,6 +293,45 @@ class UnboundZoneConfig:
     def _control(args):
         log.debug("unbound-control: {}".format(args))
         subprocess.check_call(["unbound-control"] + args, stdout=DEVNULL, stderr=DEVNULL)
+
+
+class UnboundLocalZoneConfig:
+    """A dictionary-like proxy object for Unbound's local zone configuration."""
+
+    def __init__(self):
+        subprocess.check_call(["unbound-control", "status"], stdout=DEVNULL, stderr=DEVNULL)
+        self.cache = {}
+        for line in subprocess.check_output(["unbound-control", "list_local_zones"]).decode().split('\n'):
+            if line:
+                fields = line.split(" ")
+                name = fields.pop(0).rstrip(".")
+                type = fields.pop(0)
+                self.cache[name] = type
+        log.debug(self)
+
+    def __repr__(self):
+        return "<UnboundLocalZoneConfig(data={cache})>".format(**vars(self))
+
+    def __iter__(self):
+        return iter(self.cache)
+
+    def add(self, zone, type):
+        """Install a local zone into Unbound."""
+        self.cache[zone] = type
+        self._control(["local_zone", zone, type])
+        log.debug(self)
+
+    def remove(self, zone):
+        """Remove a local zone from Unbound."""
+        if self.cache.pop(zone, None):
+            self._control(["local_zone_remove", zone])
+            log.debug(self)
+
+    @staticmethod
+    def _control(args):
+        log.debug("unbound-control: {}".format(args))
+        subprocess.check_call(["unbound-control"] + args, stdout=DEVNULL, stderr=DEVNULL)
+
 
 class Store:
     """A proxy object to access stored zones or global servers."""
@@ -371,8 +417,7 @@ class Application:
         "d.f.ip6.arpa",
         "168.192.in-addr.arpa",
         ] + ["{}.172.in-addr.arpa".format(octet) for octet in range(16, 32)] + [
-        "10.in-addr.arpa",
-        ] if config.use_private_address_ranges else []
+        "10.in-addr.arpa"]
 
     def __init__(self, argv):
         if len(argv) > 1 and argv[1] == '--debug':
@@ -589,18 +634,31 @@ class Application:
         with Lock():
             connections = ConnectionList(self.client, skip_wifi=not config.add_wifi_provided_zones).get_zone_connection_mapping()
             unbound_zones = UnboundZoneConfig()
+            unbound_local_zones = UnboundLocalZoneConfig()
             stored_zones = Store('zones')
 
             # Remove any zones managed by dnssec-trigger that are no longer
             # valid.
             log.debug("removing zones that are no longer valid")
             for zone in stored_zones:
-                # Remove all zones that are not in connections except those for
-                # reverse name resolution of private addresses.
-                if zone not in connections and zone not in self.rfc1918_reverse_zones:
-                    if zone in unbound_zones:
-                        unbound_zones.remove(zone)
-                    stored_zones.remove(zone)
+                # leave zones that are provided by some connection
+                if zone in connections:
+                    continue
+
+                if zone in self.rfc1918_reverse_zones:
+                    # if zone is private address range reverse zone and we are congifured to use them, leave it
+                    if config.use_private_address_ranges:
+                        continue
+                    # otherwise add Unbound local zone of type 'static' like Unbound does and remove it later
+                    else:
+                        unbound_local_zones.add(zone, "static")
+
+                # Remove all zones that are not in connections except OR
+                # are private address ranges reverse zones and we are NOT
+                # configured to use them
+                if zone in unbound_zones:
+                    unbound_zones.remove(zone)
+                stored_zones.remove(zone)
 
             # Install all zones coming from connections except those installed
             # by other means than dnssec-trigger-script.
@@ -615,7 +673,7 @@ class Application:
             # RFC1918 zones will be installed, except those already provided by connections
             # and those installed by other means than by dnssec-trigger-script.
             # RFC19118 zones will be removed if there are no global forwarders.
-            if self.rfc1918_reverse_zones:
+            if config.use_private_address_ranges:
                 log.debug("configuring RFC 1918 private zones")
                 for zone in self.rfc1918_reverse_zones:
                     # Ignore a connection provided zone as it's been already
@@ -628,6 +686,7 @@ class Application:
                         if zone in stored_zones or zone not in unbound_zones:
                             unbound_zones.add(zone, self.global_forwarders, secure=False)
                             stored_zones.add(zone)
+                            unbound_local_zones.remove(zone)
                     else:
                         # There are no global forwarders, therefore remove the zone
                         log.debug("Removing RFC 1918 private zone '%s' since there are no global forwarders", zone)
@@ -635,8 +694,10 @@ class Application:
                             unbound_zones.remove(zone)
                         if zone in stored_zones:
                             stored_zones.remove(zone)
+                        unbound_local_zones.add(zone, "static")
 
             stored_zones.commit()
+
 
 if __name__ == "__main__":
     try:
