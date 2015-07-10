@@ -1,3 +1,9 @@
+10 July 2015: Wouter
+	- Renamed 'open resolvers' to 'relay resolvers' in the explanatory
+	  text what dnssec-trigger is doing.  Resolvers from DHCP can also
+	  be public resolvers, so the term relay resolver is used for an
+	  open resolver that performs transport layer adjustment.
+
 8 April 2015: Wouter
 	- Patches from Tomas Hozza for dnssec-trigger-script:
 	  Add newlines between classes to conform with PEP-8 and

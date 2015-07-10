@@ -409,9 +409,9 @@ const char* state_tooltip(struct alert_arg* a)
 	else if(a->now_cache)
 		return "DNSSEC via cache";
 	else if(a->now_tcp)
-		return "DNSSEC via tcp open resolver";
+		return "DNSSEC via tcp relay resolver";
 	else if(a->now_ssl)
-		return "DNSSEC via ssl open resolver";
+		return "DNSSEC via ssl relay resolver";
 	else if(a->now_disconn)
 		return "network disconnected";
 	return "DNSSEC via authorities";
@@ -497,10 +497,10 @@ void fetch_proberesults(char* buf, size_t len, const char* lf)
 		"DNSSEC results fetched direct from authorities%s", lf);
 			else if(strstr(p->str, "tcp"))
 				snprintf(pos, left, 
-		"DNSSEC results fetched from open resolvers over TCP%s", lf);
+		"DNSSEC results fetched from relay resolvers over TCP%s", lf);
 			else if(strstr(p->str, "ssl"))
 				snprintf(pos, left, 
-		"DNSSEC results fetched from open resolvers over SSL%s", lf);
+		"DNSSEC results fetched from relay resolvers over SSL%s", lf);
 			else if(strstr(p->str, "disconnected"))
 				snprintf(pos, left, 
 		"The network seems to be disconnected. A local cache of DNS%s"

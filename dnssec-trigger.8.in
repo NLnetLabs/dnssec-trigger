@@ -173,11 +173,11 @@ the probing continues if there is no connection or response 404.
 .TP
 .B tcp80: \fR<ip>
 Add an IP4 or IP6 address to the list of fallback open DNSSEC resolvers that
-are used on TCP port 80.
+are used on TCP port 80.  These relay traffic from port 80 to regular DNS.
 .TP
 .B tcp443: \fR<ip>
 Add an IP4 or IP6 address to the list of fallback open DNSSEC resolvers that
-are used on TCP port 443.
+are used on TCP port 443.  These relay traffic from port 443 to regular DNS.
 .TP
 .B tcp443: \fR<ip> or <ip> { <hash>}
 Add an IP4 of IP6 address to the list of fallback SSL open DNSSEC resolvers.
