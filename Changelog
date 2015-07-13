@@ -1,3 +1,7 @@
+13 July 2015: Wouter
+	- Fix #618: create sha1 and sha256 hashes for created binaries,
+	  fixed in makedist.sh.
+
 10 July 2015: Wouter
 	- Renamed 'open resolvers' to 'relay resolvers' in the explanatory
 	  text what dnssec-trigger is doing.  Resolvers from DHCP can also

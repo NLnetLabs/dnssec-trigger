@@ -96,6 +96,44 @@ create_temp_dir () {
     cd $temp_dir
 }
 
+# pass filename as $1 arg.
+# creates file.sha1 and file.sha256
+storehash () {
+    case $OSTYPE in
+        linux*)
+                sha=`sha1sum $1 |  awk '{ print $1 }'`
+                sha256=`sha256sum $1 |  awk '{ print $1 }'`
+                ;;
+        freebsd*)
+                sha=`sha1 $1 |  awk '{ print $5 }'`
+                sha256=`sha256 $1 |  awk '{ print $5 }'`
+                ;;
+	*)
+		# in case $OSTYPE is gone.
+		case `uname` in
+		Linux*)
+		  sha=`sha1sum $1 |  awk '{ print $1 }'`
+		  sha256=`sha256sum $1 |  awk '{ print $1 }'`
+		  ;;
+		FreeBSD*)
+		  sha=`sha1 $1 |  awk '{ print $5 }'`
+		  sha256=`sha256 $1 |  awk '{ print $5 }'`
+		  ;;
+		*)
+		  sha=`sha1sum $1 |  awk '{ print $1 }'`
+		  sha256=`sha256sum $1 |  awk '{ print $1 }'`
+		  ;;
+		esac
+                ;;
+    esac
+    echo $sha > $1.sha1
+    echo $sha256 > $1.sha256
+    echo "hash of $1.{sha1,sha256}"
+    echo "sha1 $sha"
+    echo "sha256 $sha256"
+}
+
+
 SNAPSHOT="no"
 RC="no"
 LDNSDIR=""
@@ -372,6 +410,7 @@ if [ "$DOWIN" = "yes" ]; then
             #mv $file $cwd/.
             cleanup
     fi
+    storehash dnssec_trigger_setup_$version.exe
     ls -lG dnssec_trigger_setup_$version.exe
     #ls -lG $file
     info "Done"
@@ -488,6 +527,7 @@ if [ "$DOMAC" = "yes" ]; then
     mv osx/pkg/dnssec*$version*.dmg ../../dnssectrigger-$version.dmg
     cd ..
     cleanup
+    storehash dnssectrigger-$version.dmg
     ls -lhG dnssectrigger-$version.dmg
 
     info "Done"
@@ -566,25 +606,7 @@ tar czf ../$tarfile dnssec-trigger-$version || error_cleanup "Failed to create t
 
 cleanup
 
-case `uname 2>&1` in
-    Linux|linux) 
-        sha=`sha1sum $tarfile |  awk '{ print $1 }'`
-        sha256=`sha256sum $tarfile |  awk '{ print $1 }'`
-    ;;
-    FreeBSD|freebsd)
-        sha=`sha1 $tarfile |  awk '{ print $5 }'`
-        sha256=`sha256 $tarfile |  awk '{ print $5 }'`
-    ;;
-    *)
-        sha=`sha1sum $tarfile |  awk '{ print $1 }'`
-        sha256=`sha256sum $tarfile |  awk '{ print $1 }'`
-    ;;
-esac
-
-echo $sha > $tarfile.sha1
-echo $sha256 > $tarfile.sha256
+storehash $tarfile
 
 info "dnssec-trigger distribution created successfully."
-info "sha1   $sha"
-info "sha256 $sha256"
 
