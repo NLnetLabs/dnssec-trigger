@@ -1,20 +1,32 @@
-#!@PYTHON@
+#!@PYTHON@ -sE
 # -*- coding: utf-8 -*-
 """
 @author: Tomas Hozza <thozza@redhat.com>
 @author: Pavel Šimerda <psimerda@redhat.com>
 """
 
+import os
+import sys
+import fcntl
+import shutil
+import glob
+import subprocess
+import logging
+import logging.handlers
+import socket
+import struct
+import signal
+
+import gi
+gi.require_version('NMClient', '1.0')
+
 from gi.repository import NMClient
-import os, sys, fcntl, shutil, glob, subprocess
-import logging, logging.handlers
-import socket, struct
 
 # Python compatibility stuff
 if not hasattr(os, "O_CLOEXEC"):
     os.O_CLOEXEC = 0x80000
 
-DEVNULL = open("/dev/null", "wb")
+DEVNULL = open(os.devnull, "wb")
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)
@@ -24,9 +36,29 @@ log.addHandler(logging.StreamHandler())
 # NetworkManager reportedly doesn't pass the PATH environment variable.
 os.environ['PATH'] = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
+# maximum negative cache TTL set by dnssec-trigger script on setup
+UNBOUND_MAX_NEG_CACHE_TTL = 5
 
 class UserError(Exception):
     pass
+
+
+def pidof(process_name):
+    """
+    Get pids for process with given name
+
+    :param process_name: String with name of process to get PIDs of
+    :return: list with PIDs represented as int. If there is no such process, the list is empty
+    """
+    pids = list()
+    try:
+        output = subprocess.check_output(['pidof', process_name])
+        p = [int(pid) for pid in output.decode().strip().split()]
+        pids.extend(p)
+    except subprocess.CalledProcessError:
+        # There is no process with given name
+        pass
+    return pids
 
 
 class Lock:
@@ -163,7 +195,7 @@ class Connection:
     def __init__(self, connection):
         devices = connection.get_devices()
 
-        if 'get_vpn_state' in dir(connection):
+        if connection.get_vpn():
             self.type = "vpn"
         elif not devices:
             self.type = "ignore"
@@ -434,7 +466,7 @@ class Application:
         except AttributeError:
             self.usage()
 
-        self.client = NMClient.Client()
+        self.client = NMClient.Client().new()
 
     def nm_handles_resolv_conf(self):
         if not self.client.get_manager_running():
@@ -499,6 +531,20 @@ class Application:
         if os.path.exists(path) and not os.path.islink(path):
             subprocess.call(["chattr", "-i", path])
 
+    def _restart_nm(self):
+        if os.path.exists(self.resolvconf_networkmanager):
+            os.symlink(self.resolvconf_networkmanager, self.resolvconf)
+        # Sending SIGHUP will cause NM to reload config and write the /etc/resolv.conf
+        elif self.client.get_version() >= '1.0.3':
+            log.debug("Sending SIGHUP to NM to rewrite the resolv.conf")
+            nm_pids = pidof('NetworkManager')
+            for pid in nm_pids:
+                os.kill(pid, signal.SIGHUP)
+        elif os.path.exists("/sys/fs/cgroup/systemd"):
+            subprocess.check_call(["systemctl", "--ignore-dependencies", "try-restart", "NetworkManager.service"])
+        else:
+            subprocess.check_call(["/etc/init.d/NetworkManager", "restart"])
+
     def run_prepare(self):
         """Prepare for starting dnssec-trigger
 
@@ -524,6 +570,9 @@ class Application:
         Called by dnssec-trigger.
         """
 
+        # Set the maximum negative cache TTL
+        self._unbound_set_negative_cache_ttl(UNBOUND_MAX_NEG_CACHE_TTL)
+
         if config.set_search_domains:
             zones = set(sum((connection.zones for connection in ConnectionList(self.client)), []))
             log.info("Search domains: " + ' '.join(zones))
@@ -546,12 +595,8 @@ class Application:
 
         log.info("Recovering {}...".format(self.resolvconf))
         if self.nm_handles_resolv_conf():
-            if os.path.exists(self.resolvconf_networkmanager):
-                os.symlink(self.resolvconf_networkmanager, self.resolvconf)
-            elif os.path.exists("/sys/fs/cgroup/systemd"):
-                subprocess.check_call(["systemctl", "--ignore-dependencies", "try-restart", "NetworkManager.service"])
-            else:
-                subprocess.check_call(["/etc/init.d/NetworkManager", "restart"])
+            # try to make NM to rewrite resolv.conf or as a last resort restart it
+            self._restart_nm()
         else:
             try:
                 shutil.move(self.resolvconf_backup, self.resolvconf)
@@ -606,6 +651,12 @@ class Application:
 
         self.run_update_global_forwarders()
         self.run_update_connection_zones()
+
+    @staticmethod
+    def _unbound_set_negative_cache_ttl(ttl):
+        CMD = ["unbound-control", "set_option", "cache-max-negative-ttl:", str(ttl)]
+        log.debug(" ".join(CMD))
+        subprocess.check_call(CMD, stdout=DEVNULL, stderr=DEVNULL)
 
     @staticmethod
     def dnssec_trigger_control(args):
@@ -699,7 +750,7 @@ class Application:
             stored_zones.commit()
 
 
-if __name__ == "__main__":
+def main():
     try:
         Application(sys.argv).run()
     except UserError as error:
@@ -711,3 +762,8 @@ if __name__ == "__main__":
             exit(1)
         else:
             raise
+
+
+if __name__ == "__main__":
+    main()
+

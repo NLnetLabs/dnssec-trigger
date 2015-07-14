@@ -1,3 +1,15 @@
+14 July 2015: Wouter
+	- Patches from Tomas Hozza for dnssec-trigger-script:
+	  Use one import on one line as defined by PEP8.
+	  Use path to DEVNULL from os module.
+	  Move the main functionality into main() function to enable testing.
+	  Use existing API in NM for distinguishing VPN connections.
+	  Construct NMClient as advised by the documentation.
+	  Forbid Python from searching local dirs and using env variables.
+	  Set low max negative cache TTL to prevent possible user issues.
+	  Send SIGHUP to NM if it is new enough instead of restarting it.
+	  Set the required version in GI before importing NMClient.
+
 13 July 2015: Wouter
 	- Fix #618: create sha1 and sha256 hashes for created binaries,
 	  fixed in makedist.sh.
