@@ -5,6 +5,7 @@ Requires=unbound.service
 Wants=dnssec-triggerd-keygen.service
 
 [Service]
+PIDFile=@pidfile@
 Type=simple
 Restart=always
 ExecStart=@sbindir@/dnssec-triggerd -d
