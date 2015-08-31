@@ -1,3 +1,6 @@
+31 August 2015: Wouter
+	- Changed windows setup compression to be more transparent.
+
 16 July 2015: Wouter
 	- Patches from Tomas Hozza for systemd service files:
 	  Set PIDFile in the dnssec-triggerd.service file.
