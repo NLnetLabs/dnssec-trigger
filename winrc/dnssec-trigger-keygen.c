@@ -306,7 +306,7 @@ do_gen(const char* keydir, int ubmode)
 	char* servername;
 	char* clientname;
 	/* size of keys in bits */
-	int bits = 1536;
+	int bits = 3072;
 	/* hash algorithm */
 	char* hash = "sha256";
 	/* base name for files on disk */
