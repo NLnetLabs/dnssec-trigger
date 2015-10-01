@@ -606,6 +606,8 @@ tar czf ../$tarfile dnssec-trigger-$version || error_cleanup "Failed to create t
 
 cleanup
 
+echo "create dnssec-trigger-$version.tar.gz.asc with:"
+echo "    gpg --armor --detach-sign dnssec-trigger-$version.tar.gz"
 storehash $tarfile
 
 info "dnssec-trigger distribution created successfully."
