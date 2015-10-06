@@ -423,9 +423,9 @@ if [ "$DOMAC" = "yes" ]; then
     create_temp_dir
     destdir="osx/pkg/DEST"
     cnf_flag=""
-    ldns_flag="--prefix=/usr --with-ssl=/usr --disable-gost --disable-static"
-    unbound_flag="--prefix=/usr --sysconfdir=/etc --with-ssl=/usr --with-libexpat=/usr --disable-gost --enable-allsymbols --disable-static"
-    dnssectrigger_flag="--prefix=/usr --sysconfdir=/etc/dnssec-trigger --with-keydir=/etc/dnssec-trigger --with-unbound-control=/usr/sbin/unbound-control --with-ssl=/usr"
+    ldns_flag="--with-ssl=/usr --disable-gost --disable-static"
+    unbound_flag="--sysconfdir=/etc --with-ssl=/usr --with-libexpat=/usr --disable-gost --enable-allsymbols --disable-static"
+    dnssectrigger_flag="--sysconfdir=/usr/local/etc/dnssec-trigger --with-keydir=/usr/local/etc/dnssec-trigger --with-unbound-control=/usr/local/sbin/unbound-control --with-ssl=/usr"
 
     if test `uname` != "Darwin"; then
 	error_cleanup "Must make mac package on OSX"
@@ -508,12 +508,8 @@ if [ "$DOMAC" = "yes" ]; then
     info "make install"
     make install DESTDIR=$destdir || error_cleanup "make install failed"
     
-    mv $destdir/etc/unbound/unbound.conf $destdir/etc/unbound/unbound.conf-default
-    mv $destdir/etc/dnssec-trigger/dnssec-trigger.conf $destdir/etc/dnssec-trigger/dnssec-trigger.conf-default
-    # must use /private/etc to write into /etc(symlink) on mac.
-    mkdir $destdir/private
-    mv $destdir/etc $destdir/private/etc
-    mv $destdir/var $destdir/private/var
+    mv $destdir/usr/local/etc/unbound/unbound.conf $destdir/usr/local/etc/unbound/unbound.conf-default
+    mv $destdir/usr/local/etc/dnssec-trigger/dnssec-trigger.conf $destdir/usr/local/etc/dnssec-trigger/dnssec-trigger.conf-default
 
     info "dnssec-trigger version: $version"
     rm -f osx/pkg/makepackage_ed

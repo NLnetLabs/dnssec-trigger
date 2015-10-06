@@ -1,5 +1,7 @@
 6 October 2015: Wouter
 	- Patch for preliminary Mac OSX 10.11 support (from Philip Paeps).
+	- Move plists into uidir on OSX (/usr/local/share), and set usr/local
+	  in makedist for OSX.
 
 1 October 2015: Wouter
 	- default keysize for control is 3072 on windows.
