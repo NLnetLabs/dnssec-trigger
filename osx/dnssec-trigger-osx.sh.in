@@ -37,5 +37,5 @@ fi
 echo "$ifs $ips $ssid $bssid" > $tempfile
 
 logger "dnssec-trigger(osx) detected $ifs DNS $ips"
-0sbindir0/dnssec-trigger-control submit "$ips"
+@sbindir@/dnssec-trigger-control submit "$ips"
 exit 0

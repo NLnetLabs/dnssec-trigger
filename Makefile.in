@@ -148,7 +148,7 @@ RIGGERD_SRC+=winrc/netlist.c winrc/win_svc.c winrc/w_inst.c
 endif
 ifeq "$(hooks)" "osx"
 RIGGERD_SRC+=osx/wakelist.c
-LDNSLIBS+=-lIOkit /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
+LDNSLIBS+=-framework IOKit -framework CoreFoundation
 endif
 RIGGERD_OBJ=$(addprefix $(BUILD),$(RIGGERD_SRC:.c=.o)) $(COMPAT_OBJ)
 
