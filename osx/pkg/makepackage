@@ -11,7 +11,7 @@ PRODUCT="dnssectrigger"
 OS=`uname`
 DESTDIR=$(pwd)/DEST
 VERSION=`grep " PACKAGE_VERSION" ../../config.h | sed -e 's/.*"\(.*\)"/\1/'`
-FILELIST=/usr/share/dnssec-trigger/files.list
+FILELIST=/usr/local/share/dnssec-trigger/files.list
 
 if [[ "$OS" == 'Darwin' ]]; then
    PLATFORM='MacOSX'
@@ -192,16 +192,17 @@ else
 fi
 
 # write unbound launcher script
-cat << 'EOF2' > /usr/libexec/unbound-launch.sh
+mkdir -p /usr/local/libexec
+cat << 'EOF2' > /usr/local/libexec/unbound-launch.sh
 #!/bin/bash
 # update root anchor (if offline for long)
-/usr/sbin/unbound-anchor || logger "/etc/unbound/root.key has been changed"
-chown unbound /etc/unbound/root.key
+/usr/local/sbin/unbound-anchor || logger "/usr/local/etc/unbound/root.key has been changed"
+chown unbound /usr/local/etc/unbound/root.key
 # exec so the shell does not hang around.
-exec /usr/sbin/unbound -d
+exec /usr/local/sbin/unbound -d
 EOF2
-chmod +x /usr/libexec/unbound-launch.sh
-echo /usr/libexec/unbound-launch.sh >> "${FILELIST}"
+chmod +x /usr/local/libexec/unbound-launch.sh
+echo /usr/local/libexec/unbound-launch.sh >> "${FILELIST}"
 
 # write unbound plist
 cat << 'EOF2' > /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
@@ -213,7 +214,7 @@ cat << 'EOF2' > /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
         <string>nl.nlnetlabs.unbound</string>
         <key>ProgramArguments</key>
         <array>
-           <string>/usr/libexec/unbound-launch.sh</string>
+           <string>/usr/local/libexec/unbound-launch.sh</string>
         </array>
         <key>RunAtLoad</key>
         <true/>
@@ -225,44 +226,44 @@ EOF2
 echo /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist >> "${FILELIST}"
 
 # fetch root DNS key
-if [[ ! -f /etc/unbound/root.key ]]; then
-   /usr/sbin/unbound-anchor
+if [[ ! -f /usr/local/etc/unbound/root.key ]]; then
+   /usr/local/sbin/unbound-anchor
 fi
 # make it writable by unbound
-chown unbound /etc/unbound/root.key
+chown unbound /usr/local/etc/unbound/root.key
 
 runsetupi="no"
 # setup default configuration file and keys
-if [[ ! -f /etc/dnssec-trigger/dnssec-trigger.conf ]]; then
-	cp /etc/dnssec-trigger/dnssec-trigger.conf-default /etc/dnssec-trigger/dnssec-trigger.conf
+if [[ ! -f /usr/local/etc/dnssec-trigger/dnssec-trigger.conf ]]; then
+	cp /usr/local/etc/dnssec-trigger/dnssec-trigger.conf-default /usr/local/etc/dnssec-trigger/dnssec-trigger.conf
 else
-	if grep ssl443 /etc/dnssec-trigger/dnssec-trigger.conf >/dev/null && grep "url:" /etc/dnssec-trigger/dnssec-trigger.conf >/dev/null && grep "login-location" /etc/dnssec-trigger/dnssec-trigger.conf >/dev/null; then
+	if grep ssl443 /usr/local/etc/dnssec-trigger/dnssec-trigger.conf >/dev/null && grep "url:" /usr/local/etc/dnssec-trigger/dnssec-trigger.conf >/dev/null && grep "login-location" /usr/local/etc/dnssec-trigger/dnssec-trigger.conf >/dev/null; then
 		# config looks okay, check more
-		if grep 185.49.140.67 /etc/dnssec-trigger/dnssec-trigger.conf >/dev/null; then
+		if grep 185.49.140.67 /usr/local/etc/dnssec-trigger/dnssec-trigger.conf >/dev/null; then
 			:
 		else
 			# need new IPs. add them, keeps existing settings
-			mv /etc/dnssec-trigger/dnssec-trigger.conf /etc/dnssec-trigger/dnssec-trigger.conf.old
-			grep -v -e "213.154.224.3" -e "2001:7b8:206:1:bb::" < /etc/dnssec-trigger/dnssec-trigger.conf.old > /etc/dnssec-trigger/dnssec-trigger.conf
-			echo "tcp80: 185.49.140.67" >> /etc/dnssec-trigger/dnssec-trigger.conf
-			echo "tcp80: 2a04:b900::10:0:0:67" >> /etc/dnssec-trigger/dnssec-trigger.conf
-			echo "ssl443: 185.49.140.67 7E:CF:B4:BE:B9:9A:56:0D:F7:3B:40:51:A4:78:E6:A6:FD:66:0F:10:58:DC:A8:2E:C0:43:D4:77:5A:71:8A:CF" >> /etc/dnssec-trigger/dnssec-trigger.conf
-			echo "ssl443: 2a04:b900::10:0:0:67 7E:CF:B4:BE:B9:9A:56:0D:F7:3B:40:51:A4:78:E6:A6:FD:66:0F:10:58:DC:A8:2E:C0:43:D4:77:5A:71:8A:CF" >> /etc/dnssec-trigger/dnssec-trigger.conf
+			mv /usr/local/etc/dnssec-trigger/dnssec-trigger.conf /usr/local/etc/dnssec-trigger/dnssec-trigger.conf.old
+			grep -v -e "213.154.224.3" -e "2001:7b8:206:1:bb::" < /usr/local/etc/dnssec-trigger/dnssec-trigger.conf.old > /usr/local/etc/dnssec-trigger/dnssec-trigger.conf
+			echo "tcp80: 185.49.140.67" >> /usr/local/etc/dnssec-trigger/dnssec-trigger.conf
+			echo "tcp80: 2a04:b900::10:0:0:67" >> /usr/local/etc/dnssec-trigger/dnssec-trigger.conf
+			echo "ssl443: 185.49.140.67 7E:CF:B4:BE:B9:9A:56:0D:F7:3B:40:51:A4:78:E6:A6:FD:66:0F:10:58:DC:A8:2E:C0:43:D4:77:5A:71:8A:CF" >> /usr/local/etc/dnssec-trigger/dnssec-trigger.conf
+			echo "ssl443: 2a04:b900::10:0:0:67 7E:CF:B4:BE:B9:9A:56:0D:F7:3B:40:51:A4:78:E6:A6:FD:66:0F:10:58:DC:A8:2E:C0:43:D4:77:5A:71:8A:CF" >> /usr/local/etc/dnssec-trigger/dnssec-trigger.conf
 		fi
 	else
 		# need the new setting, copy anyway.
-		cp /etc/dnssec-trigger/dnssec-trigger.conf /etc/dnssec-trigger/dnssec-trigger.conf.old
-		cp /etc/dnssec-trigger/dnssec-trigger.conf-default /etc/dnssec-trigger/dnssec-trigger.conf
+		cp /usr/local/etc/dnssec-trigger/dnssec-trigger.conf /usr/local/etc/dnssec-trigger/dnssec-trigger.conf.old
+		cp /usr/local/etc/dnssec-trigger/dnssec-trigger.conf-default /usr/local/etc/dnssec-trigger/dnssec-trigger.conf
 		runsetupi="yes"
 	fi
 fi
-if [[ ! -f /etc/unbound/unbound.conf ]]; then
-	cp /etc/unbound/unbound.conf-default /etc/unbound/unbound.conf
-	/usr/sbin/unbound-control-setup
-	/usr/sbin/dnssec-trigger-control-setup
-	/usr/sbin/dnssec-trigger-control-setup -i
+if [[ ! -f /usr/local/etc/unbound/unbound.conf ]]; then
+	cp /usr/local/etc/unbound/unbound.conf-default /usr/local/etc/unbound/unbound.conf
+	/usr/local/sbin/unbound-control-setup
+	/usr/local/sbin/dnssec-trigger-control-setup
+	/usr/local/sbin/dnssec-trigger-control-setup -i
 elif test "\$runsetupi" = "yes"; then
-	/usr/sbin/dnssec-trigger-control-setup -i
+	/usr/local/sbin/dnssec-trigger-control-setup -i
 fi
 
 # clean up
@@ -272,7 +273,7 @@ chown root /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
 chown root /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist
 chown root /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
 chown root /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
-chown unbound /etc/unbound
+chown unbound /usr/local/etc/unbound
 
 # start unbound
 launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
@@ -355,7 +356,7 @@ if launchctl list | grep nl.nlnetlabs.dnssec-trigger-panel >/dev/null; then
 fi
 
 echo "stop panel"
-/usr/sbin/dnssec-trigger-control stoppanels
+/usr/local/sbin/dnssec-trigger-control stoppanels
 
 # stop daemons if exist
 echo "unload plists ..."
@@ -369,7 +370,7 @@ if test -f /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist; then
 fi
 
 # uninit the resolv.conf override
-/usr/sbin/dnssec-triggerd -u
+/usr/local/sbin/dnssec-triggerd -u
 
 # remove files.
 echo "delete files ..."
@@ -386,8 +387,10 @@ echo "delete directories ..."
 cat "${FILELIST}" | while read f; do
 	# remove empty directories
 	if test -d "\$f"; then
-		# error is piped into devnull if directory not empty.
-		rmdir "\$f" >/dev/null 2>&1
+		if test "\$f" != "/usr/local"; then
+			# error is piped into devnull if directory not empty.
+			rmdir "\$f" >/dev/null 2>&1
+		fi
 	fi
 	echo -n "."
 done

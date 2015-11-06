@@ -424,7 +424,7 @@ if [ "$DOMAC" = "yes" ]; then
     destdir="osx/pkg/DEST"
     cnf_flag=""
     ldns_flag="--with-ssl=/usr --disable-gost --disable-static"
-    unbound_flag="--sysconfdir=/etc --with-ssl=/usr --with-libexpat=/usr --disable-gost --enable-allsymbols --disable-static"
+    unbound_flag="--sysconfdir=/usr/local/etc --with-ssl=/usr --with-libexpat=/usr --disable-gost --enable-allsymbols --disable-static"
     dnssectrigger_flag="--sysconfdir=/usr/local/etc/dnssec-trigger --with-keydir=/usr/local/etc/dnssec-trigger --with-unbound-control=/usr/local/sbin/unbound-control --with-ssl=/usr"
 
     if test `uname` != "Darwin"; then
