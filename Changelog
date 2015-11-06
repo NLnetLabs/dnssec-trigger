@@ -1,5 +1,6 @@
 6 November 2015: Wouter
 	- new acx_nlnetlabs.m4 version and it has the libdl fix.
+	- Fix lint warnings about int and size_t conversion.
 
 6 October 2015: Wouter
 	- Patch for preliminary Mac OSX 10.11 support (from Philip Paeps).

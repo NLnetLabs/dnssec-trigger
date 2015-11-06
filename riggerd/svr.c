@@ -727,7 +727,7 @@ void cmd_reprobe(void)
 	buf[0]=0; /* safe, robust */
 	for(p = global_svr->probes; p; p = p->next) {
 		if(probe_is_cache(p)) {
-			int len;
+			size_t len;
 			if(left < strlen(p->name)+3)
 				break; /* no space for more */
 			snprintf(now, left, "%s%s",

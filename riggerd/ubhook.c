@@ -144,7 +144,7 @@ void hook_unbound_cache_list(struct cfg* cfg, struct probe_ip* list)
 	buf[0]=0; /* safe, robust */
 	while(list) {
 		if(probe_is_cache(list) && list->works && list->finished) {
-			int len;
+			size_t len;
 			if(left < strlen(list->name)+3)
 				break; /* no space for more */
 			snprintf(now, left, "%s%s",
@@ -209,7 +209,7 @@ int hook_unbound_supports_ssl_upstream(struct cfg* cfg)
 static void append_str_port(char* buf, char** now, size_t* left,
 	char* str, int port)
 {
-	int len;
+	size_t len;
 	if(*left < strlen(str)+3)
 		return; /* no more space */
 	snprintf(*now, *left, "%s%s@%d", *now == buf?"":" ", str, port);
