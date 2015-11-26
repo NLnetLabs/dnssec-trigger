@@ -1,5 +1,6 @@
 26 November 2015: Wouter
 	- Fix Makefile for use of /Library, which seems okay for new OSX.
+	- makedist prints checksums on OSX.
 
 6 November 2015: Wouter
 	- new acx_nlnetlabs.m4 version and it has the libdl fix.

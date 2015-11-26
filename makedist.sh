@@ -108,6 +108,10 @@ storehash () {
                 sha=`sha1 $1 |  awk '{ print $5 }'`
                 sha256=`sha256 $1 |  awk '{ print $5 }'`
                 ;;
+	[dD]arwin*)
+                sha=`shasum -a 1 $1 |  awk '{ print $1 }'`
+                sha256=`shasum -a 256 $1 |  awk '{ print $1 }'`
+		;;
 	*)
 		# in case $OSTYPE is gone.
 		case `uname` in
@@ -118,6 +122,10 @@ storehash () {
 		FreeBSD*)
 		  sha=`sha1 $1 |  awk '{ print $5 }'`
 		  sha256=`sha256 $1 |  awk '{ print $5 }'`
+		  ;;
+		[dD]arwin*)
+		  sha=`shasum -a 1 $1 |  awk '{ print $1 }'`
+		  sha256=`shasum -a 256 $1 |  awk '{ print $1 }'`
 		  ;;
 		*)
 		  sha=`sha1sum $1 |  awk '{ print $1 }'`
