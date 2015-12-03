@@ -1,6 +1,8 @@
 3 December 2015: Wouter
 	- chmod key files for unbound, dnssec-trigger control and ldns in
-	  /usr/local.
+	  /usr/local.  For OSX.
+	- Fixup installer for creation of missing keys, and also start
+	  panel in osx userspace.
 
 26 November 2015: Wouter
 	- Fix Makefile for use of /Library, which seems okay for new OSX.
