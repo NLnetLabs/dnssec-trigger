@@ -257,7 +257,7 @@ else
 		runsetupi="yes"
 	fi
 fi
-if [[ ! -f /usr/local/etc/unbound/unbound.conf ]]; then
+if [[ ! -f /usr/local/etc/unbound/unbound.conf -o ! -f /usr/local/etc/unbound/unbound_control.key]]; then
 	cp /usr/local/etc/unbound/unbound.conf-default /usr/local/etc/unbound/unbound.conf
 	/usr/local/sbin/unbound-control-setup
 	chmod a+r /usr/local/etc/unbound/unbound_*.key /usr/local/etc/unbound/unbound_*.pem

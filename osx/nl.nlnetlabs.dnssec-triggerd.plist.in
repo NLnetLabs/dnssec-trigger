@@ -19,9 +19,6 @@ User root because it has to write to resolv.conf.
 	<key>UserName</key>
 	<string>root</string>
 
-	<key>KeepAlive</key>
-	<true/>
-
 	<key>RunAtLoad</key>
 	<true/>
 
