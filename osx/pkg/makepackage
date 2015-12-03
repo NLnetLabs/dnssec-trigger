@@ -260,7 +260,9 @@ fi
 if [[ ! -f /usr/local/etc/unbound/unbound.conf ]]; then
 	cp /usr/local/etc/unbound/unbound.conf-default /usr/local/etc/unbound/unbound.conf
 	/usr/local/sbin/unbound-control-setup
+	chmod a+r /usr/local/etc/unbound/unbound_*.key /usr/local/etc/unbound/unbound_*.pem
 	/usr/local/sbin/dnssec-trigger-control-setup
+	chmod a+r /usr/local/etc/dnssec_trigger*.key /usr/local/etc/dnssec_trigger*.pem
 	/usr/local/sbin/dnssec-trigger-control-setup -i
 elif test "\$runsetupi" = "yes"; then
 	/usr/local/sbin/dnssec-trigger-control-setup -i

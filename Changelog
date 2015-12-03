@@ -1,3 +1,7 @@
+3 December 2015: Wouter
+	- chmod key files for unbound, dnssec-trigger control and ldns in
+	  /usr/local.
+
 26 November 2015: Wouter
 	- Fix Makefile for use of /Library, which seems okay for new OSX.
 	- makedist prints checksums on OSX.
