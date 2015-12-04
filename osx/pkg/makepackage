@@ -321,6 +321,13 @@ if [[ "\${OSVERS}" == '10.11' ]]; then
 		launchctl enable gui/\$num/nl.nlnetlabs.dnssec-trigger-panel
 		echo "launchctl kickstart -kp gui/\$num/nl.nlnetlabs.dnssec-trigger-panel"
 		launchctl kickstart -kp gui/\$num/nl.nlnetlabs.dnssec-trigger-panel
+		# because OSX is weird, on reinstalls we need to repeat it
+		echo "launchctl bootstrap gui/\$num /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist"
+		launchctl bootstrap gui/\$num /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+		echo "launchctl enable gui/\$num/nl.nlnetlabs.dnssec-trigger-panel"
+		launchctl enable gui/\$num/nl.nlnetlabs.dnssec-trigger-panel
+		echo "launchctl kickstart -p gui/\$num/nl.nlnetlabs.dnssec-trigger-panel"
+		launchctl kickstart -p gui/\$num/nl.nlnetlabs.dnssec-trigger-panel
 	done
 else
 	# Older OSX
