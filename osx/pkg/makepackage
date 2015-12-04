@@ -263,18 +263,22 @@ export PATH="/usr/local/sbin:\$PATH"
 if [[ ! -f /usr/local/etc/unbound/unbound.conf ]]; then
 	cp /usr/local/etc/unbound/unbound.conf-default /usr/local/etc/unbound/unbound.conf
 	/usr/local/sbin/unbound-control-setup
-	chmod a+r /usr/local/etc/unbound/unbound_*.key /usr/local/etc/unbound/unbound_*.pem
 	/usr/local/sbin/dnssec-trigger-control-setup
+	chmod a+r /usr/local/etc/unbound/unbound_*.key /usr/local/etc/unbound/unbound_*.pem
 	chmod a+r /usr/local/etc/dnssec-trigger/dnssec_trigger*.key /usr/local/etc/dnssec-trigger/dnssec_trigger*.pem
 	/usr/local/sbin/dnssec-trigger-control-setup -i
+	chmod a+r /usr/local/etc/unbound/unbound_*.key /usr/local/etc/unbound/unbound_*.pem
+	chmod a+r /usr/local/etc/dnssec-trigger/dnssec_trigger*.key /usr/local/etc/dnssec-trigger/dnssec_trigger*.pem
 elif test "\$runsetupi" = "yes"; then
 	/usr/local/sbin/dnssec-trigger-control-setup -i
+	chmod a+r /usr/local/etc/unbound/unbound_*.key /usr/local/etc/unbound/unbound_*.pem
+	chmod a+r /usr/local/etc/dnssec-trigger/dnssec_trigger*.key /usr/local/etc/dnssec-trigger/dnssec_trigger*.pem
 fi
 # (re)create keys if missing at the usr.local location
 if [[ ! -f /usr/local/etc/unbound/unbound_control.key ]]; then
 	/usr/local/sbin/unbound-control-setup
-	chmod a+r /usr/local/etc/unbound/unbound_*.key /usr/local/etc/unbound/unbound_*.pem
 	/usr/local/sbin/dnssec-trigger-control-setup
+	chmod a+r /usr/local/etc/unbound/unbound_*.key /usr/local/etc/unbound/unbound_*.pem
 	chmod a+r /usr/local/etc/dnssec-trigger/dnssec_trigger*.key /usr/local/etc/dnssec-trigger/dnssec_trigger*.pem
 fi
 
@@ -563,9 +567,9 @@ The source code is under a BSD License.}]]></resource><resource mime-type="text/
 \\
 This installer installs: libldns, unbound and dnssec-trigger.  It starts a validating DNSSEC cache on this system.\\
 \\
-The configuration files are \f1 /etc/unbound/unbound.conf \f0 and \f1 /etc/dnssec-trigger/dnssec-trigger.conf \f0 \\
+The configuration files are \f1 /usr/local/etc/unbound/unbound.conf \f0 and \f1 /usr/local/etc/dnssec-trigger/dnssec-trigger.conf \f0 \\
 \\
-The trust anchor for the Internet root zone will be downloaded and configured with \f1 unbound-anchor \f0 if the file \f1 /etc/unbound/root.key \f0 does not exist.\\
+The trust anchor for the Internet root zone will be downloaded and configured with \f1 /usr/local/sbin/unbound-anchor \f0 if the file \f1 /usr/local/etc/unbound/root.key \f0 does not exist.\\
 \\
 Information about DnssecTrigger can be found at \\
 http://www.nlnetlabs.nl/projects/dnssec-trigger\\
