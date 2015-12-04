@@ -2,6 +2,7 @@
 	- Fixup osx gui panel start code for new osx.  installer talks about
 	  new locations and set permissions on key files and add to the path
 	  the /usr/local/sbin directory during install.
+	  Do not link RiggerStatusItem to /usr/local/opt/openssl/lib.
 
 3 December 2015: Wouter
 	- chmod key files for unbound, dnssec-trigger control and ldns in
