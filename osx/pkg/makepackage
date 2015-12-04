@@ -306,6 +306,7 @@ if [[ "\${OSVERS}" == '10.11' ]]; then
 	# OSX Capitan
 	ps ax -o uid,comm | grep MacOS/loginwindow
 	for num in `ps ax -o uid,comm | grep MacOS/loginwindow | grep -v grep | awk '{print \$1;}'`; do
+	for num in `ps ax -o uid,comm | grep MacOS/loginwindow | grep -v grep | sed -e 's/^ *//' -e 's/ .*\$//'`; do
 		echo "start user panel for gui/\$num"
 		echo "launchctl bootstrap gui/\$num /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist"
 		launchctl bootstrap gui/\$num /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
@@ -331,6 +332,8 @@ doinstall
 exit 0
 
 EOF
+# DEBUG
+cp package-manager/packages/Resources/postflight ~/postflight
 
 # write uninstall script
 cat <<EOF > ../uninstall-${PRODUCT}-${VERSION}.command
