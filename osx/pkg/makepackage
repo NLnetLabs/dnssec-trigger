@@ -132,7 +132,7 @@ elif [[ "\${OSVERS}" == '10.5' ]]; then
 	dscl localhost -create /Local/Default/Users/unbound
 	dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
 	dscl localhost -create /Local/Default/Users/unbound RealName "unbound daemon"
-	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /etc/unbound/
+	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /usr/local/etc/unbound/
 	getfreeid
 	dscl localhost -create /Local/Default/Users/unbound PrimaryGroupID \$freeid
 	dscl localhost -create /Local/Default/Users/unbound UniqueID \$freeid
@@ -145,7 +145,7 @@ elif [[ "\${OSVERS}" == '10.6' ]]; then
 	dscl localhost -create /Local/Default/Users/unbound
 	dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
 	dscl localhost -create /Local/Default/Users/unbound RealName "unbound daemon"
-	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /etc/unbound/
+	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /usr/local/etc/unbound/
 	getfreeid
 	dscl localhost -create /Local/Default/Users/unbound PrimaryGroupID \$freeid
 	dscl localhost -create /Local/Default/Users/unbound UniqueID \$freeid
@@ -158,7 +158,7 @@ elif [[ "\${OSVERS}" == '10.7' ]]; then
 	dscl localhost -create /Local/Default/Users/unbound
 	dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
 	dscl localhost -create /Local/Default/Users/unbound RealName "unbound daemon"
-	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /etc/unbound/
+	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /usr/local/etc/unbound/
 	getfreeid
 	dscl localhost -create /Local/Default/Users/unbound PrimaryGroupID \$freeid
 	dscl localhost -create /Local/Default/Users/unbound UniqueID \$freeid
@@ -171,7 +171,7 @@ elif [[ "\${OSVERS}" == '10.8' ]]; then
 	dscl localhost -create /Local/Default/Users/unbound
 	dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
 	dscl localhost -create /Local/Default/Users/unbound RealName "unbound daemon"
-	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /etc/unbound/
+	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /usr/local/etc/unbound/
 	getfreeid
 	dscl localhost -create /Local/Default/Users/unbound PrimaryGroupID \$freeid
 	dscl localhost -create /Local/Default/Users/unbound UniqueID \$freeid
@@ -184,7 +184,7 @@ else
 	dscl localhost -create /Local/Default/Users/unbound
 	dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
 	dscl localhost -create /Local/Default/Users/unbound RealName "unbound daemon"
-	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /etc/unbound/
+	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /usr/local/etc/unbound/
 	getfreeid
 	dscl localhost -create /Local/Default/Users/unbound PrimaryGroupID \$freeid
 	dscl localhost -create /Local/Default/Users/unbound UniqueID \$freeid
@@ -257,12 +257,15 @@ else
 		runsetupi="yes"
 	fi
 fi
+# add /usr/local/sbin to our path, we need our binaries in path for
+# dnssec-trigger-control-setup.
+export PATH="/usr/local/sbin:\$PATH"
 if [[ ! -f /usr/local/etc/unbound/unbound.conf ]]; then
 	cp /usr/local/etc/unbound/unbound.conf-default /usr/local/etc/unbound/unbound.conf
 	/usr/local/sbin/unbound-control-setup
 	chmod a+r /usr/local/etc/unbound/unbound_*.key /usr/local/etc/unbound/unbound_*.pem
 	/usr/local/sbin/dnssec-trigger-control-setup
-	chmod a+r /usr/local/etc/dnssec_trigger*.key /usr/local/etc/dnssec_trigger*.pem
+	chmod a+r /usr/local/etc/dnssec-trigger/dnssec_trigger*.key /usr/local/etc/dnssec-trigger/dnssec_trigger*.pem
 	/usr/local/sbin/dnssec-trigger-control-setup -i
 elif test "\$runsetupi" = "yes"; then
 	/usr/local/sbin/dnssec-trigger-control-setup -i
@@ -272,7 +275,7 @@ if [[ ! -f /usr/local/etc/unbound/unbound_control.key ]]; then
 	/usr/local/sbin/unbound-control-setup
 	chmod a+r /usr/local/etc/unbound/unbound_*.key /usr/local/etc/unbound/unbound_*.pem
 	/usr/local/sbin/dnssec-trigger-control-setup
-	chmod a+r /usr/local/etc/dnssec_trigger*.key /usr/local/etc/dnssec_trigger*.pem
+	chmod a+r /usr/local/etc/dnssec-trigger/dnssec_trigger*.key /usr/local/etc/dnssec-trigger/dnssec_trigger*.pem
 fi
 
 # clean up
@@ -299,7 +302,9 @@ launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
 
 if [[ "\${OSVERS}" == '10.11' ]]; then
 	# OSX Capitan
-	for num in `ps ax -o uid,comm | grep MacOS/loginwindow | grep -v grep | awk '{print \$1;}'`; do
+	ps ax -o uid,comm | grep MacOS/loginwindow
+	for num in `ps ax -o uid,comm | grep MacOS/loginwindow | grep -v grep | awk '{print $1;}'`; do
+		echo "panel in \$num"
 		launchctl bootstrap gui/\$num /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
 		launchctl enable gui/\$num/nl.nlnetlabs.dnssec-trigger-panel
 		launchctl kickstart -kp gui/\$num/nl.nlnetlabs.dnssec-trigger-panel
