@@ -260,8 +260,6 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = RiggerStatusItem_Prefix.pch;
-				HEADER_SEARCH_PATHS = ; /*/usr/local/opt/openssl/include;*/
-				LIBRARY_SEARCH_PATHS = ; /*/usr/local/opt/openssl/lib;*/
 				INFOPLIST_FILE = "RiggerStatusItem-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
 				PRODUCT_NAME = RiggerStatusItem;
@@ -276,8 +274,6 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = RiggerStatusItem_Prefix.pch;
-				HEADER_SEARCH_PATHS = ; /*/usr/local/opt/openssl/include;
-				LIBRARY_SEARCH_PATHS = ; /*/usr/local/opt/openssl/lib;*/
 				INFOPLIST_FILE = "RiggerStatusItem-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
 				PRODUCT_NAME = RiggerStatusItem;
