@@ -87,6 +87,8 @@ if test -f /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist; then
 	# \$F[2] is the first word of the command
 	ps -ww -A -opid,user,command | perl -nae 'if(\$F[2] =~ /\\bloginwindow\\b/) { system(qq(launchctl bsexec \$F[0] su \$F[1] -c "launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist")) }'
 
+	echo "stop panel with dnssec-trigger-control"
+	/usr/local/sbin/dnssec-trigger-control stoppanels
 fi
 
 if test -f /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist; then
@@ -294,11 +296,13 @@ chown unbound /usr/local/etc/unbound
 
 # start unbound
 launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
+launchctl kickstart -kp system/nl.nlnetlabs.unbound
 sleep 1
 
 # start dnssec-trigger (-panel and -hooks)
 launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist
 launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
+launchctl kickstart -kp system/nl.nlnetlabs.dnssec-triggerd
 
 # start panel in GUI user space.
 # this is really difficult, because as root would show the user widget now,
