@@ -264,7 +264,10 @@ osx/RiggerStatusItem:	$(srcdir)/osx/RiggerStatusItem
 	cp -r $< $@
 endif
 
-osx/osx-riggerapp: osx/RiggerStatusItem osx/RiggerStatusItem/cfg.c osx/RiggerStatusItem/cfg.h osx/RiggerStatusItem/net_help.c osx/RiggerStatusItem/net_help.h osx/RiggerStatusItem/log.c osx/RiggerStatusItem/log.h osx/RiggerStatusItem/config.h osx/RiggerStatusItem/main.m osx/RiggerStatusItem/RiggerApp.h osx/RiggerStatusItem/RiggerApp.m osx/RiggerStatusItem/osxattach.h osx/RiggerStatusItem/osxattach.m
+osx/RiggerStatusItem/RiggerStatusItem.xcodeproj/project.pbxproj:	$(srcdir)/osx/RiggerStatusItem/RiggerStatusItem.xcodeproj/project.pbxproj.in $(srcdir)/osx/RiggerStatusItem
+	sed -e "s?@OSX_SSL_INCLUDE@?@ssldir@/include?" -e "s?@OSX_SSL_LIB@?@ssldir@/lib?" < $< > $@
+
+osx/osx-riggerapp: osx/RiggerStatusItem osx/RiggerStatusItem/cfg.c osx/RiggerStatusItem/cfg.h osx/RiggerStatusItem/net_help.c osx/RiggerStatusItem/net_help.h osx/RiggerStatusItem/log.c osx/RiggerStatusItem/log.h osx/RiggerStatusItem/config.h osx/RiggerStatusItem/main.m osx/RiggerStatusItem/RiggerApp.h osx/RiggerStatusItem/RiggerApp.m osx/RiggerStatusItem/osxattach.h osx/RiggerStatusItem/osxattach.m osx/RiggerStatusItem/RiggerStatusItem.xcodeproj/project.pbxproj
 	(cd osx/RiggerStatusItem; xcodebuild -project RiggerStatusItem.xcodeproj -alltargets)
 	touch osx/osx-riggerapp
 
@@ -336,7 +339,7 @@ clean:
 	rm -f *.o *.d *.lo *~ tags
 	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
 	rm -f dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT)
-	rm -f 01-dnssec-trigger dnssec-trigger-script dnssec-trigger-osx.sh nl.nlnetlabs.dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf nl.nlnetlabs.dnssec-triggerd.plist nl.nlnetlabs.dnssec-trigger-panel.plist dnssec-trigger-setdns.sh osx/osx-riggerapp dnssec-triggerd.service
+	rm -f 01-dnssec-trigger dnssec-trigger-script dnssec-trigger-osx.sh nl.nlnetlabs.dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf nl.nlnetlabs.dnssec-triggerd.plist nl.nlnetlabs.dnssec-trigger-panel.plist dnssec-trigger-setdns.sh osx/osx-riggerapp dnssec-triggerd.service osx/RiggerStatusItem/RiggerStatusItem.xcodeproj/project.pbxproj
 	rm -f dnssec-trigger-panel.desktop dnssec-trigger.8 dnssec-trigger-keygen$(EXEEXT)
 	rm -rf autom4te.cache build osx/RiggerStatusItem/build
 

@@ -1,3 +1,6 @@
+8 December 2015: Wouter
+	- Fixup compile on OSX with static SSL for makedist mac build.
+
 7 December 2015: Wouter
 	- Remove stuff from osx installer that logs out the user.
 

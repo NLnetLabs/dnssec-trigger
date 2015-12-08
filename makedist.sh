@@ -431,9 +431,9 @@ if [ "$DOMAC" = "yes" ]; then
     create_temp_dir
     destdir="osx/pkg/DEST"
     cnf_flag=""
-    ldns_flag="--with-ssl=/usr --disable-gost --disable-static"
-    unbound_flag="--sysconfdir=/usr/local/etc --with-ssl=/usr --with-libexpat=/usr --disable-gost --enable-allsymbols --disable-static"
-    dnssectrigger_flag="--sysconfdir=/usr/local/etc/dnssec-trigger --with-keydir=/usr/local/etc/dnssec-trigger --with-unbound-control=/usr/local/sbin/unbound-control --with-ssl=/usr"
+    ldns_flag="--disable-gost --disable-static"
+    unbound_flag="--sysconfdir=/usr/local/etc --with-libexpat=/usr --enable-allsymbols --disable-gost --disable-static --disable-flto"
+    dnssectrigger_flag="--sysconfdir=/usr/local/etc/dnssec-trigger --with-keydir=/usr/local/etc/dnssec-trigger --with-unbound-control=/usr/local/sbin/unbound-control"
 
     if test `uname` != "Darwin"; then
 	error_cleanup "Must make mac package on OSX"
@@ -443,6 +443,35 @@ if [ "$DOMAC" = "yes" ]; then
     svn export "$SVNROOT" dnssec-trigger || error_cleanup "SVN command failed"
     rm -rf "dnssec-trigger/$destdir"
     mkdir -p dnssec-trigger/$destdir || error_cleanup "cannot create destdir"
+
+    # openssl
+    if test -n "$WINSSL" -a -d "$WINSSL_STORE_DIR"; then
+	info "Compile $WINSSL have $WINSSL_STORE_DIR"
+	sslinstall="$WINSSL_STORE_DIR"
+	cnf_flag="$cnf_flag --with-ssl=$sslinstall"
+    elif test -n "$WINSSL"; then
+	info "Cross compile $WINSSL"
+	info "winssl tar unpack"
+	(cd ..; gzip -cd $WINSSL) | tar xf - || error_cleanup "tar unpack of $WINSSL failed"
+	sslinstall="$WINSSL_STORE_DIR"
+	cd openssl-* || error_cleanup "no openssl-X dir in tarball"
+	# configure for OSX, must call Configure directly because ./config
+	# fails.  Only build static, because dynamic is trouble with
+	# user-installed dylibs and apples dylibs.  This causes the linker
+	# to pull in the static libraries for crypto and ssl
+	# configure for crosscompile, without CAPI because it fails
+	# cross-compilation and it is not used anyway
+	sslflags="no-shared darwin64-x86_64-cc"
+	info "winssl: Configure $sslflags"
+	./Configure --prefix="$sslinstall" $sslflags || error_cleanup "OpenSSL Configure failed"
+	info "winssl: make"
+	make || error_cleanup "OpenSSL crosscompile failed"
+	# only install sw not docs, which take a long time.
+	info "winssl: make install_sw"
+	make install_sw || error_cleanup "OpenSSL install failed"
+	cnf_flag="$cnf_flag --with-ssl=$sslinstall"
+	cd ..
+    fi
 
     # ldns
     ldnsdir=""

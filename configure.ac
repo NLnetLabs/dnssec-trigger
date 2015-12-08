@@ -160,6 +160,7 @@ AC_CHECK_HEADERS([openssl/conf.h],,, [AC_INCLUDES_DEFAULT])
 AC_CHECK_HEADERS([openssl/engine.h],,, [AC_INCLUDES_DEFAULT])
 if test "$staticexe" = "yes"; then
 	LIBS="`echo $LIBS | sed -e 's/ -lcrypto//'`"
+	LIBS="`echo $LIBS | sed -e 's/^-lcrypto//'`"
 	LIBS="$ssldir/lib/libssl.a $ssldir/lib/libcrypto.a $LIBS"
 	# check if lz is needed
 	AC_MSG_CHECKING([if static libcrypto needs -lz])
@@ -170,11 +171,16 @@ if test "$staticexe" = "yes"; then
 		AC_MSG_RESULT(no)
 	], [
 		AC_MSG_RESULT(yes)
-		LIBS="$LIBS -lz"
+		if test `uname` = "Darwin" -a -f $ssldir/lib/libz.a; then
+			LIBS="$LIBS $ssldir/lib/libz.a"
+		else
+			LIBS="$LIBS -lz"
+		fi
 	])
 else
 	LIBS="-lssl $LIBS"
 fi
+AC_SUBST(ssldir)
 
 ACX_CHECK_GETADDRINFO_WITH_INCLUDES
 if test "$USE_WINSOCK" = 1; then

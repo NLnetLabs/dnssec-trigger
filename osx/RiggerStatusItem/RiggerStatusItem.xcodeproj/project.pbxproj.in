@@ -260,6 +260,8 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = RiggerStatusItem_Prefix.pch;
+				HEADER_SEARCH_PATHS = @OSX_SSL_INCLUDE@;
+				LIBRARY_SEARCH_PATHS = @OSX_SSL_LIB@;
 				INFOPLIST_FILE = "RiggerStatusItem-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
 				PRODUCT_NAME = RiggerStatusItem;
@@ -274,6 +276,8 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = RiggerStatusItem_Prefix.pch;
+				HEADER_SEARCH_PATHS = @OSX_SSL_INCLUDE@;
+				LIBRARY_SEARCH_PATHS = @OSX_SSL_LIB@;
 				INFOPLIST_FILE = "RiggerStatusItem-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
 				PRODUCT_NAME = RiggerStatusItem;
@@ -292,6 +296,7 @@
 				OTHER_LDFLAGS = (
 					"-lcrypto",
 					"-lssl",
+					"-lz",
 				);
 				PREBINDING = NO;
 				SDKROOT = macosx;
@@ -309,6 +314,7 @@
 				OTHER_LDFLAGS = (
 					"-lcrypto",
 					"-lssl",
+					"-lz",
 				);
 				PREBINDING = NO;
 				SDKROOT = macosx;

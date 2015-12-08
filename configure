@@ -644,6 +644,7 @@ netconfig_dispatcher_dir
 networkmanager_dispatcher_dir
 WINDRES
 UB_ON_WINDOWS
+ssldir
 RUNTIME_PATH
 HAVE_SSL
 LIBOBJS
@@ -6352,6 +6353,7 @@ done
 
 if test "$staticexe" = "yes"; then
 	LIBS="`echo $LIBS | sed -e 's/ -lcrypto//'`"
+	LIBS="`echo $LIBS | sed -e 's/^-lcrypto//'`"
 	LIBS="$ssldir/lib/libssl.a $ssldir/lib/libcrypto.a $LIBS"
 	# check if lz is needed
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if static libcrypto needs -lz" >&5
@@ -6379,7 +6381,11 @@ else
 
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-		LIBS="$LIBS -lz"
+		if test `uname` = "Darwin" -a -f $ssldir/lib/libz.a; then
+			LIBS="$LIBS $ssldir/lib/libz.a"
+		else
+			LIBS="$LIBS -lz"
+		fi
 
 fi
 rm -f core conftest.err conftest.$ac_objext \
@@ -6387,6 +6393,7 @@ rm -f core conftest.err conftest.$ac_objext \
 else
 	LIBS="-lssl $LIBS"
 fi
+
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for getaddrinfo" >&5
