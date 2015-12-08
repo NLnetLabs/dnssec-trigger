@@ -195,6 +195,7 @@ fi
 # also if already exists, hide unbound user.
 # like this: dscl . create /Users/unbound IsHidden 1
 dscl localhost -create /Local/Default/Users/unbound IsHidden 1
+dscl localhost -create /Local/Default/Users/unbound UserShell /usr/bin/false
 
 # write unbound launcher script
 mkdir -p /usr/local/libexec
