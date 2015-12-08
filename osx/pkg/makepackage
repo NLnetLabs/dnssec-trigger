@@ -603,7 +603,12 @@ EOF
 
 # build package
 echo "build package"
-/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker --doc package-manager/${PRODUCT}.pmdoc
+pmaker=/Applications/PackageMaker.app/Contents/MacOS/PackageMaker
+if test -f /Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker; then
+	# on 10.6 install
+	pmaker=/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker;
+fi
+$pmaker --doc package-manager/${PRODUCT}.pmdoc
 rm -rf ../${PRODUCT}-${VERSION}-${CPUARCH}.mpkg
 mv ${PRODUCT}.mpkg ../${PRODUCT}-${VERSION}-${CPUARCH}.mpkg
 #rm -f ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.zip

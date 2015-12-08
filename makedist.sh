@@ -461,7 +461,7 @@ if [ "$DOMAC" = "yes" ]; then
 	# to pull in the static libraries for crypto and ssl
 	# configure for crosscompile, without CAPI because it fails
 	# cross-compilation and it is not used anyway
-	sslflags="no-shared darwin64-x86_64-cc"
+	sslflags="no-shared no-asm darwin64-x86_64-cc"
 	info "winssl: Configure $sslflags"
 	./Configure --prefix="$sslinstall" $sslflags || error_cleanup "OpenSSL Configure failed"
 	info "winssl: make"
