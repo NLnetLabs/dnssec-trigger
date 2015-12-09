@@ -87,8 +87,9 @@ if test -f /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist; then
 	# \$F[2] is the first word of the command
 	ps -ww -A -opid,user,command | perl -nae 'if(\$F[2] =~ /\\bloginwindow\\b/) { system(qq(launchctl bsexec \$F[0] su \$F[1] -c "launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist")) }'
 
-	echo "stop panel with dnssec-trigger-control"
-	/usr/local/sbin/dnssec-trigger-control stoppanels
+	#echo "stop panel with dnssec-trigger-control"
+	#but this hangs (if there are no panels?)
+	#/usr/local/sbin/dnssec-trigger-control stoppanels
 fi
 
 if test -f /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist; then
