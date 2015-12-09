@@ -297,13 +297,13 @@ chown unbound /usr/local/etc/unbound
 
 # start unbound
 launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
-launchctl kickstart -kp system/nl.nlnetlabs.unbound
+#launchctl kickstart -kp system/nl.nlnetlabs.unbound
 sleep 1
 
 # start dnssec-trigger (-panel and -hooks)
 launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist
 launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
-launchctl kickstart -kp system/nl.nlnetlabs.dnssec-triggerd
+#launchctl kickstart -kp system/nl.nlnetlabs.dnssec-triggerd
 
 # start panel in GUI user space.
 # this is really difficult, because as root would show the user widget now,

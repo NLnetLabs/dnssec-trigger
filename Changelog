@@ -1,3 +1,6 @@
+9 December 2015: Wouter
+	- Remove kickstarts of daemons because daemon died for test user.
+
 8 December 2015: Wouter
 	- Fixup compile on OSX with static SSL for makedist mac build.
 	- OSX hide unbound user from login screen.
