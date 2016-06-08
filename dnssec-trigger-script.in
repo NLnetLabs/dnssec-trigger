@@ -525,11 +525,11 @@ class Application:
             pass
 
     def _try_set_immutable(self, path):
-        subprocess.call(["chattr", "+i", path])
+        subprocess.call(["chattr", "+i", path], stdout=DEVNULL, stderr=DEVNULL)
 
     def _try_set_mutable(self, path):
         if os.path.exists(path) and not os.path.islink(path):
-            subprocess.call(["chattr", "-i", path])
+            subprocess.call(["chattr", "-i", path], stdout=DEVNULL, stderr=DEVNULL)
 
     def _restart_nm(self):
         if os.path.exists(self.resolvconf_networkmanager):
@@ -540,10 +540,11 @@ class Application:
             nm_pids = pidof('NetworkManager')
             for pid in nm_pids:
                 os.kill(pid, signal.SIGHUP)
-        elif os.path.exists("/sys/fs/cgroup/systemd"):
-            subprocess.check_call(["systemctl", "--ignore-dependencies", "try-restart", "NetworkManager.service"])
         else:
-            subprocess.check_call(["/etc/init.d/NetworkManager", "restart"])
+            try:
+                subprocess.check_call(["systemctl", "--ignore-dependencies", "try-restart", "NetworkManager.service"], stdout=DEVNULL, stderr=DEVNULL)
+            except subprocess.CalledProcessError:
+                subprocess.check_call(["/etc/init.d/NetworkManager", "restart"], stdout=DEVNULL, stderr=DEVNULL)
 
     def run_prepare(self):
         """Prepare for starting dnssec-trigger

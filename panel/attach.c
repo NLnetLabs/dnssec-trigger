@@ -507,9 +507,11 @@ void fetch_proberesults(char* buf, size_t len, const char* lf)
 		"results is used, but no queries are made.%s", lf, lf);
 			else if(strstr(p->str, "forced_insecure"))
 				snprintf(pos, left, 
-		"DNS queries are sent to INSECURE servers, because of%s"
-		"Hotspot Signon. Select Reprobe (from menu) after signon.%s"
-		"Please, be careful out there.%s", lf, lf, lf);
+		"DNS queries are being sent to INSECURE servers%s"
+		"because Hotspot Sign-on mode was selected. Select%s"
+		"Reprobe (from menu) after sign-on. A red exclamation%s"
+		"mark in the icon warns you when DNSSEC is disabled.%s",
+				lf, lf, lf, lf);
 			else if(strstr(p->str, "http_insecure") &&
 				strstr(p->str, "insecure_mode")==NULL)
 				snprintf(pos, left, 

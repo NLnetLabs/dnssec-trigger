@@ -1,3 +1,10 @@
+8 June 2016: Wouter
+	- Tomas Hozza (3):
+	  dnssec-trigger-script: Use ducktaping when restarting NM, instead of
+	  checking the sysfs
+	  dnssec-trigger-script: Silence the calls to chattr
+	  Improved text in the panel GUI when insecure mode is forced
+
 9 December 2015: Wouter
 	- Remove kickstarts of daemons because daemon died for test user.
 
