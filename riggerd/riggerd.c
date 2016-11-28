@@ -393,10 +393,12 @@ int main(int argc, char *argv[])
 #ifdef HAVE_OPENSSL_CONF_H
 	CONF_modules_free();
 #endif
+#if OPENSSL_VERSION_NUMBER < 0x10100000
 	CRYPTO_cleanup_all_ex_data();
 	ERR_remove_state(0);
 	ERR_free_strings();
 	RAND_cleanup();
+#endif
 
 #ifdef USE_WINSOCK
 	if(WSACleanup() != 0) {

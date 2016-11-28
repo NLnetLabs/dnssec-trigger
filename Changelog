@@ -1,5 +1,6 @@
 28 November 2016: Wouter
 	- Updated acx_nlnetlabs.m4 for openssl-1.1.0 compatibility.
+	- Patch for openssl-1.1.0 compilation.
 
 8 June 2016: Wouter
 	- Tomas Hozza (3):
