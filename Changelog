@@ -1,3 +1,6 @@
+28 November 2016: Wouter
+	- Updated acx_nlnetlabs.m4 for openssl-1.1.0 compatibility.
+
 8 June 2016: Wouter
 	- Tomas Hozza (3):
 	  dnssec-trigger-script: Use ducktaping when restarting NM, instead of

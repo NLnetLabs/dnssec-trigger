@@ -57,8 +57,8 @@
 /* Define to 1 if you have the <getopt.h> header file. */
 #undef HAVE_GETOPT_H
 
-/* If you have HMAC_CTX_init */
-#undef HAVE_HMAC_CTX_INIT
+/* If you have HMAC_Update */
+#undef HAVE_HMAC_UPDATE
 
 /* Define to 1 if you have the `inet_ntop' function. */
 #undef HAVE_INET_NTOP
