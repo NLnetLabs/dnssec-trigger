@@ -1,3 +1,7 @@
+15 December 2016: Wouter
+	- 0.13 release tag.
+	- trunk has 0.14.
+
 28 November 2016: Wouter
 	- Updated acx_nlnetlabs.m4 for openssl-1.1.0 compatibility.
 	- Patch for openssl-1.1.0 compilation.
