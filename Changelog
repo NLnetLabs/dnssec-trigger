@@ -1,6 +1,8 @@
 15 December 2016: Wouter
 	- 0.13 release tag.
 	- trunk has 0.14.
+	- Fix osx installer to detect 10.12 (Sierra) so that icon is
+	  displayed correctly after reinstall.
 
 28 November 2016: Wouter
 	- Updated acx_nlnetlabs.m4 for openssl-1.1.0 compatibility.
