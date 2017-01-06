@@ -387,6 +387,7 @@ if [ "$DOWIN" = "yes" ]; then
     find_dll "$findpath" "libexpat-1.dll" || error_cleanup "no expat dll"
     find_dll "$findpath" "libunbound-2.dll" || error_cleanup "no unbound dll"
     find_dll "$findpath" "libgcc_s_sjlj-1.dll" || error_cleanup "no libgcc_s_sjlj dll"
+    find_dll "$findpath" "libwinpthread-1.dll" || error_cleanup "no libwinpthread-1.dll"
     info "put cr's in readme"
     sed -e 's/$/\r/' < ../README > README.txt
     info "copy unbound exe"
