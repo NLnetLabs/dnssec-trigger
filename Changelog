@@ -1,6 +1,6 @@
 6 January 2017: Wouter
 	- For windows, include the libgcc_s_sjlj-1.dll and
-	  libwinpthread-1.dll
+	  libwinpthread-1.dll.
 
 15 December 2016: Wouter
 	- 0.13 release tag.
