@@ -21,16 +21,16 @@
  * specific prior written permission.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 /**
@@ -41,7 +41,6 @@
 
 #ifndef UTIL_LOG_H
 #define UTIL_LOG_H
-#include "ldns/buffer.h"
 
 /**
  * verbosity value:
@@ -88,14 +87,6 @@ void log_init(const char* filename, int use_syslog, const char* chrootdir);
  * @param f: to that file, or pass NULL to disable logging.
  */
 void log_file(FILE *f);
-
-/**
- * Init a thread (will print this number for the thread log entries).
- * Must be called from the thread itself. If not called 0 is printed.
- * @param num: number to print for this thread. Owned by caller, must
- *	continue to exist.
- */
-void log_thread_set(int* num);
 
 /**
  * Set identity to print, default is 'unbound'. 
@@ -147,15 +138,6 @@ void log_warn(const char* format, ...) ATTR_FORMAT(printf, 1, 2);
  * @param length: length of data.
  */
 void log_hex(const char* msg, void* data, size_t length);
-
-/**
- * Easy alternative for log_hex, takes a ldns_buffer.
- * @param level: verbosity level for this message, compared to global 
- *	verbosity setting.
- * @param msg: string desc to print
- * @param buf: the buffer.
- */
-void log_buf(enum verbosity_value level, const char* msg, ldns_buffer* buf);
 
 /**
  * Log fatal error message, and exit the current process.

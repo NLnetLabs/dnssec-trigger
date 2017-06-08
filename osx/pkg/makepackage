@@ -1,0 +1,680 @@
+#!/bin/bash
+# makepackage
+# builds a mac package
+# version 201110 cas
+# changed for dnssec-trigger, 201110, wouter.
+
+# put installed files in DESTDIR=DEST.
+# start in osx/pkg dir with osx/pkg/DEST for distfiles.
+
+PRODUCT="dnssectrigger"
+OS=`uname`
+DESTDIR=$(pwd)/DEST
+VERSION=`grep " PACKAGE_VERSION" ../../config.h | sed -e 's/.*"\(.*\)"/\1/'`
+FILELIST=/usr/local/share/dnssec-trigger/files.list
+
+if [[ "$OS" == 'Darwin' ]]; then
+   PLATFORM='MacOSX'
+   LAYOUT="MAC"
+   OSVERSION=`sw_vers -productVersion | cut -d . -f 1,2`
+   ARCH=`uname -p`
+   if [ -z "${CPUARCH}" ]; then
+       CPUARCH="${ARCH}"
+   fi
+fi
+
+VERSION2=`echo $VERSION | sed s'/[\.\-]//'g`
+echo "Preparing binary package for $PLATFORM ${OSVERSION} on ${CPUARCH}"
+
+ORIG="$(pwd)"
+
+macpackage_commands()
+{ :
+
+    cd ${DESTDIR}
+    rm -f $ORIG/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz
+    rm -rf package-manager
+    echo "create tarball"
+    # the disable avoids ._blabla files with resource forks that store
+    # extended attributes for the files.
+    COPYFILE_DISABLE=true tar czf $ORIG/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz .
+
+    # create package manager dir structure
+    echo "create package manager dir structure"
+    PKGDIR=`pwd`
+    mkdir -p package-manager/${PRODUCT}.pmdoc
+    mkdir package-manager/packages
+    mkdir -p package-manager/packages/Package_Root/tmp
+    mkdir package-manager/packages/Resources
+
+    # write postflight script
+    cat <<EOF > package-manager/packages/Resources/postflight
+#!/bin/bash
+# stop unbound if launch plist exists
+OSVERS=\`sw_vers -productVersion | cut -d . -f 1,2\`
+INSTLOG=/tmp/${PRODUCT}-${VERSION}-install.log
+
+doinstall() {
+
+if [[ -f /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist ]]; then
+    launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
+fi
+
+guiuser="\`stat -f "%Su" /dev/console\`"
+if test -z "\$guiuser" -o "\$guiuser" = "root"; then
+	# if installer was created on 10.6, it runs with devconsole root,
+	# but HOME is set to the users homedir. On 10.7 devconsole is user.
+	guiuser="\`basename \$HOME\`"
+fi
+if test -f /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist; then
+	if test -n "\$guiuser" -a "\$guiuser" != "root"; then
+		if sudo -u "\$guiuser" launchctl list | grep nl.nlnetlabs.dnssec-trigger-panel >/dev/null; then
+			# panel loaded as user, remove as user.
+			sudo -u "\$guiuser" launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+		fi
+	fi
+	if launchctl list | grep nl.nlnetlabs.dnssec-trigger-panel >/dev/null; then
+		# panel loaded as root, unload as root.
+		launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+	fi
+
+	# try to really stop the panels, otherwise they will show popups
+	# if the new daemon starts and when we then stop them this is strange
+	# with double popups.
+	# If possible, tell launchd to stop the LaunchAgent. This will fail on 10.4.
+	# \$F[0] is the pid
+	# \$F[1] is the username
+	# \$F[2] is the first word of the command
+	ps -ww -A -opid,user,command | perl -nae 'if(\$F[2] =~ /\\bloginwindow\\b/) { system(qq(launchctl bsexec \$F[0] su \$F[1] -c "launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist")) }'
+
+	#echo "stop panel with dnssec-trigger-control"
+	#but this hangs (if there are no panels?)
+	#/usr/local/sbin/dnssec-trigger-control stoppanels
+fi
+
+if test -f /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist; then
+    launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
+    launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist
+fi
+
+# stop BIND if launch plist exists
+if [[ -f /System/Library/LaunchDaemons/org.isc.named.plist ]]; then
+    launchctl unload -w /System/Library/LaunchDaemons/org.isc.named.plist
+fi
+
+mkdir -p "\`dirname ${FILELIST}\`"
+tar xzopC / -f /tmp/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz
+tar tzf /tmp/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz > "${FILELIST}"
+echo "\`dirname ${FILELIST}\`" >> "${FILELIST}"
+
+# random guess for free id, but run script to find one
+freeid=2045
+getfreeid()
+{ :
+  MAXID=1000
+  freeid=\$(dscl localhost -list /Local/Default/Users UniqueID | awk '{ if ( \$2 > max && \$2<300 ) max = \$2 } END { print max+1 }' )
+  while [ \$freeid -le \$MAXID ]
+  do
+	  zgid=\$(dscl localhost -search /Local/Default/Groups PrimaryGroupID \$freeid)
+	  zuid=\$(dscl localhost -search /Local/Default/Users UniqueID \$freeid)
+	  if [ -z "\$zgid\$zuid" ]; then break; fi
+	  freeid=\$((\$freeid+1))
+  done
+}
+
+# add unbound user
+if [[ "\${OSVERS}" == '10.4' ]]; then
+    # Tiger
+    dscl / -create /Users/unbound
+    dscl / -create /Users/unbound UserShell /bin/nologin
+elif [[ "\${OSVERS}" == '10.5' ]]; then
+    # Leopard
+    if dscl localhost -read /Local/Default/Users/unbound UniqueID; then
+	    echo "unbound user already exists"
+    else
+	dscl localhost -create /Local/Default/Users/unbound
+	dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
+	dscl localhost -create /Local/Default/Users/unbound RealName "unbound daemon"
+	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /usr/local/etc/unbound/
+	getfreeid
+	dscl localhost -create /Local/Default/Users/unbound PrimaryGroupID \$freeid
+	dscl localhost -create /Local/Default/Users/unbound UniqueID \$freeid
+    fi
+elif [[ "\${OSVERS}" == '10.6' ]]; then
+    # SnowLeopard
+    if dscl localhost -read /Local/Default/Users/unbound UniqueID; then
+	    echo "unbound user already exists"
+    else
+	dscl localhost -create /Local/Default/Users/unbound
+	dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
+	dscl localhost -create /Local/Default/Users/unbound RealName "unbound daemon"
+	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /usr/local/etc/unbound/
+	getfreeid
+	dscl localhost -create /Local/Default/Users/unbound PrimaryGroupID \$freeid
+	dscl localhost -create /Local/Default/Users/unbound UniqueID \$freeid
+    fi
+elif [[ "\${OSVERS}" == '10.7' ]]; then
+    # Lion
+    if dscl localhost -read /Local/Default/Users/unbound UniqueID; then
+	    echo "unbound user already exists"
+    else
+	dscl localhost -create /Local/Default/Users/unbound
+	dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
+	dscl localhost -create /Local/Default/Users/unbound RealName "unbound daemon"
+	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /usr/local/etc/unbound/
+	getfreeid
+	dscl localhost -create /Local/Default/Users/unbound PrimaryGroupID \$freeid
+	dscl localhost -create /Local/Default/Users/unbound UniqueID \$freeid
+    fi
+elif [[ "\${OSVERS}" == '10.8' ]]; then
+    # Mountain Lion
+    if dscl localhost -read /Local/Default/Users/unbound UniqueID; then
+	    echo "unbound user already exists"
+    else
+	dscl localhost -create /Local/Default/Users/unbound
+	dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
+	dscl localhost -create /Local/Default/Users/unbound RealName "unbound daemon"
+	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /usr/local/etc/unbound/
+	getfreeid
+	dscl localhost -create /Local/Default/Users/unbound PrimaryGroupID \$freeid
+	dscl localhost -create /Local/Default/Users/unbound UniqueID \$freeid
+    fi
+else
+    # guess
+    if dscl localhost -read /Local/Default/Users/unbound UniqueID; then
+	    echo "unbound user already exists"
+    else
+	dscl localhost -create /Local/Default/Users/unbound
+	dscl localhost -create /Local/Default/Users/unbound UserShell /bin/nologin
+	dscl localhost -create /Local/Default/Users/unbound RealName "unbound daemon"
+	dscl localhost -create /Local/Default/Users/unbound NFSHomeDirectory /usr/local/etc/unbound/
+	getfreeid
+	dscl localhost -create /Local/Default/Users/unbound PrimaryGroupID \$freeid
+	dscl localhost -create /Local/Default/Users/unbound UniqueID \$freeid
+    fi
+fi
+# also if already exists, hide unbound user.
+# like this: dscl . create /Users/unbound IsHidden 1
+dscl localhost -create /Local/Default/Users/unbound IsHidden 1
+dscl localhost -create /Local/Default/Users/unbound UserShell /usr/bin/false
+
+# write unbound launcher script
+mkdir -p /usr/local/libexec
+cat << 'EOF2' > /usr/local/libexec/unbound-launch.sh
+#!/bin/bash
+# update root anchor (if offline for long)
+/usr/local/sbin/unbound-anchor || logger "/usr/local/etc/unbound/root.key has been changed"
+chown unbound /usr/local/etc/unbound/root.key
+# exec so the shell does not hang around.
+exec /usr/local/sbin/unbound -d
+EOF2
+chmod +x /usr/local/libexec/unbound-launch.sh
+echo /usr/local/libexec/unbound-launch.sh >> "${FILELIST}"
+
+# write unbound plist
+cat << 'EOF2' > /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+        <key>Label</key>
+        <string>nl.nlnetlabs.unbound</string>
+        <key>ProgramArguments</key>
+        <array>
+           <string>/usr/local/libexec/unbound-launch.sh</string>
+        </array>
+        <key>RunAtLoad</key>
+        <true/>
+</dict>
+</plist>
+EOF2
+echo /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist >> "${FILELIST}"
+
+# fetch root DNS key
+if [[ ! -f /usr/local/etc/unbound/root.key ]]; then
+   /usr/local/sbin/unbound-anchor
+fi
+# make it writable by unbound
+chown unbound /usr/local/etc/unbound/root.key
+
+runsetupi="no"
+# setup default configuration file and keys
+if [[ ! -f /usr/local/etc/dnssec-trigger/dnssec-trigger.conf ]]; then
+	cp /usr/local/etc/dnssec-trigger/dnssec-trigger.conf-default /usr/local/etc/dnssec-trigger/dnssec-trigger.conf
+else
+	if grep ssl443 /usr/local/etc/dnssec-trigger/dnssec-trigger.conf >/dev/null && grep "url:" /usr/local/etc/dnssec-trigger/dnssec-trigger.conf >/dev/null && grep "login-location" /usr/local/etc/dnssec-trigger/dnssec-trigger.conf >/dev/null; then
+		# config looks okay, check more
+		if grep 185.49.140.67 /usr/local/etc/dnssec-trigger/dnssec-trigger.conf >/dev/null; then
+			:
+		else
+			# need new IPs. add them, keeps existing settings
+			mv /usr/local/etc/dnssec-trigger/dnssec-trigger.conf /usr/local/etc/dnssec-trigger/dnssec-trigger.conf.old
+			grep -v -e "213.154.224.3" -e "2001:7b8:206:1:bb::" < /usr/local/etc/dnssec-trigger/dnssec-trigger.conf.old > /usr/local/etc/dnssec-trigger/dnssec-trigger.conf
+			echo "tcp80: 185.49.140.67" >> /usr/local/etc/dnssec-trigger/dnssec-trigger.conf
+			echo "tcp80: 2a04:b900::10:0:0:67" >> /usr/local/etc/dnssec-trigger/dnssec-trigger.conf
+			echo "ssl443: 185.49.140.67 7E:CF:B4:BE:B9:9A:56:0D:F7:3B:40:51:A4:78:E6:A6:FD:66:0F:10:58:DC:A8:2E:C0:43:D4:77:5A:71:8A:CF" >> /usr/local/etc/dnssec-trigger/dnssec-trigger.conf
+			echo "ssl443: 2a04:b900::10:0:0:67 7E:CF:B4:BE:B9:9A:56:0D:F7:3B:40:51:A4:78:E6:A6:FD:66:0F:10:58:DC:A8:2E:C0:43:D4:77:5A:71:8A:CF" >> /usr/local/etc/dnssec-trigger/dnssec-trigger.conf
+		fi
+	else
+		# need the new setting, copy anyway.
+		cp /usr/local/etc/dnssec-trigger/dnssec-trigger.conf /usr/local/etc/dnssec-trigger/dnssec-trigger.conf.old
+		cp /usr/local/etc/dnssec-trigger/dnssec-trigger.conf-default /usr/local/etc/dnssec-trigger/dnssec-trigger.conf
+		runsetupi="yes"
+	fi
+fi
+# add /usr/local/sbin to our path, we need our binaries in path for
+# dnssec-trigger-control-setup.
+export PATH="/usr/local/sbin:\$PATH"
+if [[ ! -f /usr/local/etc/unbound/unbound.conf ]]; then
+	cp /usr/local/etc/unbound/unbound.conf-default /usr/local/etc/unbound/unbound.conf
+	/usr/local/sbin/unbound-control-setup
+	/usr/local/sbin/dnssec-trigger-control-setup
+	chmod a+r /usr/local/etc/unbound/unbound_*.key /usr/local/etc/unbound/unbound_*.pem
+	chmod a+r /usr/local/etc/dnssec-trigger/dnssec_trigger*.key /usr/local/etc/dnssec-trigger/dnssec_trigger*.pem
+	/usr/local/sbin/dnssec-trigger-control-setup -i
+	chmod a+r /usr/local/etc/unbound/unbound_*.key /usr/local/etc/unbound/unbound_*.pem
+	chmod a+r /usr/local/etc/dnssec-trigger/dnssec_trigger*.key /usr/local/etc/dnssec-trigger/dnssec_trigger*.pem
+elif test "\$runsetupi" = "yes"; then
+	/usr/local/sbin/dnssec-trigger-control-setup -i
+	chmod a+r /usr/local/etc/unbound/unbound_*.key /usr/local/etc/unbound/unbound_*.pem
+	chmod a+r /usr/local/etc/dnssec-trigger/dnssec_trigger*.key /usr/local/etc/dnssec-trigger/dnssec_trigger*.pem
+fi
+# (re)create keys if missing at the usr.local location
+if [[ ! -f /usr/local/etc/unbound/unbound_control.key ]]; then
+	/usr/local/sbin/unbound-control-setup
+	/usr/local/sbin/dnssec-trigger-control-setup
+	chmod a+r /usr/local/etc/unbound/unbound_*.key /usr/local/etc/unbound/unbound_*.pem
+	chmod a+r /usr/local/etc/dnssec-trigger/dnssec_trigger*.key /usr/local/etc/dnssec-trigger/dnssec_trigger*.pem
+fi
+
+# clean up
+rm -rf /tmp/${PRODUCT}-${VERSION}-binary*
+
+chown root /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
+chown root /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist
+chown root /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
+chown root /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+chown unbound /usr/local/etc/unbound
+
+# start unbound
+launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
+#launchctl kickstart -kp system/nl.nlnetlabs.unbound
+sleep 1
+
+# start dnssec-trigger (-panel and -hooks)
+launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist
+launchctl load -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
+#launchctl kickstart -kp system/nl.nlnetlabs.dnssec-triggerd
+
+# start panel in GUI user space.
+# this is really difficult, because as root would show the user widget now,
+# but not after a reboot.  If as user, then it would show up after reboot.
+# but maybe not now, because sudo -u user is not good enough, thus this:
+
+if test "\${OSVERS}" != '10.1' -a "\${OSVERS}" != '10.2' -a "\${OSVERS}" != '10.3' -a "\${OSVERS}" != '10.4' -a "\${OSVERS}" != '10.5' -a "\${OSVERS}" != '10.6' -a "\${OSVERS}" != '10.7' -a "\${OSVERS}" != '10.8' -a "\${OSVERS}" != '10.9' -a "\${OSVERS}" != '10.10' ; then
+	# OSX Capitan
+	ps ax -o uid,comm | grep MacOS/loginwindow
+	for num in \`ps ax -o uid,comm | grep MacOS/loginwindow | grep -v grep | awk '{print \$1;}'\`; do
+		echo "start user panel for gui/\$num"
+		echo "launchctl bootstrap gui/\$num /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist"
+		launchctl bootstrap gui/\$num /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+		echo "launchctl enable gui/\$num/nl.nlnetlabs.dnssec-trigger-panel"
+		launchctl enable gui/\$num/nl.nlnetlabs.dnssec-trigger-panel
+		# because OSX is weird, on reinstalls we need to repeat it
+		echo "launchctl bootstrap gui/\$num /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist"
+		launchctl bootstrap gui/\$num /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+		echo "launchctl enable gui/\$num/nl.nlnetlabs.dnssec-trigger-panel"
+		launchctl enable gui/\$num/nl.nlnetlabs.dnssec-trigger-panel
+
+		echo "launchctl kickstart -kp gui/\$num/nl.nlnetlabs.dnssec-trigger-panel"
+		launchctl kickstart -kp gui/\$num/nl.nlnetlabs.dnssec-trigger-panel
+	done
+else
+	# Older OSX
+# If possible, tell launchd to start the LaunchAgent. This will fail on 10.4.
+# \$F[0] is the pid
+# \$F[1] is the username
+# \$F[2] is the first word of the command
+ps -ww -A -opid,user,command | perl -nae 'if(\$F[2] =~ /\\bloginwindow\\b/) { system(qq(launchctl bsexec \$F[0] su \$F[1] -c "launchctl load -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist")) }'
+
+fi
+
+}
+
+# for test create logfile: doinstall 2>&1 | tee \$INSTLOG
+doinstall
+exit 0
+
+EOF
+
+# write uninstall script
+cat <<EOF > ../uninstall-${PRODUCT}-${VERSION}.command
+#!/bin/bash
+# uninstall dnssec-trigger.
+
+question () {
+	printf "%s (y/n) " "\$*"
+	read answer
+	case "\$answer" in
+	    [Yy]|[Yy][Ee][Ss])
+		return 0
+		;;
+	    *)
+		return 1
+		;;
+	esac
+}
+
+do_uninstall() {
+	if test -f /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist; then
+		if launchctl list | grep nl.nlnetlabs.dnssec-trigger-panel >/dev/null; then
+			echo "unload user panel plist"
+			launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+		fi
+	fi
+	echo "run with root permission"
+	sudo bash "\$0" uninstall 
+}
+
+# see if file list exists
+if test ! -f "${FILELIST}"; then
+	echo "error: ${FILELIST} does not exist, nothing to uninstall"
+	exit 1
+fi
+
+if test "\$*" = "uninstall"; then
+	echo ""
+	echo "proceeding with uninstall of ${PRODUCT} ${VERSION}"
+else
+	echo "uninstall ${PRODUCT} ${VERSION}"
+	echo ""
+	question "Are you sure you want to uninstall?" && do_uninstall || echo "stop."
+	exit 0
+fi
+
+# from root dir.
+cd /
+
+if launchctl list | grep nl.nlnetlabs.dnssec-trigger-panel >/dev/null; then
+	echo "unload user panel plist (as root)"
+	launchctl unload -w /Library/LaunchAgents/nl.nlnetlabs.dnssec-trigger-panel.plist
+fi
+
+echo "stop panel"
+/usr/local/sbin/dnssec-trigger-control stoppanels
+
+# stop daemons if exist
+echo "unload plists ..."
+if [[ -f /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist ]]; then
+    launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.unbound.plist
+fi
+
+if test -f /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist; then
+    launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-trigger-hook.plist
+    launchctl unload -w /Library/LaunchDaemons/nl.nlnetlabs.dnssec-triggerd.plist
+fi
+
+# uninit the resolv.conf override
+/usr/local/sbin/dnssec-triggerd -u
+
+# remove files.
+echo "delete files ..."
+cat "${FILELIST}" | while read f; do
+	# remove files not directories.
+	if test -f "\$f"; then
+		rm -f "\$f"
+	fi
+	echo -n "."
+done
+echo " done"
+
+echo "delete directories ..."
+cat "${FILELIST}" | while read f; do
+	# remove empty directories
+	if test -d "\$f"; then
+		if test "\$f" != "/usr/local"; then
+			# error is piped into devnull if directory not empty.
+			rmdir "\$f" >/dev/null 2>&1
+		fi
+	fi
+	echo -n "."
+done
+echo " done"
+
+# remove filelist
+rm -f "${FILELIST}"
+rmdir "\`dirname "${FILELIST}"\`"  >/dev/null 2>&1
+
+echo "uninstall done"
+
+EOF
+chmod +x ../uninstall-${PRODUCT}-${VERSION}.command
+
+# write the background picture
+cp $ORIG/package-bg.png package-manager/packages/Resources/unbound.png
+
+cp $ORIG/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz package-manager/packages/Package_Root/tmp
+cat <<EOF > package-manager/${PRODUCT}.pmdoc/01package.xml
+<pkgref spec="1.12" uuid="2F9BC3A8-16DF-486E-9FB0-1B702DA93B5A">
+<config>
+ <identifier>nl.nlnetlabs${PRODUCT}${VERSION2}ForMacosX${OSVERSION}.Package_Root.pkg</identifier>
+ <version>${VERSION}</version>
+ <description></description>
+ <post-install type="none"/>
+ <requireAuthorization/>
+ <installFrom>${PKGDIR}/package-manager/packages/Package_Root</installFrom>
+ <installTo>/</installTo>
+ <flags>
+   <followSymbolicLinks/>
+ </flags>
+ <packageStore type="internal"></packageStore>
+ <mod>identifier</mod>
+ <mod>version</mod>
+ <mod>parent</mod>
+</config>
+<scripts>
+  <postflight mod="true">${PKGDIR}/package-manager/packages/Resources/postflight</postflight>
+</scripts>
+<contents>
+  <file-list>01package-contents.xml</file-list>
+  <filter>/CVS$</filter>
+  <filter>/\.svn$</filter>
+  <filter>/\.cvsignore$</filter>
+  <filter>/\.cvspass$</filter>
+  <filter>/\.DS_Store$</filter>
+</contents>
+</pkgref> 
+EOF
+
+cat <<EOF > package-manager/${PRODUCT}.pmdoc/01package-contents.xml
+<pkg-contents spec="1.12">
+  <f n="Package_Root" o="root" g="admin" p="16877" pt="${PKGDIR}/package-manager/packages/Package_Root" m="false" t="file">
+    <f n="tmp" o="root" g="admin" p="16877">
+      <f n="${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz" o="root" g="admin" p="33188"/>
+    </f>
+  </f>
+</pkg-contents>
+EOF
+
+
+cat <<EOF > package-manager/${PRODUCT}.pmdoc/index.xml
+<pkmkdoc spec="1.12">
+	<properties>
+		<title>NLnet Labs DnssecTrigger ${VERSION} for MacOS X</title>
+		<build>$(pwd)/NLnet Labs Unbound ${VERSION} for MacOS X.mpkg</build>
+		<organization>nl.nlnetlabs</organization>
+		<userSees ui="both"/>
+		<min-target os="2"/>
+		<domain system="true"/>
+	</properties>
+	<distribution>
+		<versions min-spec="1.000000"/>
+		<scripts></scripts>
+	</distribution>
+	<description>
+DnssecTrigger configures a local DNSSEC validating resolver.
+
+Dnssec-trigger reconfigures the local unbound DNS server. This unbound DNS server performs DNSSEC validation, but dnssec-trigger will signal it to to use the DHCP obtained forwarders if possible, and fallback to doing its own AUTH queries if that fails, and if that fails prompt the user via dnssec-trigger-applet the option to go with insecure DNS only.
+
+The source code is under a BSD License.
+	</description>
+	<contents>
+		<choice title="Package_Root" id="choice1" starts_selected="true" starts_enabled="true" starts_hidden="false">
+			<pkgref id="nl.nlnetlabs${PRODUCT}${VERSION2}ForMacosX${OSVERSION}.Package_Root.pkg"/>
+		</choice>
+	</contents>
+	<resources bg-scale="none" bg-align="topleft">
+		<locale lang="en">
+      		<resource mod="true" type="background">${PKGDIR}/package-manager/packages/Resources/unbound.png</resource>
+			<resource mime-type="text/rtf" kind="embedded" type="license"><![CDATA[{\rtf1\ansi\ansicpg1252\cocoartf1038\cocoasubrtf360
+{\fonttbl\f0\fnil\fcharset0 LucidaGrande;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural\pardirnatural
+
+\f0\fs18 \cf0 Copyright (c) 2011, NLnet Labs. All rights reserved.\\
+\\
+This software is open source.\\
+\\
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:\\
+\\
+Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.\\
+\\
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.\\
+\\
+Neither the name of the NLNET LABS nor the names of its contributors may
+be used to endorse or promote products derived from this software without
+specific prior written permission.\\
+\\
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.}]]></resource>
+<resource mime-type="text/rtf" kind="embedded" type="readme"><![CDATA[{\rtf1\ansi\ansicpg1252\cocoartf1038\cocoasubrtf360
+{\fonttbl\f0\fnil\fcharset0 LucidaGrande;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural\pardirnatural
+
+\f0\fs26 \cf0 This installs DnssecTrigger ${VERSION} for MacOS X (${CPUARCH}). \\
+\\
+This creates a local validating DNSSEC resolver on your machine (unbound, included in the package).\\
+\\
+A tray icon appears, where you can see technical results and manage it. A dialog pops up if the network DNSSEC fails.  For some (for-pay) wifi hot-spots you may have to signon-while-insecure, then reprobe.\\
+\\
+Please subscribe to the user mailing list, to hear about software updates http://www.nlnetlabs.nl/mailman/listinfo/dnssec-trigger\\
+\\
+The source code is under a BSD License.}]]></resource><resource mime-type="text/rtf" kind="embedded" type="welcome"><![CDATA[{\rtf1\ansi\ansicpg1252\cocoartf1038\cocoasubrtf360
+{\fonttbl\f0\fnil\fcharset0 LucidaGrande;\f1\fnil\fcharset0 Monaco;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural\pardirnatural
+
+\f0\fs26 \cf0 Welcome to the DnssecTrigger for MacOS X installer.\\
+\\
+This installer installs: libldns, unbound and dnssec-trigger.  It starts a validating DNSSEC cache on this system.\\
+\\
+The configuration files are \f1 /usr/local/etc/unbound/unbound.conf \f0 and \f1 /usr/local/etc/dnssec-trigger/dnssec-trigger.conf \f0 \\
+\\
+The trust anchor for the Internet root zone will be downloaded and configured with \f1 /usr/local/sbin/unbound-anchor \f0 if the file \f1 /usr/local/etc/unbound/root.key \f0 does not exist.\\
+\\
+Information about DnssecTrigger can be found at \\
+http://www.nlnetlabs.nl/projects/dnssec-trigger\\
+Information about Unbound can be found at \\
+http://unbound.net}]]>
+	</resource>
+	</locale>
+	</resources>
+	<requirements>
+		<requirement id="filt" operator="eq" value="true">
+			<file>/usr/bin/openssl</file>
+			<message>Unbound requires OpenSSL to be installed</message>
+		</requirement>
+	</requirements>
+	<flags/>
+	<item type="file">01package.xml</item>
+	<mod>properties.title</mod>
+	<mod>properties.customizeOption</mod>
+	<mod>description</mod>
+	<mod>properties.anywhereDomain</mod>
+	<mod>properties.systemDomain</mod>
+</pkmkdoc>
+EOF
+
+# build package
+echo "build package"
+pmaker=/Applications/PackageMaker.app/Contents/MacOS/PackageMaker
+if test -f /Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker; then
+	# on 10.6 install
+	pmaker=/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker;
+fi
+$pmaker --doc package-manager/${PRODUCT}.pmdoc
+rm -rf ../${PRODUCT}-${VERSION}-${CPUARCH}.mpkg
+mv ${PRODUCT}.mpkg ../${PRODUCT}-${VERSION}-${CPUARCH}.mpkg
+#rm -f ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.zip
+#zip -r ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.zip ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.mpkg
+
+# create DMG
+echo "create pack.dmg"
+rm -f ../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.dmg pack.dmg
+cp $ORIG/dmg-template.dmg.gz pack.dmg.gz
+gzip -d pack.dmg.gz
+hdiline=`hdiutil attach -readwrite "pack.dmg" | egrep '^/dev/' | sed 1q `
+device=`echo $hdiline | awk '{print $1}' `
+hdimnt=`echo $hdiline | sed -e 'sX^.*/VolumesX/VolumesX' `
+echo "hdiutil attach to device ${device} at ${hdimnt}"
+sleep 5
+sync
+# attempt to keep the same icon
+echo "copy files"
+rm -rf "$hdimnt"/*.mpkg
+cp -R ../${PRODUCT}-${VERSION}-${CPUARCH}.mpkg "$hdimnt"
+cp ../uninstall-${PRODUCT}-${VERSION}.command "$hdimnt"
+sleep 5
+echo "detach"
+sync
+hdiutil detach ${device}
+sync
+sleep 5
+echo "convert"
+sync
+hdiutil convert "pack.dmg" -format UDZO -imagekey zlib-level=9 -o "../${PRODUCT}-${VERSION}-${CPUARCH}-${OSVERSION}.dmg"
+rm pack.dmg
+rm ../uninstall-${PRODUCT}-${VERSION}.command
+
+}
+
+test_pipe()
+{
+    for i in "${PIPESTATUS[@]}"
+    do
+        [ $i == 0 ] || { echo FAILED! ; exit 1 ; }
+    done
+    echo successful!
+    return 0
+}
+
+go()
+{
+    { ${1}_commands 3>&1 1>&2 2>&3 | \
+        tee "$ORIG/${VERSION}-logs/${1}.err" ;} \
+        &>"$ORIG/${VERSION}-logs/${1}.log"
+    test_pipe || exit 1
+};
+
+# Here we go:
+#mkdir -p $ORIG/${VERSION}-logs
+#echo -n "MacOS X Packaging... "  && go macpackage      || exit 7
+macpackage_commands || exit 7
+
+# All done
+

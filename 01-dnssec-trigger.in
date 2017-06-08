@@ -1,0 +1,124 @@
+#!@SHELL@
+#
+# Script to notify dnssec-trigger that the DNS configuration in NetworkManager
+# may have changed.
+
+# Future versions of NetworkManager will have an active unbound/dnssec-trigger
+# plugin. Don't intervene when the new plugin is being used.
+if [ -e /etc/NetworkManager/NetworkManager.conf ]; then
+    grep -q '^dns=unbound\>' /etc/NetworkManager/NetworkManager.conf && exit 0
+fi
+
+# Exec the dnssec-trigger update script that uses NetworkManager API to gather
+# all the necessary information.
+if [ -x @libexecdir@/dnssec-trigger-script ]; then
+    exec @libexecdir@/dnssec-trigger-script --update
+fi
+
+# When dnssec-trigger-script is absent or not executable, the original
+# shell-based dnssec trigger hook code below is run instead.
+#
+# NetworkManager trigger for in dispatcher.d
+# config items
+# set PATH correctly instead of absolute paths to binaries
+PATH="@sbindir@:@bindir@:/sbin:/usr/sbin:/bin:/usr/bin"
+
+state_dir="/var/run/dnssec-trigger"
+validate_forward_zones="no"
+
+# implementation
+ifname="$1"
+action="$2"
+domains=""
+nameservers=""
+global_nameservers=""
+conn_zones_file="$state_dir/$CONNECTION_UUID"
+
+################################################################
+# get domains and nameservers if provided by connection going up
+case "$action" in
+    "vpn-up" )
+        domains="`echo $VPN_IP4_DOMAINS $VPN_IP6_DOMAINS | tr " " "\n" | sort -u | tr "\n" " " | sed '$s/.$//'`"
+        nameservers="`echo $VPN_IP4_NAMESERVERS $VPN_IP6_NAMESERVERS`"
+        ;;
+    "up" )
+        domains="`echo $IP4_DOMAINS $IP6_DOMAINS | tr " " "\n" | sort -u | tr "\n" " " | sed '$s/.$//'`"
+        nameservers="`echo $IP4_NAMESERVERS $IP6_NAMESERVERS`"
+        ;;
+esac
+
+#########################
+# get global nameservers
+# try to get nmcli version
+NMCLI_VER=$(printf '%03d%03d%03d%03d\n' $(nmcli -v 2>/dev/null | sed 's/.*version \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1 \2 \3 \4/'))
+# if nmcli exists
+if [ -n "$NMCLI_VER" ]; then
+    # if the version is greater or equal 0.9.9.0
+    if [ $NMCLI_VER -ge 000009009000 ]; then
+        global_nameservers="`nmcli -f IP4,IP6 dev show | fgrep 'DNS' | awk '{print $2;}'`"
+    else
+        global_nameservers="`nmcli -f IP4,IP6 dev list | fgrep 'DNS' | awk '{print $2;}'`"
+    fi
+# nmcli does not exist
+else
+    global_nameservers="`nm-tool | grep 'DNS:' | awk '{print $2;}'`"
+fi
+# fix whitespaces
+global_nameservers="`echo $global_nameservers`"
+
+
+############################################################
+# configure global nameservers using dnssec-trigger-control
+if [ -n "`pidof dnssec-triggerd`" ] ; then
+    dnssec-trigger-control submit "$global_nameservers" &> /dev/null
+    logger "dnssec-trigger-hook(networkmanager) $ifname $action added global DNS $global_nameservers"
+else
+    logger "dnssec-trigger-hook(networkmanager) $ifname $action NOT added global DNS - dnssec-triggerd is not running"
+fi
+
+######################################################
+# add forward zones into unbound using unbound-control
+if [ -n "`pidof unbound`" ]; then
+    if [ -r "$conn_zones_file" ]; then
+        for domain in `cat $conn_zones_file`; do
+            # Remove forward zone from unbound
+            if [ "$validate_forward_zones" = "no" ]; then
+            	unbound-control forward_remove +i $domain &> /dev/null
+	    else
+            	unbound-control forward_remove $domain &> /dev/null
+	    fi
+            unbound-control flush_zone $domain &> /dev/null
+            unbound-control flush_requestlist &> /dev/null
+
+            logger "dnssec-trigger-hook(networkmanager) $ifname $action removed forward DNS zone $domain"
+        done
+
+        # Remove file with zones for this connection
+        rm -f $conn_zones_file &> /dev/null
+    fi
+
+    if [ "$action" = "vpn-up" -o "$action" = "up" ]; then
+        if [ -n "$domains" ]; then
+            for domain in $domains; do
+                # Add forward zone into unbound
+                if [ "$validate_forward_zones" = "no" ]; then
+                    unbound-control forward_add +i $domain $nameservers &> /dev/null
+                else
+                    unbound-control forward_add $domain $nameservers &> /dev/null
+                fi
+                unbound-control flush_zone $domain &> /dev/null
+                unbound-control flush_requestlist &> /dev/null
+
+                # Create zone info file
+                mkdir -p $(dirname $conn_zones_file)
+                echo $domain >> $conn_zones_file
+
+                logger "dnssec-trigger-hook(networkmanager) $ifname $action added forward DNS zone $domain $nameservers"
+            done
+        fi
+    fi
+else
+    logger "dnssec-trigger-hook(networkmanager) $ifname $action NOT added forward DNS zone(s) - unbound is not running"
+fi
+ 
+exit 0

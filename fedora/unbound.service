@@ -1,0 +1,14 @@
+[Unit]
+Description=Unbound recursive Domain Name Server
+After=syslog.target network.target
+After=unbound-keygen.service
+Wants=unbound-keygen.service
+
+[Service]
+Type=forking
+PIDFile=/var/run/unbound/unbound.pid
+EnvironmentFile=-/etc/sysconfig/unbound
+ExecStart=/usr/sbin/unbound
+
+[Install]
+WantedBy=multi-user.target

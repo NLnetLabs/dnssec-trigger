@@ -21,16 +21,16 @@
  * specific prior written permission.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 /**
  * \file
@@ -38,8 +38,7 @@
  */
 
 #include "config.h"
-#include "util/log.h"
-#include "util/locks.h"
+#include "log.h"
 #ifdef HAVE_TIME_H
 #include <time.h>
 #endif
@@ -62,12 +61,8 @@
 enum verbosity_value verbosity = 0;
 /** the file logged to. */
 static FILE* logfile = 0;
-/** if key has been created */
-static int key_created = 0;
-/** pthread key for thread ids in logfile */
-static ub_thread_key_t logkey;
 /** the identity of this executable/process */
-static const char* ident="unbound";
+static const char* ident="dnssec-trigger";
 #if defined(HAVE_SYSLOG_H) || defined(UB_ON_WINDOWS)
 /** are we using syslog(3) to log to */
 static int logging_to_syslog = 0;
@@ -75,16 +70,12 @@ static int logging_to_syslog = 0;
 /** time to print in log, if NULL, use time(2) */
 static uint32_t* log_now = NULL;
 /** print time in UTC or in secondsfrom1970 */
-static int log_time_asc = 0;
+static int log_time_asc = 1;
 
 void
 log_init(const char* filename, int use_syslog, const char* chrootdir)
 {
 	FILE *f;
-	if(!key_created) {
-		key_created = 1;
-		ub_thread_key_create(&logkey, NULL);
-	}
 	if(logfile 
 #if defined(HAVE_SYSLOG_H) || defined(UB_ON_WINDOWS)
 	|| logging_to_syslog
@@ -141,11 +132,6 @@ void log_file(FILE *f)
 	logfile = f;
 }
 
-void log_thread_set(int* num)
-{
-	ub_thread_key_set(logkey, num);
-}
-
 void log_ident_set(const char* id)
 {
 	ident = id;
@@ -166,7 +152,6 @@ log_vmsg(int pri, const char* type,
 	const char *format, va_list args)
 {
 	char message[MAXSYSLOGMSGLEN];
-	unsigned int* tid = (unsigned int*)ub_thread_key_get(logkey);
 	time_t now;
 #if defined(HAVE_STRFTIME) && defined(HAVE_LOCALTIME_R) 
 	char tmbuf[32];
@@ -176,8 +161,8 @@ log_vmsg(int pri, const char* type,
 	vsnprintf(message, sizeof(message), format, args);
 #ifdef HAVE_SYSLOG_H
 	if(logging_to_syslog) {
-		syslog(pri, "[%d:%x] %s: %s", 
-			(int)getpid(), tid?*tid:0, type, message);
+		syslog(pri, "[%d] %s: %s", 
+			(int)getpid(), type, message);
 		return;
 	}
 #elif defined(UB_ON_WINDOWS)
@@ -198,8 +183,8 @@ log_vmsg(int pri, const char* type,
 			tp=MSG_GENERIC_SUCCESS;
 			wt=EVENTLOG_SUCCESS;
 		}
-		snprintf(m, sizeof(m), "[%s:%x] %s: %s", 
-			ident, tid?*tid:0, type, message);
+		snprintf(m, sizeof(m), "[%s] %s: %s", 
+			ident, type, message);
 		s = RegisterEventSource(NULL, SERVICE_NAME);
 		if(!s) return;
 		ReportEvent(s, wt, 0, tp, NULL, 1, 0, &str, NULL);
@@ -215,12 +200,12 @@ log_vmsg(int pri, const char* type,
 	if(log_time_asc && strftime(tmbuf, sizeof(tmbuf), "%b %d %H:%M:%S",
 		localtime_r(&now, &tm))%(sizeof(tmbuf)) != 0) {
 		/* %sizeof buf!=0 because old strftime returned max on error */
-		fprintf(logfile, "%s %s[%d:%x] %s: %s\n", tmbuf, 
-			ident, (int)getpid(), tid?*tid:0, type, message);
+		fprintf(logfile, "%s %s[%d] %s: %s\n", tmbuf, 
+			ident, (int)getpid(), type, message);
 	} else
 #endif
-	fprintf(logfile, "[%u] %s[%d:%x] %s: %s\n", (unsigned)now, 
-		ident, (int)getpid(), tid?*tid:0, type, message);
+	fprintf(logfile, "[%u] %s[%d] %s: %s\n", (unsigned)now, 
+		ident, (int)getpid(), type, message);
 #ifdef UB_ON_WINDOWS
 	/* line buffering does not work on windows */
 	fflush(logfile);
@@ -336,13 +321,6 @@ log_hex(const char* msg, void* data, size_t length)
 	log_hex_f(verbosity, msg, data, length);
 }
 
-void log_buf(enum verbosity_value level, const char* msg, ldns_buffer* buf)
-{
-	if(verbosity < level)
-		return;
-	log_hex_f(level, msg, ldns_buffer_begin(buf), ldns_buffer_limit(buf));
-}
-
 #ifdef USE_WINSOCK
 char* wsa_strerror(DWORD err)
 {
@@ -444,6 +422,8 @@ char* wsa_strerror(DWORD err)
 	case WSA_QOS_ESDMODEOBJ: return "Invalid QOS shape discard mode object.";
 	case WSA_QOS_ESHAPERATEOBJ: return "Invalid QOS shaping rate object.";
 	case WSA_QOS_RESERVED_PETYPE: return "Reserved policy QOS element type.";
+	case RPC_S_SERVER_UNAVAILABLE: return "The RPC server is unavailable.";
+	case RPC_S_UNKNOWN_IF: return "RPC interface is unknown.";
 	default:
 		snprintf(unknown, sizeof(unknown),
 			"unknown WSA error code %d", (int)err);

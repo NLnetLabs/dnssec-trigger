@@ -21,16 +21,16 @@
  * specific prior written permission.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 /**
@@ -41,7 +41,7 @@
 
 #ifndef NET_HELP_H
 #define NET_HELP_H
-#include "util/log.h"
+#include "log.h"
 struct sock_list;
 struct regional;
 
@@ -140,17 +140,6 @@ void log_addr(enum verbosity_value v, const char* str,
 	struct sockaddr_storage* addr, socklen_t addrlen);
 
 /**
- * Prints zone name and sockaddr in readable format with log_info. Debug.
- * @param v: at what verbosity level to print this.
- * @param str: descriptive string printed with it.
- * @param zone: DNS domain name, uncompressed wireformat.
- * @param addr: the sockaddr to print. Can be ip4 or ip6.
- * @param addrlen: length of addr.
- */
-void log_name_addr(enum verbosity_value v, const char* str, uint8_t* zone, 
-	struct sockaddr_storage* addr, socklen_t addrlen);
-
-/**
  * Convert address string, with "@port" appendix, to sockaddr.
  * Uses DNS port by default.
  * @param str: the string
@@ -184,17 +173,6 @@ int ipstrtoaddr(const char* ip, int port, struct sockaddr_storage* addr,
  */
 int netblockstrtoaddr(const char* ip, int port, struct sockaddr_storage* addr,
 	socklen_t* addrlen, int* net);
-
-/**
- * Print string with neat domain name, type and class.
- * @param v: at what verbosity level to print this.
- * @param str: string of message.
- * @param name: domain name uncompressed wireformat.
- * @param type: host format RR type.
- * @param dclass: host format RR class.
- */
-void log_nametypeclass(enum verbosity_value v, const char* str, 
-	uint8_t* name, uint16_t type, uint16_t dclass);
 
 /**
  * Compare two sockaddrs. Imposes an ordering on the addresses.
@@ -286,41 +264,56 @@ int addr_is_broadcast(struct sockaddr_storage* addr, socklen_t addrlen);
 int addr_is_any(struct sockaddr_storage* addr, socklen_t addrlen);
 
 /**
- * Insert new socket list item. If fails logs error.
- * @param list: pointer to pointer to first item.
- * @param addr: address or NULL if 'cache'.
- * @param len: length of addr, or 0 if 'cache'.
- * @param region: where to allocate
+ * Log libcrypto error with descriptive string. Calls log_err().
+ * @param str: what failed.
  */
-void sock_list_insert(struct sock_list** list, struct sockaddr_storage* addr,
-	socklen_t len, struct regional* region);
+void log_crypto_err(const char* str);
+
+/** 
+ * create SSL listen context
+ * @param key: private key file.
+ * @param pem: public key cert.
+ * @param verifypem: if nonNULL, verifylocation file.
+ * return SSL_CTX* or NULL on failure (logged).
+ */
+void* listen_sslctx_create(char* key, char* pem, char* verifypem);
 
 /**
- * Append one list to another.  Must both be from same qstate(regional).
- * @param list: pointer to result list that is modified.
- * @param add: item(s) to add.  They are prepended to list.
+ * create SSL connect context
+ * @param key: if nonNULL (also pem nonNULL), the client private key.
+ * @param pem: client public key (or NULL if key is NULL).
+ * @param verifypem: if nonNULL used for verifylocation file.
+ * @return SSL_CTX* or NULL on failure (logged).
  */
-void sock_list_prepend(struct sock_list** list, struct sock_list* add);
+void* connect_sslctx_create(char* key, char* pem, char* verifypem);
 
 /**
- * Find addr in list.
- * @param list: to search in
- * @param addr: address to look for.
- * @param len: length. Can be 0, look for 'cache entry'.
- * @return true if found.
+ * accept a new fd and wrap it in a BIO in SSL
+ * @param sslctx: the SSL_CTX to use (from listen_sslctx_create()).
+ * @param fd: from accept, nonblocking.
+ * @return SSL or NULL on alloc failure.
  */
-int sock_list_find(struct sock_list* list, struct sockaddr_storage* addr,
-        socklen_t len);
+void* incoming_ssl_fd(void* sslctx, int fd);
 
 /**
- * Merge socklist into another socket list.  Allocates the new entries
- * freshly and copies them over, so also performs a region switchover.
- * Allocation failures are logged.
- * @param list: the destination list (checked for duplicates)
- * @param region: where to allocate
- * @param add: the list of entries to add.
+ * connect a new fd and wrap it in a BIO in SSL
+ * @param sslctx: the SSL_CTX to use (from connect_sslctx_create())
+ * @param fd: from connect.
+ * @return SSL or NULL on alloc failure
  */
-void sock_list_merge(struct sock_list** list, struct regional* region,
-	struct sock_list* add);
+void* outgoing_ssl_fd(void* sslctx, int fd);
+
+/**
+ * Create tcp connection (blockingly) to the server.
+ * @param svr: IP address (can have '@port').
+ * @param port: used if no port specced.
+ * @param statuscmd: if true, tests to see if the server is down.
+ * @param err: buffer to print error in (for -1 return value).
+ * @param errlen: length of buffer.
+ * @return fd of TCP. -1 on failure (log_err result).
+ * -2 if server is down and statuscmd is given.
+ */
+int contact_server(const char* svr, int port, int statuscmd,
+	char* err, size_t errlen);
 
 #endif /* NET_HELP_H */

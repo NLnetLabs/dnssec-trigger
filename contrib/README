@@ -1,0 +1,6 @@
+These files are contributed to dnssec-trigger, and are not part of the official
+distribution but may be helpful.
+
+ * dnssec-trigger-script: A python script that reconfigures /etc/resolv.conf, dnssec-trigger and unbound.
+ * dnssec.conf.sample: A sample /etc/dnssec.conf file used by dnssec-trigger-script.
+ * 01-dnssec-trigger: A minimalistic NetworkManager dispatcher.d shell script that calls dnssec-trigger-script --update.

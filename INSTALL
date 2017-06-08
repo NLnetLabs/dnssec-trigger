@@ -1,0 +1,84 @@
+Helpful install instructions for dnssec-trigger.
+
+Quick overview
+--------------
+The software installs several components
+* the dnssec-triggerd daemon that does probes, it needs to be started on boot.
+* the dnssec-trigger-panel that shows a status icon in the tray. it needs
+  to be in the user startup items.  It can be gtk or cocoa.
+* some sort of hook script that catches DHCP updates, system specific.
+  it can be networkmanager, netconfig, osx or windows.
+
+Before you install you need: gcc, openssl-dev, gtk2-dev, glib-dev and install
+unbound (as a server on 127.0.0.1 that starts on boot), and libldns-dev.
+On OSX, gtk2 and glib are not needed, but XCode is used for cocoa.
+
+The compile process is ./configure && make, as usual.
+
+There are a bunch of configure options to put files in different locations,
+and to change defaults.
+
+If you do not want to install libldns (for some reason) or libcrypto,
+you can use --enable-static-exe, and provide --with-ldns=<path to ldns
+install or build dir> and --with-ssl=<install ssl dir> options.  It will
+statically link with openssl and ldns.
+
+Install (Linux)
+---------------
+1. Install required libraries and get the dnssec-trigger package.
+   On Ubuntu you must install libappindicator-dev, so it builds for Unity GUI.
+2. ./configure
+   It needs to detect what sort of system you use - to hook into the DHCP
+   network updates.  For many linux systems, networkmanager or netconfig.
+   Default puts files in /usr/local
+3. make
+   It could complain about missing libraries here. Install them, back to 2.
+4. sudo make install
+   Install as root.  Note you can uninstall with make uninstall.
+5. sudo dnssec-trigger-control-setup
+   This should create the key files that dnssec-trigger uses to communicate
+   securely between its components.
+6. edit unbound.conf to allow remote-control:
+   sudo dnssec-trigger-control-setup -i
+   if you want you can edit by hand, we need root anchor and remote-control
+7. setup dnssec-triggerd to start on boot.
+   some script in /etc/rc.d or so.
+   Or you can start it with sudo dnssec-triggerd (just this once).
+   The startup script needs to call dnssec-trigger-control submit <ips>
+   with a list of nameserver IPs (it may be the empty list), this will
+   cause the server to initialise.  It may be possible to call the
+   DHCP change hook for this from the startup script.
+8. the dnssec-trigger-panel needs to start for users on login.
+   to this end a .desktop file is installed in /etc/xdg/autostart for GNOME.
+   Or you can start it from the commandline (just this once).
+
+On uninstall you may need to chmod 644 /etc/resolv.conf
+so that it becomes writable again.  To remove the system specific DNS
+override, dnssec-triggerd -u can be used.
+
+Install (OSX)
+-------------
+Same as on Linux, but step 7 and 8 are taken care of by putting plist files
+in the LaunchAgents folder.  On OSX prior to 10.5 it puts the user login
+start item enabled for you, but make uninstall cannot disable it, you have
+to manually perform this from the user-account control panel.  On OSX 10.5
+and later, a launchAgent plist item does the job and is installed and
+uninstalled for you.
+
+On OSX a cocoa user interface is built instead of GTK, to display the status
+icon on the top right of the menu bar.
+
+Test (Demonstration)
+--------------------
+Since all the DHCP hook does is call dnssec-trigger-control submit <ip list>
+and then those caches are probed and configuration is changed, you can use
+that to test.  Simply sudo dnssec-trigger-control submit 127.0.0.3.
+Assuming there is nothing on that address (usually true), it times out and
+you see that the authority servers on the internet are used instead.
+If you want to test a failure of the network to allow DNSSEC traffic, you
+can use the command sudo dnssec-trigger-control unsafe.  It causes the
+daemon to use another couple 127.0.0.x addresses (that should not answer)
+and a second later think that DNSSEC does not work at all.  The popup window
+should show, if you select insecure, it then uses those 127.0.0.x addresses
+which will of course not really answer at all.  It demonstrates the GUI.
+

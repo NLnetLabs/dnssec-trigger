@@ -1,0 +1,106 @@
+#!@SHELL@
+# dnssec-trigger shell script to set DNS servers on OSX.
+# must run as root.
+#
+# usage:  set example.com 192.0.2.1 192.0.2.2
+
+# perform software upgrade install
+function doinstall () {
+	dmg="$*"
+	mnt="/tmp/installdir.$$"
+	logger "start setdns install"
+	# copy the dmg to a tempfile because the hdiutil needs exclusive access
+	cp $dmg $dmg.$$
+	for (( try=0 ; try <= 20 ; try++ )) ; do
+		hdiutil attach "$dmg.$$" -mountpoint "$mnt" -nobrowse -noautoopen -noverify
+		if test $? = 0 ; then
+			# it worked
+			break
+		fi
+		sleep 1
+	done
+	logger "mounted setdns install"
+	# run the installer from mnt/dnssectrigger-x.x-i386.mpkg
+	pkg="`ls -d $mnt/dnssectrigger-*.mpkg`"
+	installer -pkg "$pkg" -target /
+	logger "done installer setdns install"
+	hdiutil detach "$mnt" -force
+	logger "detached setdns install"
+	rm -f $dmg $dmg.$$
+}
+
+cmd="$1"
+shift
+if test "$cmd" = "set"; then
+	domains="$1"
+	firstdomain="$1"
+	shift
+	# remaining arguments are the servers to set
+	servers="$*"
+	logger "dnssec-trigger-setdns to $domains and $servers"
+elif test "$cmd" = "mset"; then
+	domains="$1"
+	firstdomain="$1"
+	shift
+	while test "$1" != "--"; do
+		domains="$domains $1"
+		shift
+	done
+	if test "$1" != "--"; then
+		echo >&2 "Usage: $0 mset domain [domain ..] -- server [server ..]"
+		exit 1
+	fi
+	shift # --
+	servers="$*"
+	logger "dnssec-trigger-setdns to $domains and $servers"
+elif test "$cmd" = "install"; then
+	doinstall "$*"
+	exit 0
+else
+	if test "$cmd" = "uninit"; then
+		logger "dnssec-trigger-setdns uninit dns override"
+	else
+		echo >&2 "bad command: set | mset | uninit"
+		echo >&2 "  set domain [ip ..]"
+		echo >&2 "  mset domain [domain ..] -- ip [ip ..]"
+		exit 1
+	fi
+	firstdomain=""
+	domains=""
+	servers=""
+fi
+
+# sets the DNS settings via scutil.
+function with_scutil () {
+# find the ids of the networkservices that are running or important
+# output like: State:/Network/Service/AB5ED934-29E2-4E1B-BEDC-9167410B49A0/DNS
+ids=`echo "list State:/Network/Service/[^/]+/DNS" | scutil | sed -e "s?^.* = ??"`
+# set the nameservers of all those entries (and the global one)
+for i in $ids State:/Network/Global/DNS; do
+	scutil <<END
+open
+d.init
+d.add ServerAddresses * $servers
+d.add SearchDomains * $domains
+d.add DomainName $firstdomain
+set $i
+quit
+END
+done
+}
+
+# set the DNS settings via networksetup
+nws="networksetup"
+if test -z "$domains"; then
+	domains="empty"
+fi
+if test -z "$servers"; then
+	servers="empty"
+fi
+$nws -listallnetworkservices 2>/dev/null | grep -v '*' | while read x ; do
+	#echo $x
+	$nws -setsearchdomains "$x" $domains
+	# no quotes around servers: the IPs have to be separate arguments.
+	$nws -setdnsservers "$x" $servers
+done
+
