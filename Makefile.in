@@ -20,7 +20,6 @@ endif
 
 SHELL=@SHELL@
 VERSION=@PACKAGE_VERSION@
-PYTHON=@PYTHON@
 srcdir=@srcdir@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
@@ -28,56 +27,25 @@ bindir=@bindir@
 sbindir=@sbindir@
 mandir=@mandir@
 libdir=@libdir@
-libexecdir=@libexecdir@
 # datarootdir is here to please some checkers, use datadir.
 datarootdir=@datarootdir@
 datadir=@datadir@
 includedir=@includedir@
+doxygen=@doxygen@
+libtool=@libtool@
 ldnsdir=@ldnsdir@
+staticexe=@staticexe@
 EXEEXT=@EXEEXT@
-hooks=@hooks@
-makehook=@hooks@-hook
-installhook=@hooks@-hook-install
-uninstallhook=@hooks@-hook-uninstall
-gui=@gui@
-makegui=@gui@-gui
-installgui=@gui@-gui-install
-uninstallgui=@gui@-gui-uninstall
-networkmanager_dispatcher_dir=@networkmanager_dispatcher_dir@
-netconfig_dispatcher_dir=@netconfig_dispatcher_dir@
-xdg_autostart_dir=@xdg_autostart_dir@
-osx_launchagents_dir=/Library/LaunchAgents
-osx_launchdaemons_dir=/Library/LaunchDaemons
-configfile=@configfile@
-keydir=@keydir@
-uidir=@uidir@
-pidfile=@pidfile@
-login_command=@login_command@
-login_location=@login_location@
-unbound_control_path=@unbound_control_path@
-DATE=$(shell date +%F -r $(srcdir)/Changelog)
-
-do_subst = sed -e 's,[@]SHELL[@],$(SHELL),g' \
-	       -e 's,[@]PACKAGE[@],$(PACKAGE),g' \
-	       -e 's,[@]VERSION[@],$(VERSION),g' \
-	       -e 's,[@]PYTHON[@],$(PYTHON),g' \
-	       -e 's,[@]libexecdir[@],$(libexecdir),g' \
-	       -e 's,[@]sbindir[@],$(sbindir),g' \
-	       -e 's,[@]keydir[@],$(keydir),g' \
-	       -e 's,[@]pidfile[@],$(pidfile),g' \
-	       -e 's,[@]unbound_control_path[@],$(unbound_control_path),g' \
-	       -e 's,[@]login_command[@],$(login_command),g' \
-	       -e 's,[@]login_location[@],$(login_location),g' \
-	       -e 's,[@]check_updates[@],$(check_updates),g' \
-	       -e 's,[@]DATE[@],$(DATE),g' \
-	       -e 's,[@]configfile[@],$(configfile),g' \
-	       -e 's,[@]bindir[@],$(bindir),g' \
-	       -e 's,[@]uidir[@],$(uidir),g'
+configfile=@ub_conf_file@
+UNBOUND_RUN_DIR=@UNBOUND_RUN_DIR@
+CHECKLOCK_SRC=@CHECKLOCK_SRC@
+UB_ON_WINDOWS=@UB_ON_WINDOWS@
 
 # override $U variable which is used by autotools for deansification (for
 # K&R C compilers), but causes problems if $U is defined in the env).
 U=
 
+SWIG=@SWIG@
 YACC=@YACC@
 LEX=@LEX@
 STRIP=@STRIP@
@@ -87,17 +55,12 @@ ifneq "$(srcdir)" "."
   CPPFLAGS:=-I$(srcdir) $(CPPFLAGS)
 endif
 CPPFLAGS:=$(strip $(CPPFLAGS))
-GTK_CFLAGS=@GTK_CFLAGS@
-CFLAGS=@CFLAGS@ $(GTK_CFLAGS)
+CFLAGS=@CFLAGS@
 LDFLAGS=@LDFLAGS@
-GTK_LIBS=@GTK_LIBS@
-LDNSLIBS=@LDNSLIBS@
-APP_INDICATOR=@APP_INDICATOR@
 LIBS=$(strip @LIBS@)
 LIBOBJS=@LIBOBJS@
 RUNTIME_PATH=@RUNTIME_PATH@
 DEPFLAG=@DEPFLAG@
-EXPORT_DYNAMIC=@EXPORT_DYNAMIC@
 DATE=$(shell date +%Y%m%d)
 BUILD=build/
 
@@ -118,205 +81,36 @@ LINTFLAGS+="-D__uint16_t=uint16_t"
 
 INSTALL=$(srcdir)/install-sh
 
-COMMON_SRC=
-COMMON_OBJ=$(addprefix $(BUILD),$(COMMON_SRC:.c=.o))
+COMMON_SRC=util.c
+COMMON_OBJ=$(addprefix $(BUILD),$(COMMON_SRC:.c=.lo))
 COMPAT_SRC=$(addprefix compat/,$(LIBOBJS:.o=.c))
-COMPAT_OBJ=$(addprefix $(BUILD)compat/,$(LIBOBJS:.o=.o))
+COMPAT_OBJ=$(addprefix $(BUILD)compat/,$(LIBOBJS:.o=.lo))
 
-ifeq "$(gui)" "gtk"
-PANEL_SRC=panel/panel.c panel/attach.c riggerd/cfg.c riggerd/log.c riggerd/net_help.c
-else
-  ifeq "$(gui)" "windows"
-# GTK works on windows but has large dependencies
-PANEL_SRC=winrc/trayicon.c panel/attach.c riggerd/cfg.c riggerd/log.c riggerd/net_help.c
-  else
-PANEL_SRC=
-  endif
-endif
-PANEL_OBJ=$(addprefix $(BUILD),$(PANEL_SRC:.c=.o)) $(COMPAT_OBJ)
-CONTROL_SRC=dnssec-trigger-control.c riggerd/cfg.c riggerd/log.c riggerd/net_help.c
-CONTROL_OBJ=$(addprefix $(BUILD),$(CONTROL_SRC:.c=.o)) $(COMPAT_OBJ)
-ifeq "$(hooks)" "windows"
-KEYGEN_SRC=winrc/dnssec-trigger-keygen.c
-else
-KEYGEN_SRC=
-endif
-KEYGEN_OBJ=$(addprefix $(BUILD),$(KEYGEN_SRC:.c=.o)) $(COMPAT_OBJ)
-RIGGERD_SRC=riggerd/riggerd.c riggerd/log.c riggerd/netevent.c riggerd/rbtree.c riggerd/mini_event.c riggerd/net_help.c riggerd/winsock_event.c riggerd/fptr_wlist.c riggerd/cfg.c riggerd/svr.c riggerd/probe.c riggerd/ubhook.c riggerd/reshook.c riggerd/http.c riggerd/update.c
-ifeq "$(hooks)" "windows"
-RIGGERD_SRC+=winrc/netlist.c winrc/win_svc.c winrc/w_inst.c
-endif
-ifeq "$(hooks)" "osx"
-RIGGERD_SRC+=osx/wakelist.c
-LDNSLIBS+=-framework IOKit -framework CoreFoundation
-endif
-RIGGERD_OBJ=$(addprefix $(BUILD),$(RIGGERD_SRC:.c=.o)) $(COMPAT_OBJ)
+PANEL_SRC=panel.c
+PANEL_OBJ=$(addprefix $(BUILD),$(PANEL_SRC:.c=.lo)) $(COMPAT_OBJ)
 
-ALL_SRC=$(sort $(COMMON_SRC) $(PANEL_SRC) $(RIGGERD_SRC) $(KEYGEN_SRC) $(CONTROL_SRC))
-ALL_OBJ=$(addprefix $(BUILD),$(ALL_SRC:.c=.o) \
-	$(addprefix compat/,$(LIBOBJS:.o=.o))) $(COMPAT_OBJ)
-
-PANEL_LINKFLAGS=
-ifeq "$(hooks)" "windows"
-PANEL_LINKFLAGS+=-Wl,--subsystem,windows -lcomctl32 -lgdi32
-PANEL_OBJ+=$(BUILD)winrc/rsrc_panel.o
-RIGGERD_OBJ+=$(BUILD)winrc/rsrc_triggerd.o
-KEYGEN_OBJ+=$(BUILD)winrc/rsrc_keygen.o
-CONTROL_OBJ+=$(BUILD)winrc/rsrc_control.o
-$(BUILD)%.o:	$(srcdir)/%.rc $(srcdir)/config.h
-	$(INFO) Resource $<
-	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
-	$Q$(WINDRES) $(CPPFLAGS) $< $@
-endif
+ALL_SRC=$(sort $(COMMON_SRC) $(PANEL_SRC)
+ALL_OBJ=$(addprefix $(BUILD),$(ALL_SRC:.c=.lo) \
+	$(addprefix compat/,$(LIBOBJS:.o=.lo))) $(COMPAT_OBJ)
 
 COMPILE=$(CC) $(CPPFLAGS) $(CFLAGS)
-LINK=$(strip $(CC) $(RUNTIME_PATH) $(CFLAGS) $(LDFLAGS))
+LINK=$(strip $(CC) $(staticexe) $(RUNTIME_PATH) $(CFLAGS) $(LDFLAGS))
 
 .PHONY:	clean realclean doc lint all install uninstall test strip 
 
-$(BUILD)%.o:    $(srcdir)/%.c 
+$(BUILD)%.lo:    $(srcdir)/%.c 
 	$(INFO) Build $<
 	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
 	$Q$(COMPILE) -o $@ -c $<
 
-all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-control$(EXEEXT) dnssec-trigger-control-setup $(makehook) $(makegui) example.conf dnssec-trigger.8 dnssec-triggerd.service
+all:	$(COMMON_OBJ) panel$(EXEEXT)
 
 test:	
-	@echo done
+	@echo test OK
 
-example.conf:	$(srcdir)/example.conf.in Makefile
-	rm -f $@
-	$(do_subst) < $(srcdir)/example.conf.in > $@
-
-dnssec-trigger.8:	$(srcdir)/dnssec-trigger.8.in Makefile
-	rm -f $@
-	$(do_subst) < $(srcdir)/dnssec-trigger.8.in > $@
-
-dnssec-trigger-control-setup:	$(srcdir)/dnssec-trigger-control-setup.sh.in Makefile
-	rm -f $@
-	$(do_subst) < $(srcdir)/dnssec-trigger-control-setup.sh.in > $@
-	chmod +x $@
-
-01-dnssec-trigger:	$(srcdir)/01-dnssec-trigger.in Makefile
-	rm -f $@
-	$(do_subst) < $(srcdir)/01-dnssec-trigger.in > $@
-	chmod +x $@
-
-dnssec-triggerd.service:	$(srcdir)/dnssec-triggerd.service.in Makefile
-	rm -f $@
-	$(do_subst) < $(srcdir)/dnssec-triggerd.service.in > $@
-
-dnssec-trigger-panel.desktop:	$(srcdir)/panel/dnssec-trigger-panel.desktop.in Makefile
-	rm -f $@
-	$(do_subst) < $(srcdir)/panel/dnssec-trigger-panel.desktop.in > $@
-
-windows-gui:	dnssec-trigger-panel$(EXEEXT)
-
-gtk-gui:	dnssec-trigger-panel$(EXEEXT) dnssec-trigger-panel.desktop
-
-cocoa-gui:	osx/RiggerStatusItem osx/osx-riggerapp nl.nlnetlabs.dnssec-trigger-panel.plist
-
-none-hook:
-	@echo "no dhcp hooks available, need trigger script"
-
-windows-hook:	dnssec-trigger-keygen$(EXEEXT)
-
-networkmanager-hook:	01-dnssec-trigger dnssec-trigger-script
-
-dnssec-trigger-script:	$(srcdir)/dnssec-trigger-script.in Makefile
-	cp $< $@
-	$(do_subst) < $(srcdir)/dnssec-trigger-script.in > $@
-	chmod +x $@
-
-osx/RiggerStatusItem/log.c:	$(srcdir)/riggerd/log.c osx/RiggerStatusItem
-	cp $< $@
-
-osx/RiggerStatusItem/cfg.c:	$(srcdir)/riggerd/cfg.c osx/RiggerStatusItem
-	cp $< $@
-
-osx/RiggerStatusItem/net_help.c:	$(srcdir)/riggerd/net_help.c osx/RiggerStatusItem
-	cp $< $@
-
-osx/RiggerStatusItem/osxattach.m:	$(srcdir)/panel/attach.c osx/RiggerStatusItem
-	cp $< $@
-
-osx/RiggerStatusItem/osxattach.h:	$(srcdir)/panel/attach.h osx/RiggerStatusItem
-	cp $< $@
-
-osx/RiggerStatusItem/log.h:	$(srcdir)/riggerd/log.h osx/RiggerStatusItem
-	cp $< $@
-
-osx/RiggerStatusItem/cfg.h:	$(srcdir)/riggerd/cfg.h osx/RiggerStatusItem
-	cp $< $@
-
-osx/RiggerStatusItem/net_help.h:	$(srcdir)/riggerd/net_help.h osx/RiggerStatusItem
-	cp $< $@
-
-osx/RiggerStatusItem/config.h:	$(srcdir)/config.h osx/RiggerStatusItem
-	cp $< $@
-
-ifeq "$(srcdir)" "."
-osx/RiggerStatusItem:
-
-else
-osx/RiggerStatusItem:	$(srcdir)/osx/RiggerStatusItem
-	-mkdir osx
-	cp -r $< $@
-endif
-
-osx/RiggerStatusItem/RiggerStatusItem.xcodeproj/project.pbxproj:	$(srcdir)/osx/RiggerStatusItem/RiggerStatusItem.xcodeproj/project.pbxproj.in $(srcdir)/osx/RiggerStatusItem
-	sed -e "s?@OSX_SSL_INCLUDE@?@ssldir@/include?" -e "s?@OSX_SSL_LIB@?@ssldir@/lib?" < $< > $@
-
-osx/osx-riggerapp: osx/RiggerStatusItem osx/RiggerStatusItem/cfg.c osx/RiggerStatusItem/cfg.h osx/RiggerStatusItem/net_help.c osx/RiggerStatusItem/net_help.h osx/RiggerStatusItem/log.c osx/RiggerStatusItem/log.h osx/RiggerStatusItem/config.h osx/RiggerStatusItem/main.m osx/RiggerStatusItem/RiggerApp.h osx/RiggerStatusItem/RiggerApp.m osx/RiggerStatusItem/osxattach.h osx/RiggerStatusItem/osxattach.m osx/RiggerStatusItem/RiggerStatusItem.xcodeproj/project.pbxproj
-	(cd osx/RiggerStatusItem; xcodebuild -project RiggerStatusItem.xcodeproj -alltargets)
-	touch osx/osx-riggerapp
-
-osx-hook:	nl.nlnetlabs.dnssec-trigger-hook.plist dnssec-trigger-osx.sh nl.nlnetlabs.dnssec-triggerd.plist dnssec-trigger-setdns.sh
-
-nl.nlnetlabs.dnssec-trigger-hook.plist:	$(srcdir)/osx/nl.nlnetlabs.dnssec-trigger-hook.plist.in Makefile
-	rm -f $@
-	$(do_subst) < $(srcdir)/osx/nl.nlnetlabs.dnssec-trigger-hook.plist.in > $@
-
-nl.nlnetlabs.dnssec-trigger-panel.plist:	$(srcdir)/osx/nl.nlnetlabs.dnssec-trigger-panel.plist.in Makefile
-	rm -f $@
-	$(do_subst) < $(srcdir)/osx/nl.nlnetlabs.dnssec-trigger-panel.plist.in > $@
-
-nl.nlnetlabs.dnssec-triggerd.plist:	$(srcdir)/osx/nl.nlnetlabs.dnssec-triggerd.plist.in Makefile
-	rm -f $@
-	$(do_subst) < $(srcdir)/osx/nl.nlnetlabs.dnssec-triggerd.plist.in > $@
-
-dnssec-trigger-osx.sh:	$(srcdir)/osx/dnssec-trigger-osx.sh.in Makefile
-	rm -f $@
-	$(do_subst) < $(srcdir)/osx/dnssec-trigger-osx.sh.in > $@
-	chmod +x $@
-
-dnssec-trigger-setdns.sh:	$(srcdir)/osx/dnssec-trigger-setdns.sh.in Makefile
-	rm -f $@
-	$(do_subst) < $(srcdir)/osx/dnssec-trigger-setdns.sh.in > $@
-	chmod +x $@
-
-netconfig-hook:	dnssec-trigger-netconfig-hook
-
-dnssec-trigger-netconfig-hook:	$(srcdir)/dnssec-trigger-netconfig-hook.sh.in Makefile
-	rm -f $@
-	$(do_subst) < $(srcdir)/dnssec-trigger-netconfig-hook.sh.in > $@
-	chmod +x $@
-
-dnssec-triggerd$(EXEEXT):	$(RIGGERD_OBJ)
+panel$(EXEEXT):	$(PANEL_OBJ)
 	$(INFO) Link $@
-	$Q$(LINK) -o $@ $(sort $(RIGGERD_OBJ)) $(LDNSLIBS) $(LIBS)
-
-dnssec-trigger-control$(EXEEXT):	$(CONTROL_OBJ)
-	$(INFO) Link $@
-	$Q$(LINK) -o $@ $(sort $(CONTROL_OBJ)) $(LIBS)
-
-dnssec-trigger-keygen$(EXEEXT):	$(KEYGEN_OBJ)
-	$(INFO) Link $@
-	$Q$(LINK) -o $@ $(sort $(KEYGEN_OBJ)) $(LIBS)
-
-dnssec-trigger-panel$(EXEEXT):	$(PANEL_OBJ)
-	$(INFO) Link $@
-	$Q$(LINK) $(EXPORT_DYNAMIC) -o $@ $(sort $(PANEL_OBJ)) $(LIBS) $(GTK_LIBS) $(PANEL_LINKFLAGS)
+	$Q$(LINK) -o $@ $(sort $(PANEL_OBJ)) $(LIBS)
 
 util/config_file.c:	util/configparser.h
 util/configlexer.c:  $(srcdir)/util/configlexer.lex util/configparser.h
@@ -337,16 +131,14 @@ util/configparser.c util/configparser.h:  $(srcdir)/util/configparser.y
 
 clean:
 	rm -f *.o *.d *.lo *~ tags
-	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
-	rm -f dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT)
-	rm -f 01-dnssec-trigger dnssec-trigger-script dnssec-trigger-osx.sh nl.nlnetlabs.dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf nl.nlnetlabs.dnssec-triggerd.plist nl.nlnetlabs.dnssec-trigger-panel.plist dnssec-trigger-setdns.sh osx/osx-riggerapp dnssec-triggerd.service osx/RiggerStatusItem/RiggerStatusItem.xcodeproj/project.pbxproj
-	rm -f dnssec-trigger-panel.desktop dnssec-trigger.8 dnssec-trigger-keygen$(EXEEXT)
-	rm -rf autom4te.cache build osx/RiggerStatusItem/build
+	rm -f panel$(EXEEXT)
+	rm -rf autom4te.cache .libs build doc/html doc/xml
 
 realclean: clean
 	rm -f config.status config.log config.h.in config.h
+	rm -f configure config.sub config.guess ltmain.sh aclocal.m4 libtool
 	rm -f util/configlexer.c util/configparser.c util/configparser.h
-	rm -f Makefile configure
+	rm -f Makefile 
 
 $(BUILD)%.lint:    $(srcdir)/%.c 
 	$(INFO) Lint $<
@@ -354,175 +146,30 @@ $(BUILD)%.lint:    $(srcdir)/%.c
 	$Q$(LINT) $(LINTFLAGS) -I. -I$(srcdir) -I$(ldnsdir)/include $<
 	$Qtouch $@
 
-lint:	$(addprefix $(BUILD),$(filter-out panel/attach.lint,$(filter-out panel/panel.lint,$(filter-out util/configparser.lint,$(filter-out util/configlexer.lint,$(sort $(ALL_SRC:.c=.lint)))))))
+lint:	$(addprefix $(BUILD),$(filter-out util/configparser.lint,$(filter-out util/configlexer.lint,$(sort $(ALL_SRC:.c=.lint)))))
 
 tags:	$(srcdir)/*.[ch] $(srcdir)/*/*.[ch]
 	ctags  -f $(srcdir)/tags $(srcdir)/*.[ch] $(srcdir)/*/*.[ch]
 
 strip:
-	$(STRIP) dnssec-triggerd$(EXEEXT)
-	$(STRIP) dnssec-trigger-control$(EXEEXT)
-	if test -f dnssec-trigger-panel$(EXEEXT); then $(STRIP) dnssec-trigger-panel$(EXEEXT); fi
-	if test -f dnssec-trigger-keygen$(EXEEXT); then $(STRIP) dnssec-trigger-keygen$(EXEEXT); fi
+	$(STRIP) panel$(EXEEXT)
 
-none-hook-install:
-	@echo "no hook to install"
-
-none-hook-uninstall:
-	@echo "no hook to uninstall"
-
-windows-hook-install:
-	@echo "Use makedist-makensis for windows hook install"
-
-windows-hook-uninstall:
-	@echo "Use makedist-makensis for windows hook uninstall"
-
-networkmanager-hook-install:
-	$(INSTALL) -m 755 -d $(DESTDIR)$(networkmanager_dispatcher_dir)
-	$(INSTALL) -m 755 -d $(DESTDIR)/etc
-	$(INSTALL) -m 755 -d $(DESTDIR)/usr/lib/systemd/system
-	$(INSTALL) -c -m 755 01-dnssec-trigger $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger
-	$(INSTALL) -c -m 755 dnssec-trigger-script $(DESTDIR)$(libexecdir)/dnssec-trigger-script
-	$(INSTALL) -c -m 644 dnssec.conf $(DESTDIR)/etc/dnssec.conf
-	$(INSTALL) -c -m 644 dnssec-triggerd.service $(DESTDIR)/usr/lib/systemd/system/dnssec-triggerd.service
-	$(INSTALL) -c -m 644 dnssec-triggerd-keygen.service $(DESTDIR)/usr/lib/systemd/system/dnssec-triggerd-keygen.service
-
-networkmanager-hook-uninstall:
-	@echo "attempt to restore resolv.conf mutability"
-	$(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT) -u
-	rm -f $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger
-	rm -f $(DESTDIR)$(libexecdir)/dnssec-trigger-script
-	rm -f $(DESTDIR)/etc/dnssec.conf
-	rm -f $(DESTDIR)/usr/lib/systemd/system/dnssec-triggerd.service
-	rm -f $(DESTDIR)/usr/lib/systemd/system/dnssec-triggerd-keygen.service
-
-osx-hook-install:
-	$(INSTALL) -m 755 -d $(DESTDIR)$(osx_launchdaemons_dir)
-	$(INSTALL) -m 755 -d $(DESTDIR)$(libexecdir)
-	$(INSTALL) -c -m 644 nl.nlnetlabs.dnssec-trigger-hook.plist $(DESTDIR)$(osx_launchdaemons_dir)/nl.nlnetlabs.dnssec-trigger-hook.plist
-	$(INSTALL) -c -m 755 dnssec-trigger-osx.sh $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
-	$(INSTALL) -c -m 755 dnssec-trigger-setdns.sh $(DESTDIR)$(libexecdir)/dnssec-trigger-setdns.sh
-	$(INSTALL) -c -m 644 nl.nlnetlabs.dnssec-triggerd.plist $(DESTDIR)$(osx_launchdaemons_dir)/nl.nlnetlabs.dnssec-triggerd.plist
-	@echo "To start the daemon, trigger and panel you can reboot; (after dnssec-trigger-control-setup)"
-
-osx-hook-uninstall:
-	@echo "attempt to remove dns override from system preferences"
-	$(DESTDIR)$(libexecdir)/dnssec-trigger-setdns.sh uninit
-	rm -f $(DESTDIR)$(osx_launchdaemons_dir)/nl.nlnetlabs.dnssec-trigger-hook.plist
-	rm -f $(DESTDIR)$(libexecdir)/dnssec-trigger-osx.sh
-	rm -f $(DESTDIR)$(libexecdir)/dnssec-trigger-setdns.sh
-	rm -f $(DESTDIR)$(osx_launchdaemons_dir)/nl.nlnetlabs.dnssec-triggerd.plist
-	if test "`uname -r | cut -d . -f 1`" -lt 9; then \
-		echo "there is no way to delete dnssec-trigger-panel from Library/Preferences/com.apple.loginwindow.plist with the defaults tool." ; \
-		echo "you have to manually remove it (from the accounts-LoginItems controlpanel pane)" ; \
-	fi
-
-cocoa-gui-install:
-	$(INSTALL) -m 755 -d $(DESTDIR)$(osx_launchagents_dir)
-	$(INSTALL) -m 755 -d $(DESTDIR)$(libexecdir)
-	if test "`uname -r | cut -d . -f 1`" -lt 9; then \
-		echo "install the panel to launch for the user, goes into Library/Preferences/com.apple.loginwindow.plist." ; \
-		defaults write loginwindow AutoLaunchedApplicationDictionary -array-add "<dict><key>Hide</key><false/><key>Path</key><string>$(libexecdir)/RiggerStatusItem.app/Contents/MacOS/RiggerStatusItem</string></dict>" ; \
-	else \
-		echo "install panel in osx 10.5 and later mode" ; \
-		$(INSTALL) -c -m 644 nl.nlnetlabs.dnssec-trigger-panel.plist $(DESTDIR)$(osx_launchagents_dir)/nl.nlnetlabs.dnssec-trigger-panel.plist ; \
-	fi
-	(umask 0022 ; cp -r osx/RiggerStatusItem/build/Release/RiggerStatusItem.app $(DESTDIR)$(libexecdir)/. )
-
-cocoa-gui-uninstall:
-	rm -f $(DESTDIR)$(osx_launchagents_dir)/nl.nlnetlabs.dnssec-trigger-panel.plist
-	rm -rf $(DESTDIR)$(libexecdir)/RiggerStatusItem.app
-
-netconfig-hook-install:
-	$(INSTALL) -m 755 -d $(DESTDIR)$(netconfig_dispatcher_dir)
-	$(INSTALL) -c -m 755 dnssec-trigger-netconfig-hook $(DESTDIR)$(netconfig_dispatcher_dir)/dnssec-trigger-netconfig-hook
-
-netconfig-hook-uninstall:
-	@echo "attempt to restore resolv.conf mutability"
-	$(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT) -u
-	rm -f $(DESTDIR)$(netconfig_dispatcher_dir)/dnssec-trigger-netconfig-hook
-
-windows-gui-install:
-	$(INSTALL) -m 755 -d $(DESTDIR)$(bindir)
-	$(INSTALL) -m 755 -d $(DESTDIR)$(uidir)
-	$(INSTALL) -c -m 755 dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
-	$(INSTALL) -c -m 644 $(srcdir)/winrc/alert.ico $(DESTDIR)$(uidir)/alert.ico
-	$(INSTALL) -c -m 644 $(srcdir)/winrc/status.ico $(DESTDIR)$(uidir)/status.ico
-
-windows-gui-uninstall:
-	rm -f $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
-	rm -f $(DESTDIR)$(uidir)/alert.ico
-	rm -f $(DESTDIR)$(uidir)/status.ico
-
-gtk-gui-install:
-	$(INSTALL) -m 755 -d $(DESTDIR)$(bindir)
-	$(INSTALL) -m 755 -d $(DESTDIR)$(uidir)
-	$(INSTALL) -c -m 644 $(srcdir)/panel/pui.xml $(DESTDIR)$(uidir)/pui.xml
-	$(INSTALL) -c -m 644 $(srcdir)/panel/status-icon.png $(DESTDIR)$(uidir)/status-icon.png
-	$(INSTALL) -c -m 644 $(srcdir)/panel/status-icon-alert.png $(DESTDIR)$(uidir)/status-icon-alert.png
-	$(INSTALL) -c -m 755 dnssec-trigger-panel$(EXEEXT) $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
-ifeq "$(APP_INDICATOR)" "yes"
-	$(INSTALL) -m 755 -d $(DESTDIR)/usr/share/icons/hicolor/scalable/apps
-	$(INSTALL) -m 755 -d $(DESTDIR)/usr/share/icons/hicolor/64x64/apps
-	$(INSTALL) -c -m 644 $(srcdir)/panel/status-icon.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/dnssec-trigger.svg
-	$(INSTALL) -c -m 644 $(srcdir)/panel/status-icon-alert.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/dnssec-trigger-alert.svg
-	$(INSTALL) -c -m 644 $(srcdir)/panel/status-icon.png $(DESTDIR)/usr/share/icons/hicolor/64x64/apps/dnssec-trigger.png
-	$(INSTALL) -c -m 644 $(srcdir)/panel/status-icon-alert.png $(DESTDIR)/usr/share/icons/hicolor/64x64/apps/dnssec-trigger-alert.png
-	gtk-update-icon-cache $(DESTDIR)/usr/share/icons/hicolor
-endif
-	if test -n "$(xdg_autostart_dir)"; then \
-		$(INSTALL) -m 755 -d $(DESTDIR)$(xdg_autostart_dir) ; \
-		$(INSTALL) -c -m 644 dnssec-trigger-panel.desktop $(DESTDIR)$(xdg_autostart_dir)/dnssec-trigger-panel.desktop ; fi
-
-gtk-gui-uninstall:
-	rm -f $(DESTDIR)$(bindir)/dnssec-trigger-panel$(EXEEXT)
-	rm -f $(DESTDIR)$(uidir)/pui.xml
-	rm -f $(DESTDIR)$(uidir)/status-icon.png
-	rm -f $(DESTDIR)$(uidir)/status-icon-alert.png
-ifeq "$(APP_INDICATOR)" "yes"
-	rm -f $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/dnssec-trigger.svg
-	rm -f $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/dnssec-trigger-alert.svg
-	rm -f $(DESTDIR)/usr/share/icons/hicolor/64x64/apps/dnssec-trigger.png
-	rm -f $(DESTDIR)/usr/share/icons/hicolor/64x64/apps/dnssec-trigger-alert.png
-	gtk-update-icon-cache $(DESTDIR)/usr/share/icons/hicolor
-endif
-	if test -n "$(xdg_autostart_dir)"; then \
-		rm -f $(DESTDIR)$(xdg_autostart_dir)/dnssec-trigger-panel.desktop ; fi
-
-install:	all $(installgui) $(installhook)
+install:	all
 	$(INSTALL) -m 755 -d $(DESTDIR)$(sbindir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)
 	$(INSTALL) -m 755 -d $(DESTDIR)$(mandir)/man8
-	$(INSTALL) -m 755 -d $(DESTDIR)$(keydir)
-	-$(INSTALL) -m 755 -d "`dirname $(DESTDIR)$(pidfile)`"
-	$(INSTALL) -c -m 644 dnssec-trigger.8 $(DESTDIR)$(mandir)/man8/dnssec-trigger.8
-	$(INSTALL) -c -m 755 dnssec-trigger-control-setup $(DESTDIR)$(sbindir)/dnssec-trigger-control-setup
-	$(INSTALL) -c -m 755 dnssec-trigger-control$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-trigger-control$(EXEEXT)
-	$(INSTALL) -c -m 755 dnssec-triggerd$(EXEEXT) $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
-	if test ! -f $(DESTDIR)/etc/resolv.conf~ -a -f $(DESTDIR)/etc/resolv.conf; then \
-		cp $(DESTDIR)/etc/resolv.conf $(DESTDIR)/etc/resolv.conf~; fi
-	if test ! -f $(DESTDIR)$(configfile); then \
-		$(INSTALL) -c -m 644 example.conf $(DESTDIR)$(configfile); fi
-	@if test ! -f $(DESTDIR)$(keydir)/dnssec-trigger_server.key; then echo "It is probably good to run dnssec-trigger-control-setup to generate keys now, and possibly run dnssec-trigger-control-setup -i to edit unbound.conf if it does not have a trust anchor and remote-control"; fi
-	@if test -f $(DESTDIR)$(configfile); then \
-		if grep "ssl443" $(DESTDIR)$(configfile) >/dev/null; then : ; else echo "You should update your config file ($(DESTDIR)$(configfile)) with the ssl443 settings from the example.conf."; fi; fi
+	$(LIBTOOL) --mode=install cp unbound$(EXEEXT) $(DESTDIR)$(sbindir)/panel$(EXEEXT)
 
-uninstall:	$(uninstallgui) $(uninstallhook)
-	rm -f $(DESTDIR)$(mandir)/man8/dnssec-trigger.8
-	rm -f $(DESTDIR)$(sbindir)/dnssec-trigger-control-setup
-	rm -f $(DESTDIR)$(sbindir)/dnssec-trigger-control$(EXEEXT)
-	rm -f $(DESTDIR)$(sbindir)/dnssec-triggerd$(EXEEXT)
-	chmod 644 /etc/resolv.conf
-	if test -f $(DESTDIR)/etc/resolv.conf~; then \
-		cp $(DESTDIR)/etc/resolv.conf~ $(DESTDIR)/etc/resolv.conf; fi
+uninstall:
+	rm -f -- $(DESTDIR)$(sbindir)/panel$(EXEEXT)
 	@echo
-	@echo "You still need to remove ssl keys from $(DESTDIR)$(keydir) and $(DESTDIR)$(configfile) by hand"
+	@echo "You still need to remove "`dirname $(DESTDIR)$(configfile)`" , $(DESTDIR)$(configfile) by hand"
 
 # Automatic dependencies.
 $(BUILD)%.d: $(srcdir)/%.c
 	$(INFO) Depend $<
 	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
-	$Q$(SHELL) -ec '$(CC) $(DEPFLAG) $(CPPFLAGS) $(CFLAGS) $< | sed '\''s!\(.*\)\.o[ :]*!$(dir $@)\1.o $@ : !g'\'' > $@; [ -s $@ ] || rm -f $@'
+	$Q$(SHELL) -ec '$(CC) $(DEPFLAG) $(CPPFLAGS) $(CFLAGS) $< | sed '\''s!\(.*\)\.o[ :]*!$(dir $@)\1.lo $@ : !g'\'' > $@; [ -s $@ ] || rm -f $@'
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),realclean)

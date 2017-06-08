@@ -21,16 +21,16 @@
  * specific prior written permission.
  * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
- * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 /**
  * \file
@@ -38,8 +38,12 @@
  */
 
 #include "config.h"
-#include "net_help.h"
-#include "log.h"
+#include "ldns/ldns.h"
+#include "util/net_help.h"
+#include "util/log.h"
+#include "util/data/dname.h"
+#include "util/module.h"
+#include "util/regional.h"
 #include <fcntl.h>
 
 /** max length of an IP address (the address portion) that we allow */
@@ -158,7 +162,7 @@ extstrtoaddr(const char* str, struct sockaddr_storage* addr,
 	socklen_t* addrlen)
 {
 	char* s;
-	int port = DNS_PORT;
+	int port = UNBOUND_DNS_PORT;
 	if((s=strchr(str, '@'))) {
 		char buf[MAX_ADDR_STRLEN];
 		if(s-str >= MAX_ADDR_STRLEN) {
@@ -236,6 +240,70 @@ int netblockstrtoaddr(const char* str, int port, struct sockaddr_storage* addr,
 		addr_mask(addr, *addrlen, *net);
 	}
 	return 1;
+}
+
+void
+log_nametypeclass(enum verbosity_value v, const char* str, uint8_t* name, 
+	uint16_t type, uint16_t dclass)
+{
+	char buf[LDNS_MAX_DOMAINLEN+1];
+	char t[12], c[12];
+	const char *ts, *cs; 
+	if(verbosity < v)
+		return;
+	dname_str(name, buf);
+	if(type == LDNS_RR_TYPE_TSIG) ts = "TSIG";
+	else if(type == LDNS_RR_TYPE_IXFR) ts = "IXFR";
+	else if(type == LDNS_RR_TYPE_AXFR) ts = "AXFR";
+	else if(type == LDNS_RR_TYPE_MAILB) ts = "MAILB";
+	else if(type == LDNS_RR_TYPE_MAILA) ts = "MAILA";
+	else if(type == LDNS_RR_TYPE_ANY) ts = "ANY";
+	else if(ldns_rr_descript(type) && ldns_rr_descript(type)->_name)
+		ts = ldns_rr_descript(type)->_name;
+	else {
+		snprintf(t, sizeof(t), "TYPE%d", (int)type);
+		ts = t;
+	}
+	if(ldns_lookup_by_id(ldns_rr_classes, (int)dclass) &&
+		ldns_lookup_by_id(ldns_rr_classes, (int)dclass)->name)
+		cs = ldns_lookup_by_id(ldns_rr_classes, (int)dclass)->name;
+	else {
+		snprintf(c, sizeof(c), "CLASS%d", (int)dclass);
+		cs = c;
+	}
+	log_info("%s %s %s %s", str, buf, ts, cs);
+}
+
+void log_name_addr(enum verbosity_value v, const char* str, uint8_t* zone, 
+	struct sockaddr_storage* addr, socklen_t addrlen)
+{
+	uint16_t port;
+	const char* family = "unknown_family ";
+	char namebuf[LDNS_MAX_DOMAINLEN+1];
+	char dest[100];
+	int af = (int)((struct sockaddr_in*)addr)->sin_family;
+	void* sinaddr = &((struct sockaddr_in*)addr)->sin_addr;
+	if(verbosity < v)
+		return;
+	switch(af) {
+		case AF_INET: family=""; break;
+		case AF_INET6: family="";
+			sinaddr = &((struct sockaddr_in6*)addr)->sin6_addr;
+			break;
+		case AF_UNIX: family="unix_family "; break;
+		default: break;
+	}
+	if(inet_ntop(af, sinaddr, dest, (socklen_t)sizeof(dest)) == 0) {
+		strncpy(dest, "(inet_ntop error)", sizeof(dest));
+	}
+	dest[sizeof(dest)-1] = 0;
+	port = ntohs(((struct sockaddr_in*)addr)->sin_port);
+	dname_str(zone, namebuf);
+	if(af != AF_INET && af != AF_INET6)
+		verbose(v, "%s <%s> %s%s#%d (addrlen %d)",
+			str, namebuf, family, dest, (int)port, (int)addrlen);
+	else	verbose(v, "%s <%s> %s%s#%d",
+			str, namebuf, family, dest, (int)port);
 }
 
 int
@@ -425,202 +493,53 @@ int addr_is_any(struct sockaddr_storage* addr, socklen_t addrlen)
 	return 0;
 }
 
-void
-log_crypto_err(const char* str)
+void sock_list_insert(struct sock_list** list, struct sockaddr_storage* addr,
+	socklen_t len, struct regional* region)
 {
-	/* error:[error code]:[library name]:[function name]:[reason string] */
-	char buf[128];
-	unsigned long e;
-	ERR_error_string_n(ERR_get_error(), buf, sizeof(buf));
-	log_err("%s crypto %s", str, buf);
-	while( (e=ERR_get_error()) ) {
-		ERR_error_string_n(e, buf, sizeof(buf));
-		log_err("and additionally crypto %s", buf);
+	struct sock_list* add = (struct sock_list*)regional_alloc(region,
+		sizeof(*add) - sizeof(add->addr) + (size_t)len);
+	if(!add) {
+		log_err("out of memory in socketlist insert");
+		return;
 	}
+	log_assert(list);
+	add->next = *list;
+	add->len = len;
+	*list = add;
+	if(len) memmove(&add->addr, addr, len);
 }
 
-void* listen_sslctx_create(char* key, char* pem, char* verifypem)
+void sock_list_prepend(struct sock_list** list, struct sock_list* add)
 {
-	SSL_CTX* ctx = SSL_CTX_new(SSLv23_server_method());
-	if(!ctx) {
-		log_crypto_err("could not SSL_CTX_new");
-		return NULL;
-	}
-	/* no SSLv2 because has defects */
-	if(!(SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2) & SSL_OP_NO_SSLv2)){
-		log_crypto_err("could not set SSL_OP_NO_SSLv2");
-		SSL_CTX_free(ctx);
-		return NULL;
-	}
-	if(!SSL_CTX_use_certificate_file(ctx, pem, SSL_FILETYPE_PEM)) {
-		log_err("error for cert file: %s", pem);
-		log_crypto_err("error in SSL_CTX use_certificate_file");
-		SSL_CTX_free(ctx);
-		return NULL;
-	}
-	if(!SSL_CTX_use_PrivateKey_file(ctx, key, SSL_FILETYPE_PEM)) {
-		log_err("error for private key file: %s", key);
-		log_crypto_err("Error in SSL_CTX use_PrivateKey_file");
-		SSL_CTX_free(ctx);
-		return NULL;
-	}
-	if(!SSL_CTX_check_private_key(ctx)) {
-		log_err("error for key file: %s", key);
-		log_crypto_err("Error in SSL_CTX check_private_key");
-		SSL_CTX_free(ctx);
-		return NULL;
-	}
-
-	if(verifypem && verifypem[0]) {
-		if(!SSL_CTX_load_verify_locations(ctx, verifypem, NULL)) {
-			log_crypto_err("Error in SSL_CTX verify locations");
-			SSL_CTX_free(ctx);
-			return NULL;
-		}
-		SSL_CTX_set_client_CA_list(ctx, SSL_load_client_CA_file(
-			verifypem));
-		SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
-	}
-	return ctx;
+	struct sock_list* last = add;
+	if(!last) 
+		return;
+	while(last->next)
+		last = last->next;
+	last->next = *list;
+	*list = add;
 }
 
-void* connect_sslctx_create(char* key, char* pem, char* verifypem)
+int sock_list_find(struct sock_list* list, struct sockaddr_storage* addr,
+        socklen_t len)
 {
-	SSL_CTX* ctx = SSL_CTX_new(SSLv23_client_method());
-	if(!ctx) {
-		log_crypto_err("could not allocate SSL_CTX pointer");
-		return NULL;
-	}
-	if(!(SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2) & SSL_OP_NO_SSLv2)) {
-		log_crypto_err("could not set SSL_OP_NO_SSLv2");
-		SSL_CTX_free(ctx);
-		return NULL;
-	}
-	if(key && key[0]) {
-		if(!SSL_CTX_use_certificate_file(ctx, pem, SSL_FILETYPE_PEM)) {
-			log_err("error in client certificate %s", pem);
-			log_crypto_err("error in certificate file");
-			SSL_CTX_free(ctx);
-			return NULL;
+	while(list) {
+		if(len == list->len) {
+			if(len == 0 || sockaddr_cmp_addr(addr, len, 
+				&list->addr, list->len) == 0)
+				return 1;
 		}
-		if(!SSL_CTX_use_PrivateKey_file(ctx, key, SSL_FILETYPE_PEM)) {
-			log_err("error in client private key %s", key);
-			log_crypto_err("error in key file");
-			SSL_CTX_free(ctx);
-			return NULL;
-		}
-		if(!SSL_CTX_check_private_key(ctx)) {
-			log_err("error in client key %s", key);
-			log_crypto_err("error in SSL_CTX_check_private_key");
-			SSL_CTX_free(ctx);
-			return NULL;
-		}
+		list = list->next;
 	}
-	if(verifypem && verifypem[0]) {
-		if(!SSL_CTX_load_verify_locations(ctx, verifypem, NULL)) {
-			log_crypto_err("error in SSL_CTX verify");
-			SSL_CTX_free(ctx);
-			return NULL;
-		}
-		SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
-	}
-	return ctx;
+	return 0;
 }
 
-void* incoming_ssl_fd(void* sslctx, int fd)
+void sock_list_merge(struct sock_list** list, struct regional* region,
+	struct sock_list* add)
 {
-	SSL* ssl = SSL_new((SSL_CTX*)sslctx);
-	if(!ssl) {
-		log_crypto_err("could not SSL_new");
-		return NULL;
+	struct sock_list* p;
+	for(p=add; p; p=p->next) {
+		if(!sock_list_find(*list, &p->addr, p->len))
+			sock_list_insert(list, &p->addr, p->len, region);
 	}
-	SSL_set_accept_state(ssl);
-	(void)SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
-	if(!SSL_set_fd(ssl, fd)) {
-		log_crypto_err("could not SSL_set_fd");
-		SSL_free(ssl);
-		return NULL;
-	}
-	return ssl;
 }
-
-void* outgoing_ssl_fd(void* sslctx, int fd)
-{
-	SSL* ssl = SSL_new((SSL_CTX*)sslctx);
-	if(!ssl) {
-		log_crypto_err("could not SSL_new");
-		return NULL;
-	}
-	SSL_set_connect_state(ssl);
-	(void)SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
-	if(!SSL_set_fd(ssl, fd)) {
-		log_crypto_err("could not SSL_set_fd");
-		SSL_free(ssl);
-		return NULL;
-	}
-	return ssl;
-}
-
-/** contact the server with TCP connect, for clients. returns fd */
-int
-contact_server(const char* svr, int port, int statuscmd,
-	char* err, size_t errlen)
-{
-	struct sockaddr_storage addr;
-	socklen_t addrlen;
-	int fd;
-	/* use svr or the first config entry */
-	if(!svr) {
-		svr = "127.0.0.1";
-		/* config 0 addr (everything), means ask localhost */
-		if(strcmp(svr, "0.0.0.0") == 0)
-			svr = "127.0.0.1";
-		else if(strcmp(svr, "::0") == 0 ||
-			strcmp(svr, "0::0") == 0 ||
-			strcmp(svr, "0::") == 0 ||
-			strcmp(svr, "::") == 0)
-			svr = "::1";
-	}
-	if(strchr(svr, '@')) {
-		if(!extstrtoaddr(svr, &addr, &addrlen)) {
-			snprintf(err, errlen, "could not parse IP: %s", svr);
-			return -1;
-		}
-	} else {
-		if(!ipstrtoaddr(svr, port, &addr, &addrlen)) {
-			snprintf(err, errlen, "could not parse IP: %s", svr);
-			return -1;
-		}
-	}
-	fd = socket(addr_is_ip6(&addr, addrlen)?AF_INET6:AF_INET, 
-		SOCK_STREAM, 0);
-	if(fd == -1) {
-#ifndef USE_WINSOCK
-		snprintf(err, errlen, "socket: %s", strerror(errno));
-#else
-		snprintf(err, errlen, "socket: %s", wsa_strerror(WSAGetLastError()));
-#endif
-		return -1;
-	}
-	if(connect(fd, (struct sockaddr*)&addr, addrlen) < 0) {
-#ifndef USE_WINSOCK
-		snprintf(err, errlen, "connect: %s", strerror(errno));
-		if(errno == ECONNREFUSED && statuscmd) {
-			close(fd);
-			return -2;
-		}
-		close(fd);
-#else
-		snprintf(err, errlen, "connect: %s", wsa_strerror(WSAGetLastError()));
-		if(WSAGetLastError() == WSAECONNREFUSED && statuscmd) {
-			closesocket(fd);
-			return -2;
-		}
-		closesocket(fd);
-#endif
-		return -1;
-	}
-	return fd;
-}
-
-

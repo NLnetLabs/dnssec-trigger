@@ -1,8 +1,0 @@
-[Unit]
-Description=Generate keys and certificates for dnssec-trigger
-ConditionPathExists=!/etc/dnssec-trigger/dnssec_trigger_control.key
-
-[Service]
-Type=oneshot
-ExecStart=/usr/sbin/dnssec-trigger-control-setup -d /etc/dnssec-trigger/
-RemainAfterExit=yes
