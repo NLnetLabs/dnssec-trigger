@@ -767,11 +767,17 @@ static int
 hg_check_data(ldns_buffer* data, char* result)
 {
 	char* s = (char*)ldns_buffer_begin(data);
+    size_t result_len = strlen(result);
+
 	while(isspace(*s))
 		s++;
-	if(strncmp(s, result, strlen(result)) != 0)
+    if(strncmp(s, result, result_len) != 0)
 		return 0;
-	s += 2;
+    /*
+     * check that there is nothing else
+     * than whitespaces after the expected string
+     */
+    s += result_len;
 	while(isspace(*s))
 		s++;
 	if(*s != 0)

@@ -1,3 +1,7 @@
+4 July 2017: Wouter
+	- Allow strings longer than 2 characters for the HTTP probe.
+	  Patch from Thomas Hozza.
+
 6 January 2017: Wouter
 	- For windows, include the libgcc_s_sjlj-1.dll and
 	  libwinpthread-1.dll
