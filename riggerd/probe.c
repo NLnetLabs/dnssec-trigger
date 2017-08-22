@@ -156,7 +156,7 @@ get_random_dest(void)
 static const char*
 get_random_nsec3_dest(void)
 {
-	const char* choices[] = { "_probe.us.com.", "_probe.uk.com.", "_probe.kr.com.", "_probe.uk.net." };
+	const char* choices[] = { "_probe.us.com.", "_probe.uk.com.", "_probe.uk.uk.", "_probe.uk.net." };
 	return choices[ ldns_get_random() % 4 ];
 }
 
