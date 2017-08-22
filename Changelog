@@ -1,6 +1,7 @@
 22 August 2017: Wouter
 	- Fix no NSEC3 in nodata reply: kr.com always fails to validate, uses
 	  uk.uk instead.
+	- updated root servers list.
 
 4 July 2017: Wouter
 	- Allow strings longer than 2 characters for the HTTP probe.
