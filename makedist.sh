@@ -554,6 +554,9 @@ if [ "$DOMAC" = "yes" ]; then
     rm -f osx/pkg/makepackage_ed
     sed -e 's/^VERSION=/VERSION='"$version"'/' < osx/pkg/makepackage > osx/pkg/makepackage_ed || error_cleanup "Could not edit makepackage"
     info "running makepackage"
+    # remove empty dir var/run because we cannot overwrite it on untar
+    # because immutable filesystems.  (was created for manual install, pidfile)
+    rm -rf osx/pkg/DEST/var
     (cd osx/pkg; ./makepackage) || error_cleanup "makepackage failed"
 
     # see tar gz for debug

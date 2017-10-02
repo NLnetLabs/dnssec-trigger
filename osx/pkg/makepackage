@@ -103,7 +103,7 @@ if [[ -f /System/Library/LaunchDaemons/org.isc.named.plist ]]; then
 fi
 
 mkdir -p "\`dirname ${FILELIST}\`"
-tar xzopC / -f /tmp/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz
+tar xzmopC / -f /tmp/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz
 tar tzf /tmp/${PRODUCT}-${VERSION}-binary-${CPUARCH}-${OSVERSION}.tar.gz > "${FILELIST}"
 echo "\`dirname ${FILELIST}\`" >> "${FILELIST}"
 

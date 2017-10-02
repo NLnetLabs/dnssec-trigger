@@ -1,3 +1,6 @@
+2 October 2017: Wouter
+	- Fix OSX install to exclude var and not set tar timestamps.
+
 22 August 2017: Wouter
 	- Fix no NSEC3 in nodata reply: kr.com always fails to validate, uses
 	  uk.uk instead.
