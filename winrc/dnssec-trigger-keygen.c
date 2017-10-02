@@ -379,9 +379,11 @@ int main(int argc, char* argv[])
 	do_gen(keydir, ubmode);
 
 	EVP_cleanup();
+#if OPENSSL_VERSION_NUMBER < 0x10100000
 	CRYPTO_cleanup_all_ex_data();
 	ERR_remove_state(0);
 	ERR_free_strings();
 	RAND_cleanup();
+#endif
 	return 0;
 }

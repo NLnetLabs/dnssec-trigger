@@ -2,6 +2,7 @@
 	- Fix OSX install to exclude var and not set tar timestamps.
 	- Fix compile warning on gcc 7.2.
 	- Fix makedist.sh for openssl 1.1 and ldns 1.7.
+	- Fix keygen.exe for openssl 1.1 API.
 
 22 August 2017: Wouter
 	- Fix no NSEC3 in nodata reply: kr.com always fails to validate, uses
