@@ -318,7 +318,7 @@ if [ "$DOWIN" = "yes" ]; then
                 info "unbound: Configure $cross_flag"
 		# enable allsymbols because unbound-anchor wants wsa_strerror
 		# from util/log.c
-                mingw32-configure --enable-allsymbols --enable-debug $cross_flag || error_cleanup "unbound configure failed"
+                mingw32-configure --enable-allsymbols --enable-debug --disable-flto $cross_flag || error_cleanup "unbound configure failed"
                 info "unbound: make"
                 make || error_cleanup "unbound crosscompile failed"
 		make strip || error_cleanup "unbound make strip failed"
