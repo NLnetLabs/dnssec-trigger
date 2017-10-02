@@ -380,10 +380,10 @@ if [ "$DOWIN" = "yes" ]; then
 	    echo "no $2"
 	    return 1
     }
-    find_dll "$findpath" "libeay32.dll" || error_cleanup "no crypto dll"
-    find_dll "$findpath" "ssleay32.dll" || error_cleanup "no ssl dll"
-    find_dll "$findpath" "gosteay32.dll" || echo "*** WARNING NO GOST DLL ***"
-    find_dll "$findpath" "libldns-1.dll" || error_cleanup "no ldns dll"
+    find_dll "$findpath" "libcrypto-1_1.dll" || find_dll "$findpath" "libeay32.dll" || error_cleanup "no crypto dll"
+    find_dll "$findpath" "libssl-1_1.dll" || find_dll "$findpath" "ssleay32.dll" || error_cleanup "no ssl dll"
+    #find_dll "$findpath" "gosteay32.dll" || echo "*** WARNING NO GOST DLL ***"
+    find_dll "$findpath" "libldns-2.dll" || find_dll "$findpath" "libldns-1.dll" || error_cleanup "no ldns dll"
     find_dll "$findpath" "libexpat-1.dll" || error_cleanup "no expat dll"
     find_dll "$findpath" "libunbound-2.dll" || error_cleanup "no unbound dll"
     find_dll "$findpath" "libgcc_s_sjlj-1.dll" || error_cleanup "no libgcc_s_sjlj dll"
