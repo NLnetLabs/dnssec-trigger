@@ -1,6 +1,7 @@
 10 October 2017: Wouter
 	- release 0.14 tag
 	- trunk has version 0.15.
+	- annotate switch fallthrough for gcc 7.2.
 
 2 October 2017: Wouter
 	- Fix OSX install to exclude var and not set tar timestamps.

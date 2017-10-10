@@ -111,14 +111,22 @@ static RETSIGTYPE record_sigh(int sig)
 	case SIGHUP:
 		sig_reload = 1;
 		/* fall through and exit commbase with reload boolean set */
+		/* fallthrough */
 #endif
+		/* fallthrough */
 	case SIGTERM:
+		/* fallthrough */
 #ifdef SIGQUIT
+		/* fallthrough */
 	case SIGQUIT:
+		/* fallthrough */
 #endif
 #ifdef SIGBREAK
+		/* fallthrough */
 	case SIGBREAK:
+		/* fallthrough */
 #endif
+		/* fallthrough */
 	case SIGINT:
 		if(global_svr)
 			comm_base_exit(global_svr->base);
