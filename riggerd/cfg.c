@@ -540,7 +540,8 @@ cfg_setup_ctx_client(struct cfg* cfg, char* err, size_t errlen)
 	if(!ctx)
 		return ctx_err_ret(ctx, err, errlen,
 			"could not allocate SSL_CTX pointer");
-	if(!(SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2) & SSL_OP_NO_SSLv2))
+	if((SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2) & SSL_OP_NO_SSLv2)
+		!= SSL_OP_NO_SSLv2)
 		return ctx_err_ret(ctx, err, errlen, 
 			"could not set SSL_OP_NO_SSLv2");
 	if(!SSL_CTX_use_certificate_file(ctx,c_cert,SSL_FILETYPE_PEM) ||

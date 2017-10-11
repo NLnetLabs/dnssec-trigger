@@ -447,7 +447,8 @@ void* listen_sslctx_create(char* key, char* pem, char* verifypem)
 		return NULL;
 	}
 	/* no SSLv2 because has defects */
-	if(!(SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2) & SSL_OP_NO_SSLv2)){
+	if((SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2) & SSL_OP_NO_SSLv2)
+		!= SSL_OP_NO_SSLv2){
 		log_crypto_err("could not set SSL_OP_NO_SSLv2");
 		SSL_CTX_free(ctx);
 		return NULL;
@@ -491,7 +492,8 @@ void* connect_sslctx_create(char* key, char* pem, char* verifypem)
 		log_crypto_err("could not allocate SSL_CTX pointer");
 		return NULL;
 	}
-	if(!(SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2) & SSL_OP_NO_SSLv2)) {
+	if((SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2) & SSL_OP_NO_SSLv2)
+		!= SSL_OP_NO_SSLv2) {
 		log_crypto_err("could not set SSL_OP_NO_SSLv2");
 		SSL_CTX_free(ctx);
 		return NULL;

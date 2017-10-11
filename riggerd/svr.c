@@ -162,7 +162,8 @@ static int setup_ssl_ctx(struct svr* s)
 		return 0;
 	}
 	/* no SSLv2 because has defects */
-	if(!(SSL_CTX_set_options(s->ctx, SSL_OP_NO_SSLv2) & SSL_OP_NO_SSLv2)){
+	if((SSL_CTX_set_options(s->ctx, SSL_OP_NO_SSLv2) & SSL_OP_NO_SSLv2)
+		!= SSL_OP_NO_SSLv2){
 		log_crypto_err("could not set SSL_OP_NO_SSLv2");
 		return 0;
 	}
