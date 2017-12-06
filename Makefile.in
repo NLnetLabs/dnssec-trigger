@@ -54,6 +54,7 @@ uidir=@uidir@
 pidfile=@pidfile@
 login_command=@login_command@
 login_location=@login_location@
+check_updates=@check_updates@
 unbound_control_path=@unbound_control_path@
 DATE=$(shell date +%F -r $(srcdir)/Changelog)
 
