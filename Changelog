@@ -1,3 +1,6 @@
+23 February 2018: Wouter
+	- port of dnssec-trigger-script to libnm.
+
 6 December 2017: Wouter
 	- release 0.15 tag.
 	- trunk has version 0.16.

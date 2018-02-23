@@ -13,14 +13,13 @@ import glob
 import subprocess
 import logging
 import logging.handlers
-import socket
 import struct
 import signal
 
 import gi
-gi.require_version('NMClient', '1.0')
+gi.require_version('NM', '1.0')
 
-from gi.repository import NMClient
+from gi.repository import NM
 
 # Python compatibility stuff
 if not hasattr(os, "O_CLOEXEC"):
@@ -132,7 +131,7 @@ class ConnectionList:
 
     def __init__(self, client, only_default=False, only_vpn=False, skip_wifi=False):
         # Cache the active connection list in the class
-        if not client.get_manager_running():
+        if not client.get_nm_running():
             raise UserError("NetworkManager is not running.")
         if self.nm_connections is None:
             self.__class__.nm_connections = client.get_active_connections()
@@ -208,40 +207,20 @@ class Connection:
         self.uuid = connection.get_uuid()
 
         self.zones = []
-        try:
-            self.zones += connection.get_ip4_config().get_domains()
-        except AttributeError:
-            pass
-        try:
-            self.zones += connection.get_ip6_config().get_domains()
-        except AttributeError:
-            pass
-
         self.servers = []
-        try:
-            self.servers += [self.ip4_to_str(server) for server in connection.get_ip4_config().get_nameservers()]
-        except AttributeError:
-            pass
-        try:
-            self.servers += [self.ip6_to_str(connection.get_ip6_config().get_nameserver(i))
-                for i in range(connection.get_ip6_config().get_num_nameservers())]
-        except AttributeError:
-            pass
+
+        ip4_config = connection.get_ip4_config()
+        if ip4_config is not None:
+            self.zones += ip4_config.get_domains()
+            self.servers += ip4_config.get_nameservers()
+
+        ip6_config = connection.get_ip6_config()
+        if ip6_config is not None:
+            self.zones += ip6_config.get_domains()
+            self.servers += ip6_config.get_nameservers()
 
     def __repr__(self):
         return "<Connection(uuid={uuid}, type={type}, default={is_default}, zones={zones}, servers={servers})>".format(**vars(self))
-
-    @staticmethod
-    def ip4_to_str(ip4):
-        """Converts IPv4 address from integer to string."""
-
-        return socket.inet_ntop(socket.AF_INET, struct.pack("=I", ip4))
-
-    @staticmethod
-    def ip6_to_str(ip6):
-        """Converts IPv6 address from integer to string."""
-
-        return socket.inet_ntop(socket.AF_INET6, ip6)
 
     @property
     def ignore(self):
@@ -466,10 +445,10 @@ class Application:
         except AttributeError:
             self.usage()
 
-        self.client = NMClient.Client().new()
+        self.client = NM.Client().new()
 
     def nm_handles_resolv_conf(self):
-        if not self.client.get_manager_running():
+        if not self.client.get_nm_running():
             log.debug("NetworkManager is not running")
             return False
         try:
