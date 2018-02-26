@@ -1,3 +1,6 @@
+26 February 2018: Wouter
+	- Fix that NXDOMAIN for _probe.uk.uk is deemed allright.
+
 23 February 2018: Wouter
 	- port of dnssec-trigger-script to libnm.
 

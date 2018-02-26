@@ -490,7 +490,8 @@ outq_check_packet(struct outq* outq, uint8_t* wire, size_t len)
 	}
 
 	/* does DNS work? */
-	if(ldns_pkt_get_rcode(p) != LDNS_RCODE_NOERROR) {
+	if(ldns_pkt_get_rcode(p) != LDNS_RCODE_NOERROR &&
+		ldns_pkt_get_rcode(p) != LDNS_RCODE_NXDOMAIN) {
 		char* r = ldns_pkt_rcode2str(ldns_pkt_get_rcode(p));
 		snprintf(reason, sizeof(reason), "no answer, %s",
 			r?r:"(out of memory)");
