@@ -2,8 +2,6 @@
  * Persistent storage in /var/run/dnssec-trigger/ directory.
  */
 
-#include "config.h"
-
 #if !defined STORE_H && defined FWD_ZONES_SUPPORT
 #define STORE_H
 

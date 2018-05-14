@@ -4,8 +4,6 @@
  * the Python implementation.
  */
 
-#include "config.h"
-
 #if !defined LOCK_H && defined FWD_ZONES_SUPPORT
 #define LOCK_H
 

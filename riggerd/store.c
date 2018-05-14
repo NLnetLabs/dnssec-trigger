@@ -1,7 +1,7 @@
+#include "config.h"
 #include <string.h>
 #include <stdio.h>
 
-#include "config.h"
 #include "store.h"
 #include "string_list.h"
 

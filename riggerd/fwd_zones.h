@@ -1,4 +1,3 @@
-#include "config.h"
 #include "connection_list.h"
 
 #if !defined FWD_ZONES_H && defined FWD_ZONES_SUPPORT
