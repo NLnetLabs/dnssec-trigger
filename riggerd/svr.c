@@ -51,6 +51,12 @@
 #ifdef USE_WINSOCK
 #include "winsock_event.h"
 #endif
+#ifdef FWD_ZONES_SUPPORT
+#include "fwd_zones.h"
+#include "lock.h"
+#include "store.h"
+#include "ubhook.h"
+#endif
 
 struct svr* global_svr = NULL;
 
@@ -64,6 +70,10 @@ static void sslconn_shutdown(struct sslconn* sc);
 static void sslconn_command(struct sslconn* sc);
 static void sslconn_persist_command(struct sslconn* sc);
 static void send_results_to_con(struct svr* svr, struct sslconn* s);
+#ifdef FWD_ZONES_SUPPORT
+static void update_global_forwarders(struct nm_connection_list *original);
+static void update_connection_zones(struct nm_connection_list *original);
+#endif
 
 struct svr* svr_create(struct cfg* cfg)
 {
@@ -792,6 +802,234 @@ static void handle_submit(char* ips)
 	probe_start(ips);
 }
 
+#ifdef FWD_ZONES_SUPPORT
+#define VERB_DEBUG VERB_QUERY
+
+static void handle_update_all(char *json) {
+	/* Parse the JSON string received from the script and create a list of active connections.
+	 * e.g. Ethernet with some IP address, forward zones and DNS servers, Wi-Fi connection or
+	 * corporate VPN. */
+	struct nm_connection_list original =  yield_connections_from_json(json);
+	verbose(VERB_QUERY, "Query: %s", json);
+	verbose(VERB_QUERY, "running update global forwarders");
+	update_global_forwarders(&original);
+	verbose(VERB_QUERY, "running update connection zones");
+	update_connection_zones(&original);
+	nm_connection_list_clear(&original);
+}
+
+static void update_global_forwarders(struct nm_connection_list *original) {
+	/* Default connections in this case are those, that are used for DNS queries by default. In
+	 * other words, all DNS queries goes into this connection. We let the user choose whether they
+	 * want to use VPN or "default" (in NetworkManager jargon) connection for this purpose. The reason
+	 * for this option is that the VPN connection should be secure, but on the other hand, we don't
+	 * want to expose our DNS traffic to our employer, for example. */
+	struct nm_connection_list defaults;
+	verbose(VERB_DEBUG, "Using VPN forwarders: %s", global_svr->cfg->use_vpn_forwarders ? "yes" : "no");
+	if (!global_svr->cfg->use_vpn_forwarders) {
+		defaults = nm_connection_list_filter(original, 1, &nm_connection_filter_default);
+	} else {
+		defaults = nm_connection_list_filter(original, 1, &nm_connection_filter_type_vpn);
+	}
+	/* Probe function takes a string of space separated servers :-) */
+	struct string_buffer global_forward_candidates = nm_connection_list_sprint_servers(&defaults);
+	verbose(VERB_DEBUG, "Global forward candidates: %s", global_forward_candidates.string);
+	verbose(VERB_DEBUG, "Starting probe");
+
+	lock_acquire();
+	probe_start(global_forward_candidates.string);
+
+	// Cleanup:
+	lock_release();
+	free(global_forward_candidates.string);
+	nm_connection_list_clear(&defaults);
+}
+
+static const struct string_buffer rfc1918_reverse_zones[] = {
+	{.string = "c.f.ip6.arpa", .length = 12},
+	{.string = "d.f.ip6.arpa", .length = 12},
+	{.string = "168.192.in-addr.arpa", .length = 20},
+	{.string = "16.172.in-addr.arpa", .length = 19},
+	{.string = "17.172.in-addr.arpa", .length = 19},
+	{.string = "18.172.in-addr.arpa", .length = 19},
+	{.string = "19.172.in-addr.arpa", .length = 19},
+	{.string = "20.172.in-addr.arpa", .length = 19},
+	{.string = "21.172.in-addr.arpa", .length = 19},
+	{.string = "22.172.in-addr.arpa", .length = 19},
+	{.string = "23.172.in-addr.arpa", .length = 19},
+	{.string = "24.172.in-addr.arpa", .length = 19},
+	{.string = "25.172.in-addr.arpa", .length = 19},
+	{.string = "26.172.in-addr.arpa", .length = 19},
+	{.string = "27.172.in-addr.arpa", .length = 19},
+	{.string = "28.172.in-addr.arpa", .length = 19},
+	{.string = "29.172.in-addr.arpa", .length = 19},
+	{.string = "30.172.in-addr.arpa", .length = 19},
+	{.string = "31.172.in-addr.arpa", .length = 19},
+	{.string = "10.in-addr.arpa", .length = 15},
+};
+
+static const size_t reverse_zones_len = 20;
+
+static bool zone_in_reverse_zones(char *zone, size_t len) {
+	for (size_t i = 0; i < reverse_zones_len; ++i) {
+		if (len == rfc1918_reverse_zones[i].length) {
+			if (strncmp(rfc1918_reverse_zones[i].string, zone, len) == 0) {
+				return true;
+			}
+		}
+
+	}
+	return false;
+}
+
+static void update_connection_zones(struct nm_connection_list *connections) {
+	/*
+	 * Inputs:
+	 * 		Stored zones = zones configured by dnssec-trigger in previous invocation of update command
+	 * 		Unbound forward zones = zones currently in use by the running Unbound instance
+	 * 		Connections = new zones taken from NetworkManager
+	 */
+
+	struct string_buffer static_label = string_builder("static");
+	struct store stored_zones = STORE_INIT("zones");
+	struct nm_connection_list forward_zones =  hook_unbound_list_forwards(NULL);
+
+	/*
+	 * Step 1:
+	 * 		Remove zones from unbound, that were previously configured by dnssec-trigger, but are no longer
+	 * 		present in connections from NetworkManager. Preserve any zones, that were not configured by
+	 * 		dnssec-trigger, as these were probably configured by the user and it would be nice from us
+	 * 		to keep them there.
+	 */
+	FOR_EACH_STRING_IN_LIST(iter, &stored_zones.cache) {
+		struct string_buffer zone = {
+			.string = iter->string,
+			.length = iter->length
+		};
+		if (nm_connection_list_contains_zone(connections, iter->string, iter->length)) {
+			verbose(VERB_DEBUG, "Iter over stored zones: %s is in connections", iter->string);
+			continue;
+		}
+		if (zone_in_reverse_zones(iter->string, iter->length)) {
+			if (global_svr->cfg->use_private_address_ranges) {
+				verbose(VERB_DEBUG, "Iter over stored zones: %s is in reverse zones", iter->string);
+				continue;
+			} else {
+				verbose(VERB_DEBUG, "Iter over stored zones: %s add to local zones using ubhook", iter->string);
+				hook_unbound_add_local_zone(zone, static_label);
+			}
+		}
+		if (nm_connection_list_contains_zone(&forward_zones, iter->string, iter->length)) {
+			verbose(VERB_DEBUG, "Iter over stored zones: %s removing from forward zones", iter->string);
+			nm_connection_list_remove(&forward_zones, iter->string, iter->length);
+			hook_unbound_remove_forward_zone(zone);
+		}
+		verbose(VERB_DEBUG, "Iter over stored zones: %s removing from store", iter->string);
+		store_remove(&stored_zones, iter->string, iter->length);
+	}
+
+	/*
+	 * Step 2:
+	 * 		Add all zones, that are provided by connections, haven't been configured by dnssec-trigger yet are not
+	 * 		present in unbound forward zones into Unbound forward zones.
+	 */
+	verbose(VERB_DEBUG, "Use Wi-Fi provided zones: %s", global_svr->cfg->add_wifi_provided_zones ? "enabled" : "disabled");
+	for (struct nm_connection_node *iter = connections->first; NULL != iter; iter = iter->next) {
+		struct nm_connection *c = iter->self;
+		if (!global_svr->cfg->add_wifi_provided_zones) {
+			if (c->type == NM_CON_WIFI) {
+				continue;
+			}
+		}
+		FOR_EACH_STRING_IN_LIST(string_iter, &c->zones) {
+			struct string_buffer zone = {
+				.string = string_iter->string,
+				.length = string_iter->length,
+			};
+			bool in_store = store_contains(&stored_zones, zone.string, zone.length);
+			bool in_fwd_zones = nm_connection_list_contains_zone(&forward_zones, zone.string, zone.length);
+			verbose(VERB_DEBUG, "Iter over connections: %s (%s, %s)",
+				zone.string,
+				in_store ? "in store" : "not in store",
+				in_fwd_zones ? "in fwd zones" : "not in fwd zones");
+			if ( (in_store) || !(in_fwd_zones) ) {
+				verbose(VERB_DEBUG, "Iter over connections: %s append to forward zones and add to store", zone.string);
+				struct nm_connection *new_fwd_zone = (struct nm_connection *)calloc_or_die(sizeof(struct nm_connection));
+				nm_connection_init(new_fwd_zone);
+				string_list_diplicate(&c->servers, &new_fwd_zone->servers);
+				string_list_push_back(&new_fwd_zone->zones, zone.string, zone.length);
+				nm_connection_list_push_back(&forward_zones, new_fwd_zone);
+				hook_unbound_add_forward_zone_from_connection(new_fwd_zone);
+				store_add(&stored_zones, zone.string, zone.length);
+			}
+		}
+	}
+
+	/*
+         * Configure forward zones for reverse name resolution of private addresses.
+         * RFC1918 zones will be installed, except those already provided by connections
+         * and those installed by other means than by dnssec-trigger-script.
+         * RFC19118 zones will be removed if there are no global forwarders.
+         */
+	verbose(VERB_DEBUG, "Using private address ranges: %s", global_svr->cfg->use_private_address_ranges ? "yes" : "no");
+	if (global_svr->cfg->use_private_address_ranges) {
+		struct nm_connection_list global_forwarders;
+		if (global_svr->cfg->use_vpn_forwarders) {
+			global_forwarders = nm_connection_list_filter(connections, 1, &nm_connection_filter_type_vpn);
+		} else {
+			global_forwarders = nm_connection_list_filter(connections, 1, &nm_connection_filter_default);
+		}
+
+		struct string_buffer gf_string = nm_connection_list_sprint_servers(&global_forwarders);
+		verbose(VERB_DEBUG, "Selected global forwarders: %s", gf_string.string);
+		free(gf_string.string);
+
+		for (size_t i=0; i<reverse_zones_len; ++i) {
+			const struct string_buffer *zone = &rfc1918_reverse_zones[i];
+			/*
+                         * Ignore a connection provided zone as it's been already
+                         * processed.
+                         */
+			if (nm_connection_list_contains_zone(&forward_zones, zone->string, zone->length)) {
+				continue;
+			}
+			if (store_contains(&stored_zones, zone->string, zone->length) || 
+					!nm_connection_list_contains_zone(&forward_zones, zone->string, zone->length)) {
+				struct nm_connection *new_zone = (struct nm_connection *) calloc_or_die(sizeof(struct nm_connection));
+				nm_connection_init(new_zone);
+				string_list_push_back(&new_zone->zones, zone->string, zone->length);
+				new_zone->servers = nm_connection_list_get_servers_list(&global_forwarders);
+				new_zone->security = NM_CON_INSECURE;
+				verbose(VERB_DEBUG, "Iter over reverse zones: %s append to forward zones as insecure, add to store and remove from unbound local zones", zone->string);
+				hook_unbound_add_forward_zone_from_connection(new_zone);
+				nm_connection_list_push_back(&forward_zones, new_zone);
+				store_add(&stored_zones, zone->string, zone->length);
+				hook_unbound_remove_local_zone(*zone);
+				free(new_zone);
+			} else {
+				if (nm_connection_list_contains_zone(&forward_zones, zone->string, zone->length)) {
+					verbose(VERB_DEBUG, "Iter over reverse zones: %s remove from unbound local zones", zone->string);
+					hook_unbound_remove_local_zone(*zone);
+				}
+				if (store_contains(&stored_zones, zone->string, zone->length)) {
+					verbose(VERB_DEBUG, "Iter over reverse zones: %s remove from store", zone->string);
+					store_remove(&stored_zones, zone->string, zone->length);
+				}
+				hook_unbound_add_local_zone(*zone, static_label);
+				verbose(VERB_DEBUG, "Iter over reverse zones: %s add to unbound local zones", zone->string);
+			}
+		}
+	}
+
+	store_commit(&stored_zones);
+
+	return;
+}
+
+#undef VERB_DEBUG
+
+#endif
+
 /** append update signal to buffer to send */
 static void
 append_update_to_con(struct sslconn* s, char* version_available)
@@ -1051,6 +1289,11 @@ static void sslconn_command(struct sslconn* sc)
 	} else if(strncmp(str, "stop", 4) == 0) {
 		comm_base_exit(global_svr->base);
 		sslconn_shutdown(sc);
+#ifdef FWD_ZONES_SUPPORT
+       } else if(strncmp(str, "update_all", 10) == 0) {
+                handle_update_all(str+10);  // moves pointer above the command name upto args
+                sslconn_shutdown(sc);
+#endif
 	} else {
 		verbose(VERB_DETAIL, "unknown command: %s", str);
 		handle_printclose(sc, "error unknown command");

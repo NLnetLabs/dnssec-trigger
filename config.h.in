@@ -15,6 +15,9 @@
 /* define this to enable debug checks. */
 #undef DO_DEBUG
 
+/* Support forward zones */
+#undef FWD_ZONES_SUPPORT
+
 /* Have AppIndicator (Ubuntu Unity) */
 #undef HAVE_APP_INDICATOR
 

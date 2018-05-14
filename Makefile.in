@@ -56,12 +56,15 @@ login_command=@login_command@
 login_location=@login_location@
 check_updates=@check_updates@
 unbound_control_path=@unbound_control_path@
+FWD_ZONES_SUPPORT=@FWD_ZONES_SUPPORT@
+NMDISPATCHERCOMMAND=@NMDISPATCHERCOMMAND@
 DATE=$(shell date +%F -r $(srcdir)/Changelog)
 
 do_subst = sed -e 's,[@]SHELL[@],$(SHELL),g' \
 	       -e 's,[@]PACKAGE[@],$(PACKAGE),g' \
 	       -e 's,[@]VERSION[@],$(VERSION),g' \
 	       -e 's,[@]PYTHON[@],$(PYTHON),g' \
+	       -e 's,[@]NMDISPATCHERCOMMAND[@],$(NMDISPATCHERCOMMAND),g' \
 	       -e 's,[@]libexecdir[@],$(libexecdir),g' \
 	       -e 's,[@]sbindir[@],$(sbindir),g' \
 	       -e 's,[@]keydir[@],$(keydir),g' \
@@ -151,9 +154,14 @@ ifeq "$(hooks)" "osx"
 RIGGERD_SRC+=osx/wakelist.c
 LDNSLIBS+=-framework IOKit -framework CoreFoundation
 endif
+ifeq "$(FWD_ZONES_SUPPORT)" "yes"
+RIGGERD_SRC+= vendor/ccan/json/json.c riggerd/string_list.c riggerd/connection_list.c riggerd/fwd_zones.c riggerd/lock.c riggerd/store.c
+endif
 RIGGERD_OBJ=$(addprefix $(BUILD),$(RIGGERD_SRC:.c=.o)) $(COMPAT_OBJ)
+TESTS_SRC=test/json.c test/other.c
+TESTS_OBJ=$(addprefix $(BUILD),$(TESTS_SRC:.c=.o)) $(COMPAT_OBJ)
 
-ALL_SRC=$(sort $(COMMON_SRC) $(PANEL_SRC) $(RIGGERD_SRC) $(KEYGEN_SRC) $(CONTROL_SRC))
+ALL_SRC=$(sort $(COMMON_SRC) $(PANEL_SRC) $(RIGGERD_SRC) $(KEYGEN_SRC) $(CONTROL_SRC) $(TESTS_SRC))
 ALL_OBJ=$(addprefix $(BUILD),$(ALL_SRC:.c=.o) \
 	$(addprefix compat/,$(LIBOBJS:.o=.o))) $(COMPAT_OBJ)
 
@@ -175,15 +183,27 @@ LINK=$(strip $(CC) $(RUNTIME_PATH) $(CFLAGS) $(LDFLAGS))
 
 .PHONY:	clean realclean doc lint all install uninstall test strip 
 
-$(BUILD)%.o:    $(srcdir)/%.c 
+$(BUILD)%.o:    $(srcdir)/%.c
 	$(INFO) Build $<
 	@-if test ! -d $(dir $@); then $(INSTALL) -d $(patsubst %/,%,$(dir $@)); fi
 	$Q$(COMPILE) -o $@ -c $<
 
 all:	$(COMMON_OBJ) dnssec-triggerd$(EXEEXT) dnssec-trigger-control$(EXEEXT) dnssec-trigger-control-setup $(makehook) $(makegui) example.conf dnssec-trigger.8 dnssec-triggerd.service
 
-test:	
-	@echo done
+test:	test/json-test test/other-test
+	@echo "Run tests!"
+	./test/json-test
+	./test/other-test
+
+test/json-test$(EXEEXT):	$(RIGGERD_OBJ) $(TESTS_OBJ)
+	$(INFO) Link $@
+	$Q$(LINK) -o $@ $(BUILD)test/json.o $(BUILD)riggerd/connection_list.o  $(BUILD)riggerd/fwd_zones.o $(BUILD)riggerd/string_list.o  $(BUILD)riggerd/log.o $(BUILD)vendor/ccan/json/json.o $(LDNSLIBS) $(LIBS) -lcmocka
+
+RIGGERD_OBJ_WITHOUT_MAIN=$(filter-out build/riggerd/riggerd.o,$(RIGGERD_OBJ))
+test/other-test$(EXEEXT):	$(RIGGERD_OBJ) $(TESTS_OBJ)
+	$(INFO) Link $@
+	@echo "$(RIGGERD_OBJ_WITHOUT_MAIN)"
+	$Q$(LINK) -o $@ $(BUILD)test/other.o $(RIGGERD_OBJ_WITHOUT_MAIN) $(LDNSLIBS) $(LIBS) -lcmocka
 
 example.conf:	$(srcdir)/example.conf.in Makefile
 	rm -f $@
@@ -337,7 +357,9 @@ util/configparser.c util/configparser.h:  $(srcdir)/util/configparser.y
 	$Q$(YACC) -d -o util/configparser.c $<
 
 clean:
+	-mv dnssec-trigger.tmpfiles.d dnssec-trigger.tmpfiles.d.preserve # We don't want to delete this file as it is used for tmpfiles.d
 	rm -f *.o *.d *.lo *~ tags
+	-mv dnssec-trigger.tmpfiles.d.preserve dnssec-trigger.tmpfiles.d
 	rm -f dnssec-trigger-panel$(EXEEXT) dnssec-triggerd$(EXEEXT)
 	rm -f dnssec-trigger-control-setup dnssec-trigger-control$(EXEEXT)
 	rm -f 01-dnssec-trigger dnssec-trigger-script dnssec-trigger-osx.sh nl.nlnetlabs.dnssec-trigger-hook.plist dnssec-trigger-netconfig-hook example.conf nl.nlnetlabs.dnssec-triggerd.plist nl.nlnetlabs.dnssec-trigger-panel.plist dnssec-trigger-setdns.sh osx/osx-riggerapp dnssec-triggerd.service osx/RiggerStatusItem/RiggerStatusItem.xcodeproj/project.pbxproj

@@ -15,6 +15,7 @@ import logging
 import logging.handlers
 import struct
 import signal
+import json
 
 import gi
 gi.require_version('NM', '1.0')
@@ -211,7 +212,7 @@ class Connection:
 
         ip4_config = connection.get_ip4_config()
         if ip4_config is not None:
-            self.zones += ip4_config.get_domains()
+            self.zones += list(set(ip4_config.get_domains()+ip4_config.get_searches()))
             self.servers += ip4_config.get_nameservers()
 
         ip6_config = connection.get_ip6_config()
@@ -728,6 +729,30 @@ class Application:
                         unbound_local_zones.add(zone, "static")
 
             stored_zones.commit()
+
+    def run_update_all(self):
+        cons = ConnectionList(self.client)
+
+        json_struct = {}
+        connections = []
+        connection = {}
+
+        for con in cons:
+            connection["type"] = con.type
+            connection["default"] = con.is_default
+            connection["zones"] = con.zones
+            connection["servers"] = con.servers
+
+            connections.append(connection)
+            connection = {}
+
+        json_struct["connections"] = connections
+        print("Running update all with these connections:")
+        print(json.dumps(json_struct, sort_keys=True, indent=4, separators=(',', ': ')))
+        try:
+            self.dnssec_trigger_control(["update_all", json.dumps(json_struct)])
+        except subprocess.CalledProcessError:
+            pass
 
 
 def main():

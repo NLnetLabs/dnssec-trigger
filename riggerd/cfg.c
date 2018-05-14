@@ -375,6 +375,12 @@ keyword(struct cfg* cfg, char* p)
 			&cfg->num_http_urls, get_arg(p+4));
 	} else if(strncmp(p, "check-updates:", 14) == 0) {
 		bool_arg(&cfg->check_updates, p+14);
+	} else if(strncmp(p, "use-vpn-forwarders:", 19) == 0) {
+		bool_arg(&cfg->use_vpn_forwarders, p+19);
+	} else if(strncmp(p, "use-private-addresses:", 22) == 0) {
+		bool_arg(&cfg->use_private_address_ranges, p+22);
+	} else if(strncmp(p, "add-wifi-provided-zones:", 24) == 0) {
+		bool_arg(&cfg->add_wifi_provided_zones, p+24);
 	} else {
 		return 0;
 	}
@@ -428,6 +434,10 @@ struct cfg* cfg_create(const char* cfgfile)
 	cfg->pidfile = strdup(PIDFILE);
 	cfg->resolvconf = strdup("/etc/resolv.conf");
 	cfg->check_updates = (strcmp(CHECK_UPDATES, "yes")==0);
+	/* Don't use it by default */
+	cfg->use_vpn_forwarders = 0;
+	cfg->use_private_address_ranges = 1;
+	cfg->add_wifi_provided_zones = 0;
 
 	if(!cfg->unbound_control || !cfg->pidfile || !cfg->server_key_file ||
 		!cfg->server_cert_file || !cfg->control_key_file ||

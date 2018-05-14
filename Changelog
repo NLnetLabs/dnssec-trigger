@@ -1,3 +1,47 @@
+14 May 2018: Wouter
+	- Patch set from Martin Sehnoutka,
+	  It migrates the functionality currently provided by the script
+	  into the daemon. the "update" command from the script is available
+	  in the daemon as "update_all", so that they can live side by side.
+	- Modify the build system:
+A new configure option 'with-forward-zones-support' was introduced, that
+enables configuration of forward and local zones directly from the
+daemon as opposed to the script. Without this option, there is almost no
+change.
+
+The new functionality of the daemon can be triggered by the "update_all"
+command, which is now used in NM dispatcher script and systemd service
+file. Some configuration options were migrated from the script to the
+daemon as well.
+
+Finally a testing suite was introduced using the cmocka library.
+	- Introduce string_buffer and string_list types:
+	String buffer is a fat pointer and list is a single linked list of fat
+char pointers.
+	- Import JSON parsing library (BSD-MIT license).
+	- Connection list module:
+A connection is a struct encapsulating the concept of "connection" as
+known from NetworkManager. It is used to extract information about
+global resolvers, DNS search zones and in the future about reverse zones
+corresponding to the network address.
+	- Function to parse JSON into connection list
+	- Lock module, used to serialize execution in the script
+This was introduced as a compatibility feature with the script, but once
+the script is gone, this can be safely removed.
+	- Store module - persistent storage used by the script
+The script uses few files stored on disk in order to create a persistent
+cache of configured global forwarders and forward zones. This was
+introduced as a compatibility module with the script. Again it can be
+removed once the compatibility is not needed any more.
+	- Testing suite for previously introduced modules
+It can be executed using 'make test' and it can be also used in CI.
+	- New configuration options, that were in the script
+	- Hook unbound control
+It uses 'unbound-control' binary instead of the socket, so this should
+probably be rewritten if possible.
+	- Reimplement update command from script in riggerd
+	- add testing file for global forwarders cache
+
 26 February 2018: Wouter
 	- Fix that NXDOMAIN for _probe.uk.uk is deemed allright.
 

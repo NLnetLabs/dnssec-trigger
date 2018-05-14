@@ -185,6 +185,16 @@ They serve plain-DNS(tcp-style) over port 443, encapsulated in SSL.  The SSL
 certificate online is checked with the fingerprint (if configured here).
 You may configure multiple hashes (one space between), if one matches its OK,
 so that pre\-publish rollover of the certificates is possible.
+.TP
+.B use\-vpn\-forwarders: \fR<yes or no>
+Use DNS servers from VPN for all hosts, default is no. Only domains configured
+for this connection are forwarded to VPN resolvers. If set yes, 
+all DNS queries are resolved on servers supplied by VPN.
+.TP
+.B use\-private\-addresses: \fR<yes or no>
+Forward reverse zones of RFC 1918 private addresses to global forwarders, 
+default is yes.  If set no, private addresses are resolved only on this
+host. Addresses not configured locally will return NXDOMAIN.
 .SH "THE DNSSEC\-TRIGGER\-PANEL"
 The dnssec\-trigger\-panel is an applet that runs in the tray.  It shows
 the DNSSEC status.  It can be invoked with \-d to test in the build

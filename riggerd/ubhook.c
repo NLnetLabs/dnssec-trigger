@@ -293,3 +293,176 @@ void hook_unbound_ssl_upstream(struct cfg* cfg, int ssl443_ip4, int ssl443_ip6)
 	}
 	ub_has_ssl_upstream = 1;
 }
+
+#ifdef FWD_ZONES_SUPPORT
+
+struct nm_connection_list hook_unbound_list_forwards(struct cfg* cfg) {
+	FILE *fp;
+	fp = popen("unbound-control list_forwards", "r");
+	struct nm_connection_list ret = hook_unbound_list_forwards_inner(cfg, fp);
+	fclose(fp);
+	return ret;
+}
+
+struct nm_connection_list hook_unbound_list_forwards_inner(struct cfg* cfg, FILE *fp) {
+	// TODO: is there any other output??
+	// Format: <ZONE> IN forward [+i] <list of addresses>
+	
+	struct nm_connection_list ret;
+	nm_connection_list_init(&ret);
+	struct nm_connection *new;
+
+	size_t line_len = 1024;
+    ssize_t read_len = 0;
+    char *line = (char *)calloc_or_die(line_len);
+    memset(line, 0, line_len);
+    while ((read_len = getline(&line, &line_len, fp) != -1)){
+		// XXX: line len is always 1??
+		size_t i = 0;
+		int parser_state = 0;
+		size_t start = 0;
+		bool run = true;
+		new = (struct nm_connection *) calloc_or_die(sizeof(struct nm_connection));
+		nm_connection_init(new);
+		while(run) {
+			switch (parser_state) {
+				case 0:
+					while (line[i] != ' ') {
+						++i;
+					}
+					string_list_push_back(&new->zones, &line[start], i-start);
+					++i;
+					parser_state = 1;
+					break;
+				case 1:
+				/* fallthrough */
+				case 2:
+					while (line[i] != ' ') {
+						++i;
+					}
+					++i;
+					++parser_state;
+					break;
+				default:
+					if (line[i] == '+') {
+						i += 3;
+						// INSECURE
+					} else {
+						start = i;
+						while (line[i] != ' ' && line[i] != '\n') {
+							++i;
+							if (line[i] == '\n') {
+								run = false;
+								break;
+							}
+						}
+						string_list_push_back(&new->servers, &line[start], i-start);
+						++i;
+					}
+				break;
+			}
+		}
+		nm_connection_list_push_back(&ret, new);
+		memset(line, 0, line_len);
+	}
+	free(line);
+	return ret;
+}
+
+struct string_list hook_unbound_list_local_zones(struct cfg* cfg) {
+	FILE *fp;
+	fp = popen("unbound-control list_local_zones", "r");
+	struct string_list ret = hook_unbound_list_local_zones_inner(cfg, fp);
+	fclose(fp);
+	return ret;
+}
+
+struct string_list hook_unbound_list_local_zones_inner(struct cfg* cfg, FILE *fp) {
+	struct string_list ret;
+	string_list_init(&ret);
+	char zone[1024], label[1024];
+    int r = 0;
+
+	while ((r = fscanf(fp, "%s %s\n", zone, label)) > 0 ) {
+        struct string_buffer label_static = string_builder("static");
+        if (strncmp(label_static.string, label, label_static.length) != 0) {
+            // TODO: log it? do sth about it?
+        } else {
+			string_list_push_back(&ret, zone, strlen(zone));
+		}
+    }
+
+	return ret;
+}
+
+static int run_unbound_control(char *cmd) {
+	FILE *fp;
+	int ret = -1;
+	
+	fp = popen(cmd, "r");
+	if (fscanf(fp, "ok\n") != -1) {
+		ret = 0;
+	}
+	fclose(fp);
+	return ret;
+}
+
+int hook_unbound_add_forward_zone_from_connection(struct nm_connection *con) {
+	struct string_buffer zone = {
+			.string = con->zones.first->string,
+			.length = con->zones.first->length,
+		};
+	struct string_buffer servers = {
+				.string = (char *)calloc_or_die(4000),
+				.length = 4000,
+			};
+	string_list_sprint(&(con->servers), servers.string, servers.length);
+	hook_unbound_add_forward_zone(zone, servers);
+	free(servers.string);
+}
+
+int hook_unbound_add_forward_zone(struct string_buffer zone, struct string_buffer servers) {
+	struct string_buffer exe = string_builder("unbound-control");
+	return hook_unbound_add_forward_zone_inner(exe, zone, servers);
+}
+
+int hook_unbound_add_forward_zone_inner(struct string_buffer exe, struct string_buffer zone, struct string_buffer servers) {
+	char cmd[4000] = {'\0'};
+	sprintf(cmd, "%s forward_add +i %s %s", exe.string, zone.string, servers.string);
+	return run_unbound_control(cmd);
+}
+
+int hook_unbound_remove_forward_zone(struct string_buffer zone) {
+	struct string_buffer exe = string_builder("unbound-control");
+	return hook_unbound_remove_forward_zone_inner(exe, zone);
+}
+
+int hook_unbound_remove_forward_zone_inner(struct string_buffer exe, struct string_buffer zone) {
+	char cmd[4000] = {'\0'};
+	sprintf(cmd, "%s forward_remove %s", exe.string, zone.string);
+	return run_unbound_control(cmd);
+}
+
+int hook_unbound_add_local_zone(struct string_buffer zone, struct string_buffer type) {
+	struct string_buffer exe = string_builder("unbound-control");
+	return hook_unbound_add_local_zone_inner(exe, zone, type);
+}
+
+int hook_unbound_add_local_zone_inner(struct string_buffer exe, struct string_buffer zone, struct string_buffer type) {
+	char cmd[1000] = {'\0'};
+	sprintf(cmd, "%s local_zone %s %s", exe.string, zone.string, type.string);
+	return run_unbound_control(cmd);
+}
+
+int hook_unbound_remove_local_zone(struct string_buffer zone) {
+	struct string_buffer exe = string_builder("unbound-control");
+	return hook_unbound_remove_local_zone_inner(exe, zone);
+}
+
+int hook_unbound_remove_local_zone_inner(struct string_buffer exe, struct string_buffer zone) {
+	char cmd[1000] = {'\0'};
+	sprintf(cmd, "%s local_zone_remove %s", exe.string, zone.string);
+	return run_unbound_control(cmd);
+}
+
+#endif

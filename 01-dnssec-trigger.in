@@ -12,7 +12,7 @@ fi
 # Exec the dnssec-trigger update script that uses NetworkManager API to gather
 # all the necessary information.
 if [ -x @libexecdir@/dnssec-trigger-script ]; then
-    exec @libexecdir@/dnssec-trigger-script --update
+    exec @libexecdir@/dnssec-trigger-script --@NMDISPATCHERCOMMAND@
 fi
 
 # When dnssec-trigger-script is absent or not executable, the original

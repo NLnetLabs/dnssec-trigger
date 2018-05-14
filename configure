@@ -623,6 +623,8 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 DATE
+NMDISPATCHERCOMMAND
+FWD_ZONES_SUPPORT
 LDNSLIBS
 ldnsdir
 unbound_control_path
@@ -724,6 +726,7 @@ with_python
 with_unbound_control
 with_ldns
 enable_rpath
+with_forward_zones_support
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1392,6 +1395,9 @@ Optional Packages:
                           set the unbound-control to use, default what
                           configure finds in its path
   --with-ldns=PATH        specify prefix of path of ldns library to use
+  --with-forward-zones-support
+                          Set whether to enable forward zones support. Beware,
+                          it is only POSIX OSes feature
 
 Some influential environment variables:
   CC          C compiler command
@@ -7484,6 +7490,29 @@ _ACEOF
 cat >>confdefs.h <<_ACEOF
 #define DNS_PORT 53
 _ACEOF
+
+
+NMDISPATCHERCOMMAND="update"
+
+# Check whether --with-forward-zones-support was given.
+if test "${with_forward_zones_support+set}" = set; then :
+  withval=$with_forward_zones_support;
+else
+  withval=""
+fi
+
+# we don't provide this functionality for NON-POSIX OSes e.g. windows
+# for enabling this functionality on NON-POSIX systems some functions must be rewritten with target system's API
+if test "$USE_WINSOCK" != 1; then
+	if test "$withval" = "yes"; then
+		FWD_ZONES_SUPPORT=yes
+
+
+$as_echo "#define FWD_ZONES_SUPPORT 1" >>confdefs.h
+
+		NMDISPATCHERCOMMAND="update_all"
+	fi
+fi
 
 
 

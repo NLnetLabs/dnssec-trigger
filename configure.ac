@@ -572,6 +572,21 @@ AC_SUBST(RUNTIME_PATH)
 AC_DEFINE_UNQUOTED([MAXSYSLOGMSGLEN], [10240], [Define to the maximum message length to pass to syslog.])
 AC_DEFINE_UNQUOTED([DNS_PORT], [53], [DNS port number])
 
+NMDISPATCHERCOMMAND="update"
+AC_ARG_WITH([forward-zones-support], AC_HELP_STRING([--with-forward-zones-support],
+[Set whether to enable forward zones support. Beware, it is only POSIX OSes feature]),, withval="")
+# we don't provide this functionality for NON-POSIX OSes e.g. windows
+# for enabling this functionality on NON-POSIX systems some functions must be rewritten with target system's API
+if test "$USE_WINSOCK" != 1; then
+	if test "$withval" = "yes"; then
+		FWD_ZONES_SUPPORT=yes
+		AC_SUBST(FWD_ZONES_SUPPORT)
+        AC_DEFINE(FWD_ZONES_SUPPORT, 1, [Support forward zones])
+		NMDISPATCHERCOMMAND="update_all"
+	fi
+fi
+AC_SUBST(NMDISPATCHERCOMMAND)
+
 AH_BOTTOM([
 #ifndef DO_DEBUG
 #  define NDEBUG

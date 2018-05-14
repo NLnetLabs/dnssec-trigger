@@ -40,6 +40,12 @@
  * DNSSEC resolver.
  */
 
+#ifdef FWD_ZONES_SUPPORT
+
+#include "connection_list.h"
+
+#endif
+
 #ifndef UBHOOKS_H
 #define UBHOOKS_H
 struct cfg;
@@ -106,5 +112,57 @@ void hook_unbound_tcp_upstream(struct cfg* cfg, int tcp80_ip4, int tcp80_ip6,
  * @param ssl443_ip6: if true, use those IP addresses.
  */
 void hook_unbound_ssl_upstream(struct cfg* cfg, int ssl443_ip4, int ssl443_ip6);
+
+#ifdef FWD_ZONES_SUPPORT
+
+/**
+ * Run unbound list_forwards and parse output into the return structure
+ */
+struct nm_connection_list hook_unbound_list_forwards(struct cfg* cfg);
+
+/**
+ * For testing purposes only.
+ */
+struct nm_connection_list hook_unbound_list_forwards_inner(struct cfg* cfg, FILE *fp);
+
+/**
+ * Run unbound list_local_zones and parse output into the return structure
+ */
+struct string_list hook_unbound_list_local_zones(struct cfg* cfg);
+
+/**
+ * For testing purposes only.
+ */
+struct string_list hook_unbound_list_local_zones_inner(struct cfg* cfg, FILE *fp);
+
+/**
+ * 
+ */
+int hook_unbound_add_forward_zone_from_connection(struct nm_connection *con);
+int hook_unbound_add_forward_zone(struct string_buffer zone, struct string_buffer servers);
+int hook_unbound_add_forward_zone_inner(struct string_buffer exe, struct string_buffer zone, struct string_buffer servers);
+
+/**
+ * 
+ */
+int hook_unbound_remove_forward_zone(struct string_buffer zone);
+int hook_unbound_remove_forward_zone_inner(struct string_buffer exe, struct string_buffer zone);
+
+
+/**
+ * Call unbound-control local_zone <zone> <type>
+ */
+int hook_unbound_add_local_zone(struct string_buffer zone, struct string_buffer type);
+int hook_unbound_add_local_zone_inner(struct string_buffer exe, struct string_buffer zone, struct string_buffer type);
+
+
+/**
+ * Call unbound-control local_zone_remove <zone> <type>
+ */
+int hook_unbound_remove_local_zone(struct string_buffer zone);
+int hook_unbound_remove_local_zone_inner(struct string_buffer exe, struct string_buffer zone);
+
+
+#endif
 
 #endif /* UBHOOKS_H */

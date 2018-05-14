@@ -1,0 +1,22 @@
+. IN forward 10.12.15.16
+ny.mylovelycorporate.io. IN forward +i 192.168.1.1 10.12.15.16
+c.f.ip6.arpa. IN forward +i 192.168.1.1 10.12.15.16
+d.f.ip6.arpa. IN forward +i 192.168.1.1 10.12.15.16
+10.in-addr.arpa. IN forward +i 192.168.1.1 10.12.15.16
+16.172.in-addr.arpa. IN forward +i 192.168.1.1 10.12.15.16
+17.172.in-addr.arpa. IN forward +i 192.168.1.1 10.12.15.16
+18.172.in-addr.arpa. IN forward +i 192.168.1.1 10.12.15.16
+19.172.in-addr.arpa. IN forward +i 192.168.1.1 10.12.15.16
+20.172.in-addr.arpa. IN forward +i 192.168.1.1 10.12.15.16
+21.172.in-addr.arpa. IN forward +i 192.168.1.1 10.12.15.16
+22.172.in-addr.arpa. IN forward +i 192.168.1.1 10.12.15.16
+23.172.in-addr.arpa. IN forward +i 192.168.1.1 10.12.15.16
+24.172.in-addr.arpa. IN forward +i 192.168.1.1 10.12.15.16
+25.172.in-addr.arpa. IN forward +i 192.168.1.1 10.12.15.16
+26.172.in-addr.arpa. IN forward +i 192.168.1.1 10.12.15.16
+27.172.in-addr.arpa. IN forward +i 192.168.1.1 10.12.15.16
+28.172.in-addr.arpa. IN forward +i 192.168.1.1 10.12.15.16
+29.172.in-addr.arpa. IN forward +i 192.168.1.1 10.12.15.16
+30.172.in-addr.arpa. IN forward +i 192.168.1.1 10.12.15.16
+31.172.in-addr.arpa. IN forward +i 192.168.1.1 10.12.15.16
+168.192.in-addr.arpa. IN forward +i 192.168.1.1 10.12.15.16
