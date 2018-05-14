@@ -1,3 +1,4 @@
+#include "config.h"
 #include "connection_list.h"
 #include "string_list.h"
 

@@ -10,6 +10,7 @@ riggerd/string_list.c:158:17: warning: comparison of unsigned expression < 0 is 
 2 warnings generated.
  */
 
+#include "config.h"
 #include "string_list.h"
 
 #ifdef FWD_ZONES_SUPPORT
