@@ -177,7 +177,7 @@ void nm_connection_list_dbg_print(struct nm_connection_list *list);
 void nm_connection_list_dbg_eprint(struct nm_connection_list *list);
 
 /**
- * Print all servers into char buffer. The caller is reposinble for releasing the
+ * Print all servers into char buffer. The caller is responsible for releasing the
  * buffer with free().
  * @param list: List to be printed
  */
