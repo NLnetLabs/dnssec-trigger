@@ -42,6 +42,9 @@ probably be rewritten if possible.
 	- Reimplement update command from script in riggerd
 	- add testing file for global forwarders cache
 
+	- Fixes and modifications from Wouter:
+	  - removed -vvv option from dnssec-triggerd daemon start script.
+
 26 February 2018: Wouter
 	- Fix that NXDOMAIN for _probe.uk.uk is deemed allright.
 
