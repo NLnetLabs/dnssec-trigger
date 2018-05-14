@@ -283,7 +283,7 @@ struct string_buffer nm_connection_list_sprint_servers(struct nm_connection_list
             if (current_len + str_iter->length > len) {
                 fatal_exit("Error handling string buffers");
             }
-            memcpy(buf_iter, str_iter->string, str_iter->length);
+            memmove(buf_iter, str_iter->string, str_iter->length);
             buf_iter += str_iter->length + 1;
             str_iter = str_iter->next;
         }
