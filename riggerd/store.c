@@ -4,38 +4,36 @@
 
 #include "store.h"
 #include "string_list.h"
+#include "log.h"
 
 struct store store_init(const char *dir, const char *full_path, const char *full_path_tmp) {
     struct string_list cache;
-    string_list_init(&cache);
-    struct store s = {
-        .dir = dir,
-        .path = full_path,
-        .path_tmp = full_path_tmp,
-        .cache = cache
-    };
-    // Read cache into the string list??
-    FILE *fp = fopen(full_path, "r");
-    if (fp == NULL) {
-        // TODO: log debug output
-        return s;
-    }
+    struct store s;
+    FILE *fp;
     size_t line_len = 512;
     ssize_t read_len;
-    char *line = (char *)calloc_or_die(line_len);
+    char* line;
+    string_list_init(&cache);
+    s.dir = dir,
+    s.path = full_path,
+    s.path_tmp = full_path_tmp,
+    s.cache = cache;
+    // Read cache into the string list
+    fp = fopen(full_path, "r");
+    if (fp == NULL) {
+	log_err("cannot open %s: %s", full_path, strerror(errno));
+        return s;
+    }
+    line = (char *)calloc_or_die(line_len);
     memset(line, 0, line_len);
-    while ((read_len = getline(&line, &line_len, fp) != -1)){
-        // Hack: the getline function return 1 on any output, I have no idea how to fix it
-        // so I will just workaround it
-        size_t string_length = strnlen(line, line_len);
-        for (size_t i=0; i<string_length; ++i) {
-            if (line[i] == '\n') {
-                line[i] = '\0';
-            }
-        }
-        string_length = strnlen(line, line_len);
-        string_list_push_back(&s.cache, line, string_length);
+    while ((read_len = getline(&line, &line_len, fp)) != -1){
+	if(read_len > 0 && line[read_len-1]=='\n')
+		line[--read_len] = 0; /* remove \n */
+        string_list_push_back(&s.cache, line, read_len);
         memset(line, 0, line_len);
+    }
+    if(ferror(fp)) {
+	    log_err("error reading %s: %s", full_path, strerror(errno));
     }
     free(line);
     fclose(fp);
@@ -46,6 +44,7 @@ int store_commit(const struct store *self) {
     // Open the tmp file
     FILE *fp = fopen(self->path_tmp, "w");
     if (fp == NULL) {
+	log_err("cannot open %s for write: %s", self->path_tmp, strerror(errno));
         return -1;
     }
     // Write its content
