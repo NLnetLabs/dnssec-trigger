@@ -71,5 +71,5 @@ void store_add(struct store *self, char *string, size_t len) {
 }
 
 bool store_contains(struct store *self, char *string, size_t len) {
-    return string_list_contains(&(self->cache), string, len);
+    return string_list_contains(&self->cache, string, len);
 }
