@@ -3,7 +3,6 @@
 #if !defined STRING_LIST_H && defined FWD_ZONES_SUPPORT
 #define STRING_LIST_H
 
-#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -69,14 +68,14 @@ void string_list_push_back(struct string_list* list, const char* new_value, cons
  * @param new_value: String to be found
  * @param buffer_size: Size of the string buffer
  */
-bool string_list_contains(const struct string_list* list, const char* value, const size_t buffer_size);
+int string_list_contains(const struct string_list* list, const char* value, const size_t buffer_size);
 
 /**
- * Diplicate the list
+ * Duplicate the list
  * @param original: List to copy
  * @param copy: New list
  */
-void string_list_diplicate(const struct string_list* original, struct string_list *copy);
+void string_list_duplicate(const struct string_list* original, struct string_list *copy);
 
 /**
  * Copy the second list and append it to the first one
@@ -104,7 +103,7 @@ size_t string_list_length(const struct string_list* list);
  * @param l1: First list
  * @param l2: Second list
  */
-bool string_list_is_equal(const struct string_list* l1, const struct string_list* l2);
+int string_list_is_equal(const struct string_list* l1, const struct string_list* l2);
 
 /**
  * Print list of strings onto one line without newline at the end.

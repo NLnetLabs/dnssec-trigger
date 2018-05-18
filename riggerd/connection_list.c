@@ -84,10 +84,10 @@ void nm_connection_list_copy_and_push_back(struct nm_connection_list *list, stru
     struct nm_connection *conn = (struct nm_connection *)calloc_or_die(sizeof(struct nm_connection));
     conn->default_con = new_value->default_con;
     string_list_init(&conn->zones);
-    string_list_diplicate(&new_value->zones, &conn->zones);
+    string_list_duplicate(&new_value->zones, &conn->zones);
     conn->type = new_value->type;
     string_list_init(&conn->servers);
-    string_list_diplicate(&new_value->servers, &conn->servers);
+    string_list_duplicate(&new_value->servers, &conn->servers);
     nm_connection_list_push_back(list, conn);
 }
 

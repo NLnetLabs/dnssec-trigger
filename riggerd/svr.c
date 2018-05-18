@@ -956,7 +956,7 @@ static void update_connection_zones(struct nm_connection_list *connections) {
 				verbose(VERB_DEBUG, "Iter over connections: %s append to forward zones and add to store", zone.string);
 				struct nm_connection *new_fwd_zone = (struct nm_connection *)calloc_or_die(sizeof(struct nm_connection));
 				nm_connection_init(new_fwd_zone);
-				string_list_diplicate(&c->servers, &new_fwd_zone->servers);
+				string_list_duplicate(&c->servers, &new_fwd_zone->servers);
 				string_list_push_back(&new_fwd_zone->zones, zone.string, zone.length);
 				nm_connection_list_push_back(&forward_zones, new_fwd_zone);
 				hook_unbound_add_forward_zone_from_connection(new_fwd_zone);

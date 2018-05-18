@@ -1,15 +1,3 @@
-/*
-FIXME:
-usr/include/libpng16 -o build/riggerd/string_list.o -c riggerd/string_list.c
-riggerd/string_list.c:40:1: warning: control may reach end of non-void function [-Wreturn-type]
-}
-^
-riggerd/string_list.c:158:17: warning: comparison of unsigned expression < 0 is always false [-Wtautological-compare]
-    if (orig-len<0)
-        ~~~~~~~~^~
-2 warnings generated.
- */
-
 #include "config.h"
 #include "string_list.h"
 
@@ -18,7 +6,6 @@ riggerd/string_list.c:158:17: warning: comparison of unsigned expression < 0 is 
 #include "log.h"
 #include <string.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 
 void string_list_init(struct string_list* list)
@@ -31,10 +18,11 @@ void string_list_init(struct string_list* list)
 
 void string_list_clear(struct string_list* list)
 {
+	struct string_entry* iter;
 	if (NULL == list)
 		return;
 
-	struct string_entry* iter = list->first;
+	iter = list->first;
 	while (NULL != iter) {
 		struct string_entry* node = iter;
 		iter = node->next;
@@ -54,18 +42,20 @@ void* calloc_or_die(size_t size) {
 	} else {
 		return mem;
 	}
-	// Cannot reach this point
+	/* ENOTREACH */
 	return NULL;
 }
 
 void string_list_push_back(struct string_list* list, const char* new_value, const size_t buffer_size)
 {
+	size_t len;
+	struct string_entry** node;
 	if (NULL == list || NULL == new_value || buffer_size == 0) {
-			return;
+		return;
 	}
 
-	size_t len = strnlen(new_value, buffer_size);
-	struct string_entry** node = &list->first;
+	len = strnlen(new_value, buffer_size);
+	node = &list->first;
 
 	while (NULL != *node) {
 		node = &(*node)->next;
@@ -74,34 +64,36 @@ void string_list_push_back(struct string_list* list, const char* new_value, cons
 	*node = (struct string_entry*) calloc_or_die(sizeof(struct string_entry));
 	(*node)->extension = NULL;
 	(*node)->length = len;
-	(*node)->string = (char*) calloc_or_die(len+1);
-	strncpy((*node)->string, new_value, len);
+	(*node)->string = strdup(new_value);
+	if(!(*node)->string) fatal_exit("malloc failure");
 }
 
-bool string_list_contains(const struct string_list* list, const char* value, const size_t buffer_size)
+int string_list_contains(const struct string_list* list, const char* value, const size_t buffer_size)
 {
+	size_t len;
+	struct string_entry* iter;
 	if (NULL == list || NULL == value || buffer_size == 0) {
-		return false;
+		return 0;
 	}
 
-	size_t len = strnlen(value, buffer_size);
+	len = strnlen(value, buffer_size);
 
 	/*
 	 * Iterate through the whole list
 	 */
-	for (struct string_entry* iter = list->first; NULL != iter; iter = iter->next) {
+	for (iter = list->first; NULL != iter; iter = iter->next) {
 		/*
 		 * We already know size of both buffers, so we take advantage of that
 		 * and also of short-cut evaluation.
 		 */
 		if (len == iter->length && strncmp(iter->string, value, len) == 0) {
-			return true;
+			return 1;
 		}
 	}
-	return false;
+	return 0;
 }
 
-void string_list_diplicate(const struct string_list* original, struct string_list *copy) {
+void string_list_duplicate(const struct string_list* original, struct string_list *copy) {
 	if (NULL == original || NULL == copy) {
 		return;
 	}
@@ -124,17 +116,20 @@ void string_list_copy_and_append(struct string_list* original, struct string_lis
 }
 
 void string_list_remove(struct string_list* list, const char* value, const size_t buffer_size) {
+	size_t len;
+	struct string_entry* prev;
+	int first;
 	if (NULL == list || NULL == value || buffer_size == 0) {
 		return;
 	}
 
-	size_t len = strnlen(value, buffer_size);
+	len = strnlen(value, buffer_size);
 
 	/*
 	 * Iterate through the whole list
 	 */
-	struct string_entry* prev = NULL;
-	bool first = true;
+	prev = NULL;
+	first = 1;
 	for (struct string_entry* iter = list->first; NULL != iter; prev = iter, iter = iter->next) {
 		/*
 		 * We already know size of both buffers, so we take advantage of that
@@ -154,17 +149,19 @@ void string_list_remove(struct string_list* list, const char* value, const size_
 			free(iter);
 			return;
 		}
-		first = false;
+		first = 0;
 	}
 }
 
 size_t string_list_length(const struct string_list* list)
 {
+	size_t len;
+	struct string_entry* iter;
 	if (NULL == list)
 		return 0;
 
-	size_t len = 0;
-	struct string_entry* iter = list->first;
+	len = 0;
+	iter = list->first;
 	while (NULL != iter) {
 		iter = iter->next;
 		++len;
@@ -172,35 +169,36 @@ size_t string_list_length(const struct string_list* list)
 	return len;
 }
 
-bool string_list_is_equal(const struct string_list* l1, const struct string_list* l2)
+int string_list_is_equal(const struct string_list* l1, const struct string_list* l2)
 {
 	if (NULL == l1 && NULL == l2)
-		return true;
+		return 1;
 
 	if ((NULL == l1 && NULL != l2) || (NULL == l2 && NULL != l1))
-		return false;
+		return 0;
 
 	// Assumption: Every value is unique
 	if (string_list_length(l1) != string_list_length(l2)) {
-		return false;
+		return 0;
 	}
 
 	for (struct string_entry* iter = l1->first; NULL != iter; iter = iter->next) {
 		if (!string_list_contains(l2, iter->string, iter->length))
-			return false;
+			return 0;
 	}
 
-	return true;
+	return 1;
 }
 
 void string_list_dbg_print_inner(const struct string_list* list, FILE *fp)
 {
+    struct string_entry *iter;
     if (NULL == list)
         return;
 
 	//fprintf(stderr, "DBG: %d, %d, %zu\n", list, list->first, list->first->length);
 
-    struct string_entry *iter = list->first;
+    iter = list->first;
     while(NULL != iter) {
         fprintf(fp, "%s, ", iter->string);
         iter = iter->next;
@@ -218,12 +216,14 @@ void string_list_dbg_eprint(const struct string_list* list){
 
 int string_list_sprint(const struct string_list* list, char *buffer, size_t len)
 {
+    size_t orig;
+    struct string_entry *iter;
     if (NULL == list || NULL == buffer || 0 == len)
         return 0;
 
-    size_t orig = len;
+    orig = len;
 
-    struct string_entry *iter = list->first;
+    iter = list->first;
     while(NULL != iter) {
         // TODO: print into the buffer
         if (iter->length > len) {
@@ -243,10 +243,10 @@ int string_list_sprint(const struct string_list* list, char *buffer, size_t len)
         iter = iter->next;
     }
 
-    if (orig-len<0)
+    if (orig < len)
         log_err("string_list_sprint: arithmetic error");
 
     return orig-len;
 }
 
-#endif
+#endif /* FWD_ZONES_SUPPORT */
