@@ -36,7 +36,7 @@ struct store store_init(const char *dir, const char *full_path, const char *full
 int store_commit(const struct store *self);
 
 /**
- * Destry cache
+ * Destroy cache
  */
 void store_destroy(struct store *self);
 
