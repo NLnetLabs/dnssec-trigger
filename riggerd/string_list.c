@@ -196,8 +196,6 @@ void string_list_dbg_print_inner(const struct string_list* list, FILE *fp)
     if (NULL == list)
         return;
 
-	//fprintf(stderr, "DBG: %d, %d, %zu\n", list, list->first, list->first->length);
-
     iter = list->first;
     while(NULL != iter) {
         fprintf(fp, "%s, ", iter->string);
@@ -218,21 +216,25 @@ int string_list_sprint(const struct string_list* list, char *buffer, size_t len)
 {
     size_t orig;
     struct string_entry *iter;
-    if (NULL == list || NULL == buffer || 0 == len)
+    if (NULL == buffer || 0 == len)
         return 0;
+    buffer[0] = 0;
+    if(list == NULL)
+	    return 0;
 
     orig = len;
 
     iter = list->first;
     while(NULL != iter) {
-        // TODO: print into the buffer
-        if (iter->length > len) {
+	int print_ret;
+        // print into the buffer
+        if (iter->length+1+1 > len) {
             // This address wouldn't fit into the buffer
             return -1;
         }
 
-        int print_ret = snprintf(buffer, len, "%s ", iter->string);
-        if (print_ret >= len || print_ret < 0)
+        print_ret = snprintf(buffer, len, "%s ", iter->string);
+        if (print_ret >= (int)len || print_ret < 0)
         {
             // This should never happen because we have already checked the length
             return -1;

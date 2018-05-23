@@ -1,3 +1,6 @@
+23 May 2018: Wouter
+	- string_list, sprint with null termination and correct buffer check.
+
 18 May 2018: Wouter
 	- More review fixes, store.c, error log and fixup of getline return,
 	  and not variable use before declaration.  Spelling, strdup,
