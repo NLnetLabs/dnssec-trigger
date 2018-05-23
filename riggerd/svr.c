@@ -870,16 +870,16 @@ static const struct string_buffer rfc1918_reverse_zones[] = {
 
 static const size_t reverse_zones_len = 20;
 
-static bool zone_in_reverse_zones(char *zone, size_t len) {
+static int zone_in_reverse_zones(char *zone, size_t len) {
 	for (size_t i = 0; i < reverse_zones_len; ++i) {
 		if (len == rfc1918_reverse_zones[i].length) {
 			if (strncmp(rfc1918_reverse_zones[i].string, zone, len) == 0) {
-				return true;
+				return 1;
 			}
 		}
 
 	}
-	return false;
+	return 0;
 }
 
 static void update_connection_zones(struct nm_connection_list *connections) {
@@ -946,8 +946,8 @@ static void update_connection_zones(struct nm_connection_list *connections) {
 				.string = string_iter->string,
 				.length = string_iter->length,
 			};
-			bool in_store = store_contains(&stored_zones, zone.string, zone.length);
-			bool in_fwd_zones = nm_connection_list_contains_zone(&forward_zones, zone.string, zone.length);
+			int in_store = store_contains(&stored_zones, zone.string, zone.length);
+			int in_fwd_zones = nm_connection_list_contains_zone(&forward_zones, zone.string, zone.length);
 			verbose(VERB_DEBUG, "Iter over connections: %s (%s, %s)",
 				zone.string,
 				in_store ? "in store" : "not in store",
