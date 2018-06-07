@@ -431,7 +431,7 @@ int hook_unbound_add_forward_zone(struct string_buffer zone, struct string_buffe
 
 int hook_unbound_add_forward_zone_inner(struct string_buffer exe, struct string_buffer zone, struct string_buffer servers) {
 	char cmd[4000] = {'\0'};
-	sprintf(cmd, "%s forward_add +i %s %s", exe.string, zone.string, servers.string);
+	snprintf(cmd, sizeof(cmd), "%s forward_add +i %s %s", exe.string, zone.string, servers.string);
 	return run_unbound_control(cmd);
 }
 
@@ -442,7 +442,7 @@ int hook_unbound_remove_forward_zone(struct string_buffer zone) {
 
 int hook_unbound_remove_forward_zone_inner(struct string_buffer exe, struct string_buffer zone) {
 	char cmd[4000] = {'\0'};
-	sprintf(cmd, "%s forward_remove %s", exe.string, zone.string);
+	snprintf(cmd, sizeof(cmd), "%s forward_remove %s", exe.string, zone.string);
 	return run_unbound_control(cmd);
 }
 
@@ -453,7 +453,7 @@ int hook_unbound_add_local_zone(struct string_buffer zone, struct string_buffer 
 
 int hook_unbound_add_local_zone_inner(struct string_buffer exe, struct string_buffer zone, struct string_buffer type) {
 	char cmd[1000] = {'\0'};
-	sprintf(cmd, "%s local_zone %s %s", exe.string, zone.string, type.string);
+	snprintf(cmd, sizeof(cmd), "%s local_zone %s %s", exe.string, zone.string, type.string);
 	return run_unbound_control(cmd);
 }
 
@@ -464,7 +464,7 @@ int hook_unbound_remove_local_zone(struct string_buffer zone) {
 
 int hook_unbound_remove_local_zone_inner(struct string_buffer exe, struct string_buffer zone) {
 	char cmd[1000] = {'\0'};
-	sprintf(cmd, "%s local_zone_remove %s", exe.string, zone.string);
+	snprintf(cmd, sizeof(cmd), "%s local_zone_remove %s", exe.string, zone.string);
 	return run_unbound_control(cmd);
 }
 

@@ -2,6 +2,7 @@
 	- Fix that update_connection_zones does not use item after free.
 	- Fix declare before code warnings.
 	- Use pclose for popen fds.
+	- Use snprintf instead of sprintf to fixed buffer.
 
 23 May 2018: Wouter
 	- string_list, sprint with null termination and correct buffer check.
