@@ -893,6 +893,7 @@ static void update_connection_zones(struct nm_connection_list *connections) {
 	struct string_buffer static_label = string_builder("static");
 	struct store stored_zones = STORE_INIT("zones");
 	struct nm_connection_list forward_zones =  hook_unbound_list_forwards(NULL);
+	struct string_entry* iter;
 
 	/*
 	 * Step 1:
@@ -901,7 +902,8 @@ static void update_connection_zones(struct nm_connection_list *connections) {
 	 * 		dnssec-trigger, as these were probably configured by the user and it would be nice from us
 	 * 		to keep them there.
 	 */
-	FOR_EACH_STRING_IN_LIST(iter, &stored_zones.cache) {
+	iter = stored_zones.cache.first;
+	while(iter) {
 		struct string_buffer zone = {
 			.string = iter->string,
 			.length = iter->length
@@ -925,7 +927,11 @@ static void update_connection_zones(struct nm_connection_list *connections) {
 			hook_unbound_remove_forward_zone(zone);
 		}
 		verbose(VERB_DEBUG, "Iter over stored zones: %s removing from store", iter->string);
-		store_remove(&stored_zones, iter->string, iter->length);
+		/* don't use FOR_EACH_STRING_IN_LIST because the stringlist
+		 * edited in the loop. pick up the next pointer, then
+		 * delete the item */
+		iter = iter->next;
+		store_remove(&stored_zones, zone.string, zone.length);
 	}
 
 	/*
