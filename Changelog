@@ -1,6 +1,7 @@
 7 June 2018: Wouter
 	- Fix that update_connection_zones does not use item after free.
 	- Fix declare before code warnings.
+	- Use pclose for popen fds.
 
 23 May 2018: Wouter
 	- string_list, sprint with null termination and correct buffer check.

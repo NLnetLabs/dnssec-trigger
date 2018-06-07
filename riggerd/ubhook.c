@@ -300,7 +300,7 @@ struct nm_connection_list hook_unbound_list_forwards(struct cfg* cfg) {
 	FILE *fp;
 	fp = popen("unbound-control list_forwards", "r");
 	struct nm_connection_list ret = hook_unbound_list_forwards_inner(cfg, fp);
-	fclose(fp);
+	pclose(fp);
 	return ret;
 }
 
@@ -373,7 +373,7 @@ struct string_list hook_unbound_list_local_zones(struct cfg* cfg) {
 	FILE *fp;
 	fp = popen("unbound-control list_local_zones", "r");
 	struct string_list ret = hook_unbound_list_local_zones_inner(cfg, fp);
-	fclose(fp);
+	pclose(fp);
 	return ret;
 }
 
@@ -403,7 +403,7 @@ static int run_unbound_control(char *cmd) {
 	if (fscanf(fp, "ok\n") != -1) {
 		ret = 0;
 	}
-	fclose(fp);
+	pclose(fp);
 	return ret;
 }
 
