@@ -298,25 +298,26 @@ void hook_unbound_ssl_upstream(struct cfg* cfg, int ssl443_ip4, int ssl443_ip6)
 
 struct nm_connection_list hook_unbound_list_forwards(struct cfg* cfg) {
 	FILE *fp;
+	struct nm_connection_list ret;
 	fp = popen("unbound-control list_forwards", "r");
-	struct nm_connection_list ret = hook_unbound_list_forwards_inner(cfg, fp);
+	ret = hook_unbound_list_forwards_inner(cfg, fp);
 	pclose(fp);
 	return ret;
 }
 
-struct nm_connection_list hook_unbound_list_forwards_inner(struct cfg* cfg, FILE *fp) {
+struct nm_connection_list hook_unbound_list_forwards_inner(struct cfg* ATTR_UNUSED(cfg), FILE *fp) {
 	// TODO: is there any other output??
 	// Format: <ZONE> IN forward [+i] <list of addresses>
 	
 	struct nm_connection_list ret;
-	nm_connection_list_init(&ret);
 	struct nm_connection *new;
 
 	size_t line_len = 1024;
-    ssize_t read_len = 0;
-    char *line = (char *)calloc_or_die(line_len);
-    memset(line, 0, line_len);
-    while ((read_len = getline(&line, &line_len, fp) != -1)){
+	ssize_t read_len = 0;
+	char *line = (char *)calloc_or_die(line_len);
+	nm_connection_list_init(&ret);
+	memset(line, 0, line_len);
+	while ((read_len = getline(&line, &line_len, fp) != -1)){
 		// XXX: line len is always 1??
 		size_t i = 0;
 		int parser_state = 0;
@@ -371,17 +372,18 @@ struct nm_connection_list hook_unbound_list_forwards_inner(struct cfg* cfg, FILE
 
 struct string_list hook_unbound_list_local_zones(struct cfg* cfg) {
 	FILE *fp;
+	struct string_list ret;
 	fp = popen("unbound-control list_local_zones", "r");
-	struct string_list ret = hook_unbound_list_local_zones_inner(cfg, fp);
+	ret = hook_unbound_list_local_zones_inner(cfg, fp);
 	pclose(fp);
 	return ret;
 }
 
-struct string_list hook_unbound_list_local_zones_inner(struct cfg* cfg, FILE *fp) {
+struct string_list hook_unbound_list_local_zones_inner(struct cfg* ATTR_UNUSED(cfg), FILE *fp) {
 	struct string_list ret;
-	string_list_init(&ret);
 	char zone[1024], label[1024];
-    int r = 0;
+    	int r = 0;
+	string_list_init(&ret);
 
 	while ((r = fscanf(fp, "%s %s\n", zone, label)) > 0 ) {
         struct string_buffer label_static = string_builder("static");
@@ -419,6 +421,7 @@ int hook_unbound_add_forward_zone_from_connection(struct nm_connection *con) {
 	string_list_sprint(&(con->servers), servers.string, servers.length);
 	hook_unbound_add_forward_zone(zone, servers);
 	free(servers.string);
+	return 1;
 }
 
 int hook_unbound_add_forward_zone(struct string_buffer zone, struct string_buffer servers) {
