@@ -825,6 +825,7 @@ static void update_global_forwarders(struct nm_connection_list *original) {
 	 * for this option is that the VPN connection should be secure, but on the other hand, we don't
 	 * want to expose our DNS traffic to our employer, for example. */
 	struct nm_connection_list defaults;
+	struct string_buffer global_forward_candidates;
 	verbose(VERB_DEBUG, "Using VPN forwarders: %s", global_svr->cfg->use_vpn_forwarders ? "yes" : "no");
 	if (!global_svr->cfg->use_vpn_forwarders) {
 		defaults = nm_connection_list_filter(original, 1, &nm_connection_filter_default);
@@ -832,7 +833,7 @@ static void update_global_forwarders(struct nm_connection_list *original) {
 		defaults = nm_connection_list_filter(original, 1, &nm_connection_filter_type_vpn);
 	}
 	/* Probe function takes a string of space separated servers :-) */
-	struct string_buffer global_forward_candidates = nm_connection_list_sprint_servers(&defaults);
+	global_forward_candidates = nm_connection_list_sprint_servers(&defaults);
 	verbose(VERB_DEBUG, "Global forward candidates: %s", global_forward_candidates.string);
 	verbose(VERB_DEBUG, "Starting probe");
 
@@ -959,8 +960,9 @@ static void update_connection_zones(struct nm_connection_list *connections) {
 				in_store ? "in store" : "not in store",
 				in_fwd_zones ? "in fwd zones" : "not in fwd zones");
 			if ( (in_store) || !(in_fwd_zones) ) {
+				struct nm_connection* new_fwd_zone;
 				verbose(VERB_DEBUG, "Iter over connections: %s append to forward zones and add to store", zone.string);
-				struct nm_connection *new_fwd_zone = (struct nm_connection *)calloc_or_die(sizeof(struct nm_connection));
+				new_fwd_zone = (struct nm_connection *)calloc_or_die(sizeof(struct nm_connection));
 				nm_connection_init(new_fwd_zone);
 				string_list_duplicate(&c->servers, &new_fwd_zone->servers);
 				string_list_push_back(&new_fwd_zone->zones, zone.string, zone.length);
@@ -980,13 +982,14 @@ static void update_connection_zones(struct nm_connection_list *connections) {
 	verbose(VERB_DEBUG, "Using private address ranges: %s", global_svr->cfg->use_private_address_ranges ? "yes" : "no");
 	if (global_svr->cfg->use_private_address_ranges) {
 		struct nm_connection_list global_forwarders;
+		struct string_buffer gf_string;
 		if (global_svr->cfg->use_vpn_forwarders) {
 			global_forwarders = nm_connection_list_filter(connections, 1, &nm_connection_filter_type_vpn);
 		} else {
 			global_forwarders = nm_connection_list_filter(connections, 1, &nm_connection_filter_default);
 		}
 
-		struct string_buffer gf_string = nm_connection_list_sprint_servers(&global_forwarders);
+		gf_string = nm_connection_list_sprint_servers(&global_forwarders);
 		verbose(VERB_DEBUG, "Selected global forwarders: %s", gf_string.string);
 		free(gf_string.string);
 
