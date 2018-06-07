@@ -426,7 +426,7 @@ static void selfupdate_outq_done_txt(struct selfupdate* se, struct outq* outq,
 static int selfupdate_start_file_download(struct selfupdate* se,
 	ldns_rr_list* addr)
 {
-	char url[256];
+	char url[1024];
 	char file[256];
 	char* reason = NULL;
 	struct http_get** handle;

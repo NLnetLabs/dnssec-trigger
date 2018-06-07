@@ -3,6 +3,8 @@
 	- Fix declare before code warnings.
 	- Use pclose for popen fds.
 	- Use snprintf instead of sprintf to fixed buffer.
+	- Fix gcc buffer size for snprintf warning (in dnssec-trigger update
+	  code, not the patch set from 14may).
 
 23 May 2018: Wouter
 	- string_list, sprint with null termination and correct buffer check.
