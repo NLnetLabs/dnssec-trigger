@@ -321,7 +321,7 @@ struct nm_connection_list hook_unbound_list_forwards_inner(struct cfg* cfg, FILE
 		size_t i = 0;
 		int parser_state = 0;
 		size_t start = 0;
-		bool run = true;
+		int run = 1;
 		new = (struct nm_connection *) calloc_or_die(sizeof(struct nm_connection));
 		nm_connection_init(new);
 		while(run) {
@@ -352,7 +352,7 @@ struct nm_connection_list hook_unbound_list_forwards_inner(struct cfg* cfg, FILE
 						while (line[i] != ' ' && line[i] != '\n') {
 							++i;
 							if (line[i] == '\n') {
-								run = false;
+								run = 0;
 								break;
 							}
 						}
