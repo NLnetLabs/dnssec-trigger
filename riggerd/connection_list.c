@@ -47,11 +47,12 @@ static void nm_connection_clean_up_node(struct nm_connection_node *current, enum
 
 void nm_connection_list_clear(struct nm_connection_list *list)
 {
+    struct nm_connection_node *current, *next;
     if (NULL == list)
         return;
 
-    struct nm_connection_node *current = list->first;
-    struct nm_connection_node *next = NULL;
+    current = list->first;
+    next = NULL;
     while (NULL != current){
         next = current->next;
 
@@ -63,11 +64,12 @@ void nm_connection_list_clear(struct nm_connection_list *list)
 
 void nm_connection_list_push_back(struct nm_connection_list *list, struct nm_connection *new_value)
 {
+    struct nm_connection_node **node;
     if (NULL == list || NULL == new_value) {
         return;
     }
 
-    struct nm_connection_node **node = &list->first;
+    node = &list->first;
     while (NULL != *node) {
         node = &(*node)->next;
     }
@@ -78,10 +80,11 @@ void nm_connection_list_push_back(struct nm_connection_list *list, struct nm_con
 }
 
 void nm_connection_list_copy_and_push_back(struct nm_connection_list *list, struct nm_connection *new_value) {
+    struct nm_connection *conn;
     if (NULL == list || NULL == new_value) {
         return;
     }
-    struct nm_connection *conn = (struct nm_connection *)calloc_or_die(sizeof(struct nm_connection));
+    conn = (struct nm_connection *)calloc_or_die(sizeof(struct nm_connection));
     conn->default_con = new_value->default_con;
     string_list_init(&conn->zones);
     string_list_duplicate(&new_value->zones, &conn->zones);
@@ -127,15 +130,16 @@ struct nm_connection_list nm_connection_list_filter(struct nm_connection_list *l
         unsigned int count, ...)
 {
     struct nm_connection_list ret;
-    nm_connection_list_init_non_owning(&ret);
+    filter_conn_fcn *fcn;
+    va_list args;
 
+    nm_connection_list_init_non_owning(&ret);
     if (NULL == list)
         return ret;
 
-    va_list args;
     va_start(args, count);
     // Load functions into a temporary array
-    filter_conn_fcn *fcn = (filter_conn_fcn *)calloc_or_die(sizeof(filter_conn_fcn *)*count);
+    fcn = (filter_conn_fcn *)calloc_or_die(sizeof(filter_conn_fcn *)*count);
     for(unsigned int i = 0; i < count; ++i)
     {
         fcn[i] = va_arg(args, filter_conn_fcn);
@@ -148,7 +152,7 @@ struct nm_connection_list nm_connection_list_filter(struct nm_connection_list *l
         } else {
             // TODO: implement the same for OR instead of AND ?
             // Accumulate the result of each filter
-            bool acc = true;
+            int acc = 1;
             for(unsigned int i = 0; i < count; ++i)
             {
                 acc &= fcn[i](iter->self);
@@ -166,10 +170,10 @@ struct nm_connection_list nm_connection_list_filter(struct nm_connection_list *l
 
 size_t nm_connection_list_length(struct nm_connection_list *list)
 {
+    size_t counter = 0;
     if (NULL == list)
         return 0;
 
-    size_t counter = 0;
     for (struct nm_connection_node *iter = list->first; NULL != iter; iter = iter->next) {
         counter++;
     }
@@ -179,11 +183,13 @@ size_t nm_connection_list_length(struct nm_connection_list *list)
 
 static void nm_connection_list_dbg_print_inner(struct nm_connection_list *list, FILE *fp)
 {
+    struct nm_connection_node *iter;
+    int n;
     if (NULL == list)
         return;
 
-    struct nm_connection_node *iter = list->first;
-    int n = 0;
+    iter = list->first;
+    n = 0;
     while (NULL != iter) {
         fprintf(fp, "Connection %d\n", n);
         fprintf(fp, "default: ");
@@ -241,6 +247,12 @@ struct string_buffer nm_connection_list_sprint_servers(struct nm_connection_list
         .string = NULL,
         .length = 0
     };
+    struct nm_connection_node *iter;
+    size_t acc;
+    size_t len;
+    char *buffer;
+    char *buf_iter;
+
     if (NULL == list)
         return ret;
 
@@ -249,9 +261,9 @@ struct string_buffer nm_connection_list_sprint_servers(struct nm_connection_list
      */
 
     // Iterate over all connections
-    struct nm_connection_node *iter = list->first;
+    iter = list->first;
     // Accumulate length of all server strings
-    size_t acc = 0;
+    acc = 0;
     while (NULL != iter) {
 
         // Iterate over all servers in each connection
@@ -266,11 +278,11 @@ struct string_buffer nm_connection_list_sprint_servers(struct nm_connection_list
     }
 
     // acc + null byte
-    size_t len = sizeof(char)*(acc+1);
-    char *buffer = (char *)calloc_or_die(len);
+    len = sizeof(char)*(acc+1);
+    buffer = (char *)calloc_or_die(len);
     // fill the buffer with spaces
     memset(buffer, ' ', len);
-    char *buf_iter = buffer;
+    buf_iter = buffer;
 
     /*
      * Fill in the buffer

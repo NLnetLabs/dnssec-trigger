@@ -13,6 +13,9 @@ struct nm_connection_list yield_connections_from_json(char *json)
 
     if (json_validate(json) == true) {
 	//printf("I've got valid json and it looks like this:\n%s\n", json);
+	JsonNode *node;
+	JsonNode *connection;
+	JsonNode *parameter;
 
 	/* Decode the input string and check it again */
 	JsonNode *head = json_decode(json);
@@ -24,7 +27,7 @@ struct nm_connection_list yield_connections_from_json(char *json)
 
 	/* We expect to get a list of connections. Anything else is not valid input,
 	 * even though it might be valid json. */
-	JsonNode *node = head->children.head; // now it should be the first dictionary value i.e. connections
+	node = head->children.head; // now it should be the first dictionary value i.e. connections
 	if (NULL == node || strncmp(node->key, "connections", 11) != 0) { // and also must be an array
             json_delete(head);
 	    return ret;
@@ -32,7 +35,7 @@ struct nm_connection_list yield_connections_from_json(char *json)
 
         /* Now we finally have the array of connections and this is
          * its head */
-        JsonNode *connection = node->children.head;
+        connection = node->children.head;
         /* Go through all connections and put them into the connection list ret */
         while (NULL != connection) {
 
@@ -41,7 +44,7 @@ struct nm_connection_list yield_connections_from_json(char *json)
 
             /* Read all key:value pairs in each node. Expected values
              * are: default, servers, type, zones */
-            JsonNode *parameter = connection->children.head;
+            parameter = connection->children.head;
             while (NULL != parameter) {
 
                 // Check JSON key
