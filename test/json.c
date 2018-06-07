@@ -63,12 +63,6 @@ static void null_test_success(void **state) {
     (void) state; /* unused */
 }
 
-/* A test case that does nothing and succeeds. */
-static void null_test_fail(void **state) {
-    assert_non_null(NULL);
-    (void) state; /* unused */
-}
-
 static void load_json_into_list_and_test_length(void **state) {
     struct nm_connection_list l = yield_connections_from_json(json);
     assert_true(nm_connection_list_length(&l) == 3);

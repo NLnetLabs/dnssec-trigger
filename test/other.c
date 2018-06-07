@@ -91,9 +91,10 @@ static void store_macro_creation(void **state) {
 
 static void store_read_file_content(void **state) {
     const char *file_name = "test/servers-list-ipv4";
+    struct store s;
     assert_true(access(file_name, R_OK) == 0);
 
-    struct store s = store_init("", "test/servers-list-ipv4", "");
+    s = store_init("", "test/servers-list-ipv4", "");
 
     assert_true(string_list_contains(&s.cache, "1.2.3.4", 8));
     assert_true(string_list_contains(&s.cache, "192.168.168.168", 15));
@@ -135,11 +136,13 @@ static void store_commit_cache(void **state) {
 
 static void ubhook_list_forwards_test(void **state) {
     FILE *fp;
-	fp = fopen("test/list_forwards_example", "r");
-	struct nm_connection_list ret = hook_unbound_list_forwards_inner(NULL, fp);
-    //nm_connection_list_dbg_eprint(&ret);
+    struct nm_connection_list ret;
     struct string_buffer zone = string_builder("ny.mylovelycorporate.io.");
     struct string_buffer zone2 = string_builder(".");
+
+	fp = fopen("test/list_forwards_example", "r");
+	ret = hook_unbound_list_forwards_inner(NULL, fp);
+    //nm_connection_list_dbg_eprint(&ret);
     assert_true(nm_connection_list_contains_zone(&ret, zone.string, zone.length));
     assert_true(nm_connection_list_contains_zone(&ret, zone2.string, zone2.length));
     nm_connection_list_clear(&ret);
@@ -149,14 +152,16 @@ static void ubhook_list_forwards_test(void **state) {
 
 static void ubhook_list_local_zones_test(void **state) {
     FILE *fp;
+    struct string_buffer zone = string_builder("test.");
+    struct string_buffer zone2 = string_builder("invalid.");
+    struct string_list ret;
+
 	fp = fopen("test/list_local_zones_example", "r");
     if (!fp)
         assert_false(true);
 
-	struct string_list ret = hook_unbound_list_local_zones_inner(NULL, fp);
+	ret = hook_unbound_list_local_zones_inner(NULL, fp);
     //string_list_dbg_eprint(&ret);
-    struct string_buffer zone = string_builder("test.");
-    struct string_buffer zone2 = string_builder("invalid.");
     assert_true(string_list_contains(&ret, zone.string, zone.length));
     assert_true(string_list_contains(&ret, zone2.string, zone2.length));
     string_list_clear(&ret);
@@ -184,11 +189,13 @@ static void ubhook_remove_local_zone(void **state) {
 
 static void nm_list_remove(void **state) {
     FILE *fp;
-	fp = fopen("test/list_forwards_example", "r");
-	struct nm_connection_list ret = hook_unbound_list_forwards_inner(NULL, fp);
-    //nm_connection_list_dbg_eprint(&ret);
+    struct nm_connection_list ret;
     struct string_buffer zone = string_builder("ny.mylovelycorporate.io.");
     struct string_buffer zone2 = string_builder(".");
+
+	fp = fopen("test/list_forwards_example", "r");
+	ret = hook_unbound_list_forwards_inner(NULL, fp);
+    //nm_connection_list_dbg_eprint(&ret);
     
     assert_true(nm_connection_list_contains_zone(&ret, zone.string, zone.length));
     nm_connection_list_remove(&ret, zone.string, zone.length);
