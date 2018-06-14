@@ -53,17 +53,28 @@
 static int ub_has_tcp_upstream = 0;
 static int ub_has_ssl_upstream = 0;
 
-/** check if commandline argument is only a-zA-Z0-9, and ' :._-+' */
+/** check if commandline argument is only a-zA-Z0-9, and ' :._-+' 
+ * also not starting with a '-' (i.e. like a commandline option) */
 static int
 allowed_arg(const char* arg)
 {
 	const char* s;
 	if(!arg) return 1;
+	/* cannot start with a '-' */
+	if(arg[0] && (arg[0]=='-' || arg[0]=='+')) {
+		log_err("command line string argument '%s' fails check on disallowed characters", arg);
+		return 0;
+	}
 	for(s = arg; *s; s++) {
 		/* definitely do not allow these characters:
 		 *  ' " & ! ; * | because it could escape the shell */
 		if( *s == '\'' || *s == '"' || *s == '&' || *s == ';' ||
 			*s == '*' || *s == '|' ) {
+			log_err("command line string argument '%s' fails check on disallowed characters", arg);
+			return 0;
+		}
+		if( (*s == ' ' || *s == '\t') && s[1] && (s[1]=='-' || s[1]=='+')) {
+			/* like " -option", disallowed */
 			log_err("command line string argument '%s' fails check on disallowed characters", arg);
 			return 0;
 		}
