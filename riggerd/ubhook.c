@@ -47,10 +47,37 @@
 #ifdef USE_WINSOCK
 #include "winrc/win_svc.h"
 #endif
+#include <ctype.h>
 
 /* the state configured for unbound */
 static int ub_has_tcp_upstream = 0;
 static int ub_has_ssl_upstream = 0;
+
+/** check if commandline argument is only a-zA-Z0-9, and ' :._-+' */
+static int
+allowed_arg(const char* arg)
+{
+	const char* s;
+	if(!arg) return 1;
+	for(s = arg; *s; s++) {
+		/* definitely do not allow these characters:
+		 *  ' " & ! ; * | because it could escape the shell */
+		if( *s == '\'' || *s == '"' || *s == '&' || *s == ';' ||
+			*s == '*' || *s == '|' ) {
+			log_err("command line string argument '%s' fails check on disallowed characters", arg);
+			return 0;
+		}
+		if( isalnum((unsigned char)*s) || *s == ' ' || *s == ':' ||
+			*s == '.' || *s == '_' || *s == '-' || *s == '+' ||
+			*s == '\t') {
+			continue;
+		} else 	{
+			log_err("command line string argument '%s' fails check on allowed characters", arg);
+			return 0;
+		}
+	}
+	return 1;
+}
 
 /**
  * Perform the unbound control command.
@@ -77,6 +104,7 @@ ub_ctrl(struct cfg* cfg, const char* cmd, const char* args)
 	if(cfg->unbound_control)
 		ctrl = cfg->unbound_control;
 	verbose(VERB_ALGO, "system %s %s %s", ctrl, cmd, args);
+	if(!allowed_arg(args)) return;
 	snprintf(command, sizeof(command), "%s %s %s", ctrl, cmd, args);
 #ifdef USE_WINSOCK
 	r = win_run_cmd(command);
@@ -179,6 +207,7 @@ static int hook_unbound_supports_option(struct cfg* cfg, const char* args)
 	if(cfg->unbound_control)
 		ctrl = cfg->unbound_control;
 	verbose(VERB_ALGO, "system %s %s %s", ctrl, cmd, args);
+	if(!allowed_arg(args)) return 0;
 	snprintf(command, sizeof(command), "%s %s %s", ctrl, cmd, args);
 #ifdef USE_WINSOCK
 	r = win_run_cmd(command);
@@ -431,6 +460,8 @@ int hook_unbound_add_forward_zone(struct string_buffer zone, struct string_buffe
 
 int hook_unbound_add_forward_zone_inner(struct string_buffer exe, struct string_buffer zone, struct string_buffer servers) {
 	char cmd[4000] = {'\0'};
+	if(!allowed_arg(zone.string)) return 0;
+	if(!allowed_arg(servers.string)) return 0;
 	snprintf(cmd, sizeof(cmd), "%s forward_add +i %s %s", exe.string, zone.string, servers.string);
 	return run_unbound_control(cmd);
 }
@@ -442,6 +473,7 @@ int hook_unbound_remove_forward_zone(struct string_buffer zone) {
 
 int hook_unbound_remove_forward_zone_inner(struct string_buffer exe, struct string_buffer zone) {
 	char cmd[4000] = {'\0'};
+	if(!allowed_arg(zone.string)) return 0;
 	snprintf(cmd, sizeof(cmd), "%s forward_remove %s", exe.string, zone.string);
 	return run_unbound_control(cmd);
 }
@@ -453,6 +485,8 @@ int hook_unbound_add_local_zone(struct string_buffer zone, struct string_buffer 
 
 int hook_unbound_add_local_zone_inner(struct string_buffer exe, struct string_buffer zone, struct string_buffer type) {
 	char cmd[1000] = {'\0'};
+	if(!allowed_arg(zone.string)) return 0;
+	if(!allowed_arg(type.string)) return 0;
 	snprintf(cmd, sizeof(cmd), "%s local_zone %s %s", exe.string, zone.string, type.string);
 	return run_unbound_control(cmd);
 }
@@ -464,6 +498,7 @@ int hook_unbound_remove_local_zone(struct string_buffer zone) {
 
 int hook_unbound_remove_local_zone_inner(struct string_buffer exe, struct string_buffer zone) {
 	char cmd[1000] = {'\0'};
+	if(!allowed_arg(zone.string)) return 0;
 	snprintf(cmd, sizeof(cmd), "%s local_zone_remove %s", exe.string, zone.string);
 	return run_unbound_control(cmd);
 }
