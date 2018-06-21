@@ -1,5 +1,6 @@
 21 June 2018: Wouter
 	- Release 0.16.
+	- trunk is 0.17 in development.
 
 14 June 2018: Wouter
 	- Add check on shell commandline arguments, to make sure domain names
