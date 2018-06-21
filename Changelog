@@ -1,3 +1,6 @@
+21 June 2018: Wouter
+	- Release 0.16.
+
 14 June 2018: Wouter
 	- Add check on shell commandline arguments, to make sure domain names
 	  and IP addresses passed to it do not contain escape characters.
