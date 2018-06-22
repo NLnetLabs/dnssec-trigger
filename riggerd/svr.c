@@ -911,11 +911,13 @@ static void update_connection_zones(struct nm_connection_list *connections) {
 		};
 		if (nm_connection_list_contains_zone(connections, iter->string, iter->length)) {
 			verbose(VERB_DEBUG, "Iter over stored zones: %s is in connections", iter->string);
+			iter = iter->next;
 			continue;
 		}
 		if (zone_in_reverse_zones(iter->string, iter->length)) {
 			if (global_svr->cfg->use_private_address_ranges) {
 				verbose(VERB_DEBUG, "Iter over stored zones: %s is in reverse zones", iter->string);
+				iter = iter->next;
 				continue;
 			} else {
 				verbose(VERB_DEBUG, "Iter over stored zones: %s add to local zones using ubhook", iter->string);

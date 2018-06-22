@@ -1,3 +1,6 @@
+22 June 2018: Wouter
+	- Fix for infinite loop in update_connection_zones.
+
 21 June 2018: Wouter
 	- Release 0.16.
 	- trunk is 0.17 in development.
