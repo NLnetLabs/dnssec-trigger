@@ -4,7 +4,7 @@ AC_PREREQ(2.56)
 sinclude(acx_nlnetlabs.m4)
 CFLAGS="$CFLAGS"
 
-AC_INIT(dnssec-trigger, 0.17, labs@nlnetlabs.nl, dnssec-trigger)
+AC_INIT(dnssec-trigger, 0.18, labs@nlnetlabs.nl, dnssec-trigger)
 AC_AIX
 AC_C_CONST
 AC_LANG_C
