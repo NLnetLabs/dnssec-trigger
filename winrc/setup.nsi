@@ -16,7 +16,7 @@
 !define QUADVERSION "0.0.0.0"
 
 outFile "dnssec_trigger_setup_${VERSION}.exe"
-Name "DnssecTrigger"
+Name "DNSSEC-Trigger"
 
 # default install directory
 installDir "$PROGRAMFILES\DnssecTrigger"
@@ -158,7 +158,7 @@ Var StartMenuFolder
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 
-!define MUI_WELCOMEPAGE_TEXT "This wizard will guide you through the uninstallation of Dnssec Trigger.$\r$\n$\r$\nClick Next to continue."
+!define MUI_WELCOMEPAGE_TEXT "This wizard will guide you through the uninstallation of DNSSEC-Trigger.$\r$\n$\r$\nClick Next to continue."
 !define MUI_UNWELCOMEFINISHPAGE_BITMAP "setup_left_un.bmp"
 !insertmacro MUI_UNPAGE_WELCOME
 !insertmacro MUI_UNPAGE_CONFIRM
