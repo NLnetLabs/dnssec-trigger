@@ -1,6 +1,8 @@
 14 January 2019: Wouter
 	- Fix #4217: dnssec-trigger-script can abort with a KeyError in a
 	  misconfigured network.
+	- Fix for #4218: segfault in dnssec-triggerd when laptop was
+	  multihomed with differing dns settings.
 
 20 August 2018: Wouter
 	- Fix spelling inconsistency on Windows in the installer.

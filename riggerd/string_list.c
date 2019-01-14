@@ -86,7 +86,7 @@ int string_list_contains(const struct string_list* list, const char* value, cons
 		 * We already know size of both buffers, so we take advantage of that
 		 * and also of short-cut evaluation.
 		 */
-		if (len == iter->length && strncmp(iter->string, value, len) == 0) {
+		if (iter->string && len == iter->length && strncmp(iter->string, value, len) == 0) {
 			return 1;
 		}
 	}
