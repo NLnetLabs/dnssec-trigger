@@ -294,7 +294,8 @@ class UnboundZoneConfig:
             if secure:
                 self._control(["insecure_remove", name])
         else:
-            del self.cache[name]
+            if name in self.cache:
+                del self.cache[name]
             self._control(["forward_remove", name])
         self._control([config.flush_command, name])
         self._control(["flush_requestlist"])
