@@ -1,3 +1,6 @@
+16 January 2019: Wouter
+	- Fix for #4218: zero string allocation to stop crashes.
+
 14 January 2019: Wouter
 	- Fix #4217: dnssec-trigger-script can abort with a KeyError in a
 	  misconfigured network.

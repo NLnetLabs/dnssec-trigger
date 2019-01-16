@@ -63,6 +63,7 @@ void string_list_push_back(struct string_list* list, const char* new_value, cons
 
 	*node = (struct string_entry*) calloc_or_die(sizeof(struct string_entry));
 	(*node)->extension = NULL;
+	(*node)->next = NULL;
 	(*node)->length = len;
 	(*node)->string = strdup(new_value);
 	if(!(*node)->string) fatal_exit("malloc failure");
