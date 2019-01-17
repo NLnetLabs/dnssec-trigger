@@ -172,6 +172,22 @@ if test "$action" = "uninstall"; then
 	exit 0
 fi
 
+# remove (to regenerate) keys that are too small)
+function debian_get_x509_bits () {
+    openssl x509 -in $1 -text | \
+        grep 'Public-Key:'  |
+        awk 'match($0,/[0-9]+/) {print substr($0, RSTART, RLENGTH)}';
+}
+function debian_remove_small_keys () {
+    if test -f $1.pem; then
+        if [ $(debian_get_x509_bits $1.pem) -lt $BITS ]; then
+            rm $1.{key,pem};
+        fi
+    fi
+}
+debian_remove_small_keys $SVR_BASE
+debian_remove_small_keys $CTL_BASE
+
 # create certificate keys; do not recreate if they already exist.
 if test -f $SVR_BASE.key; then
 	echo "$SVR_BASE.key exists"
