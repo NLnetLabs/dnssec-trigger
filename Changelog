@@ -2,6 +2,8 @@
 	- Fix to remove keys that are too small during
 	  dnssec-trigger-control-setup to avoid openssl failing on the small
 	  keys.  It then generates new (longer) keys.  Patch from Diane Trout.
+	- Fix #4218: do not free zone added to forward zones in
+	  update_connection_zones().
 
 16 January 2019: Wouter
 	- Fix for #4218: zero string allocation to stop crashes.

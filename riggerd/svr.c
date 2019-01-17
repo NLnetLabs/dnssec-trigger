@@ -1014,7 +1014,6 @@ static void update_connection_zones(struct nm_connection_list *connections) {
 				nm_connection_list_push_back(&forward_zones, new_zone);
 				store_add(&stored_zones, zone->string, zone->length);
 				hook_unbound_remove_local_zone(*zone);
-				free(new_zone);
 			} else {
 				if (nm_connection_list_contains_zone(&forward_zones, zone->string, zone->length)) {
 					verbose(VERB_DEBUG, "Iter over reverse zones: %s remove from unbound local zones", zone->string);
