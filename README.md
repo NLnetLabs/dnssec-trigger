@@ -1,6 +1,6 @@
 # Dnssec-Trigger
 
-[![Travis Build Status](https://travis-ci.org/NLnetLabs/dnssec-trigger.svg?branch=master)](https://travis-ci.org/NLnetLabs/dnssec-trigger)
+[![Travis Build Status](https://travis-ci.com/NLnetLabs/dnssec-trigger.svg?branch=master)](https://travis-ci.com/NLnetLabs/dnssec-trigger)
 [![Packaging status](https://repology.org/badge/tiny-repos/dnssec-trigger.svg)](https://repology.org/project/dnssec-trigger/versions)
 
 By Wouter Wijngaards, NLnet Labs, 2011
