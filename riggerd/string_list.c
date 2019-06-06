@@ -95,6 +95,7 @@ int string_list_contains(const struct string_list* list, const char* value, cons
 }
 
 void string_list_duplicate(const struct string_list* original, struct string_list *copy) {
+	struct string_entry* iter;
 	if (NULL == original || NULL == copy) {
 		return;
 	}
@@ -108,6 +109,7 @@ void string_list_duplicate(const struct string_list* original, struct string_lis
 }
 
 void string_list_copy_and_append(struct string_list* original, struct string_list *append) {
+	struct string_entry* iter;
 	if (NULL == original || NULL == append) {
 		return;
 	}

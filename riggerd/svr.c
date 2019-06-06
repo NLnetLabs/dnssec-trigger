@@ -872,7 +872,8 @@ static const struct string_buffer rfc1918_reverse_zones[] = {
 static const size_t reverse_zones_len = 20;
 
 static int zone_in_reverse_zones(char *zone, size_t len) {
-	for (size_t i = 0; i < reverse_zones_len; ++i) {
+	size_t i;
+	for (i = 0; i < reverse_zones_len; ++i) {
 		if (len == rfc1918_reverse_zones[i].length) {
 			if (strncmp(rfc1918_reverse_zones[i].string, zone, len) == 0) {
 				return 1;
@@ -895,6 +896,8 @@ static void update_connection_zones(struct nm_connection_list *connections) {
 	struct store stored_zones = STORE_INIT("zones");
 	struct nm_connection_list forward_zones =  hook_unbound_list_forwards(NULL);
 	struct string_entry* iter;
+	struct nm_connection_node *conniter;
+	struct string_entry* string_iter;
 
 	/*
 	 * Step 1:
@@ -941,8 +944,8 @@ static void update_connection_zones(struct nm_connection_list *connections) {
 	 * 		present in unbound forward zones into Unbound forward zones.
 	 */
 	verbose(VERB_DEBUG, "Use Wi-Fi provided zones: %s", global_svr->cfg->add_wifi_provided_zones ? "enabled" : "disabled");
-	for (struct nm_connection_node *iter = connections->first; NULL != iter; iter = iter->next) {
-		struct nm_connection *c = iter->self;
+	for (conniter = connections->first; NULL != conniter; conniter = conniter->next) {
+		struct nm_connection *c = conniter->self;
 		if (!global_svr->cfg->add_wifi_provided_zones) {
 			if (c->type == NM_CON_WIFI) {
 				continue;

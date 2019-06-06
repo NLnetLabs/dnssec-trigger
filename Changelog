@@ -1,6 +1,7 @@
 6 June 2019: Wouter
 	- Move to github, at https://github.com/NLnetLabs/dnssec-trigger
 	- Added .gitignore.
+	- Move iterator declarations out of for statement.
 
 17 January 2019: Wouter
 	- Fix to remove keys that are too small during

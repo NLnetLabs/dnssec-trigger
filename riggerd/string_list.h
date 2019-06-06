@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define FOR_EACH_STRING_IN_LIST(ITER, LIST) for (struct string_entry *(ITER) = (LIST)->first; (ITER) != NULL; (ITER) = (ITER)->next)
+#define FOR_EACH_STRING_IN_LIST(ITER, LIST) for ((ITER) = (LIST)->first; (ITER) != NULL; (ITER) = (ITER)->next)
 
 /**
  * Linked list of strings

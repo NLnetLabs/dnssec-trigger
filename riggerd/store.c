@@ -41,6 +41,7 @@ struct store store_init(const char *dir, const char *full_path, const char *full
 }
 
 int store_commit(const struct store *self) {
+    struct string_entry* iter;
     // Open the tmp file
     FILE *fp = fopen(self->path_tmp, "w");
     if (fp == NULL) {
