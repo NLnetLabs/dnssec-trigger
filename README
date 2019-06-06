@@ -1,5 +1,8 @@
 Dnssec Trigger Readme
 
+[![Travis Build Status](https://travis-ci.org/NLnetLabs/dnssec-trigger.svg?branch=master)](https://travis-ci.org/NLnetLabs/dnssec-trigger)
+[![Packaging status](https://repology.org/badge/tiny-repos/dnssec-trigger.svg)](https://repology.org/project/dnssec-trigger/versions)
+
 By Wouter Wijngaards, NLnet Labs, 2011
 BSD license is in the LICENSE file.
 Bugs or comments: labs@nlnetlabs.nl
