@@ -165,7 +165,7 @@ static void ubhook_list_forwards_test(void) {
     assert_true(nm_connection_list_contains_zone(&ret, zone.string, zone.length));
     assert_true(nm_connection_list_contains_zone(&ret, zone2.string, zone2.length));
     nm_connection_list_clear(&ret);
-	fclose(fp);
+    fclose(fp);
 }
 
 static void ubhook_list_local_zones_test(void) {
@@ -241,33 +241,66 @@ static void string_list_extension(void) {
     string_list_clear(&new);
 }
 
-static void run_test(const char* name, void (*func)(void))
-{
-	printf("%s: ", name);
-	func();
-	printf("OK\n");
-}
-
 int main() {
-    run_test("string_list_test_remove_at_the_beginning",
-	string_list_test_remove_at_the_beginning);
-    run_test("string_list_test_remove_in_the_middle",
-	string_list_test_remove_in_the_middle);
-    run_test("string_list_test_remove_at_the_end",
-        string_list_test_remove_at_the_end);
-    run_test("lock_file_call_fn", lock_file_call_fn);
-    run_test("lock_file_check_file_presence", lock_file_check_file_presence);
-    run_test("lock_file_check_file_permissions",
-        lock_file_check_file_permissions);
-    run_test("store_macro_creation", store_macro_creation);
-    run_test("store_read_file_content", store_read_file_content);
-    run_test("store_commit_cache", store_commit_cache);
-    run_test("ubhook_list_forwards_test", ubhook_list_forwards_test);
-    run_test("ubhook_list_local_zones_test", ubhook_list_local_zones_test);
-    run_test("ubhook_add_local_zone", ubhook_add_local_zone);
-    run_test("ubhook_remove_local_zone", ubhook_remove_local_zone);
-    run_test("nm_list_remove", nm_list_remove);
-    run_test("string_list_extension", string_list_extension);
+    printf("string_list_test_remove_at_the_beginning: ");
+    string_list_test_remove_at_the_beginning();
+    printf("OK\n");
+
+    printf("string_list_test_remove_in_the_middle: ");
+    string_list_test_remove_in_the_middle();
+    printf("OK\n");
+
+    printf("string_list_test_remove_at_the_end: ");
+    string_list_test_remove_at_the_end();
+    printf("OK\n");
+
+    printf("lock_file_call_fn: ");
+    lock_file_call_fn();
+    printf("OK\n");
+
+    printf("lock_file_check_file_presence: ");
+    lock_file_check_file_presence();
+    printf("OK\n");
+
+    printf("lock_file_check_file_permissions: ");
+    lock_file_check_file_permissions();
+    printf("OK\n");
+
+    printf("store_macro_creation: ");
+    store_macro_creation();
+    printf("OK\n");
+
+    printf("store_read_file_content: ");
+    store_read_file_content();
+    printf("OK\n");
+
+    printf("store_commit_cache: ");
+    store_commit_cache();
+    printf("OK\n");
+
+    printf("ubhook_list_forwards_test: ");
+    ubhook_list_forwards_test();
+    printf("OK\n");
+
+    printf("ubhook_list_local_zones_test: ");
+    ubhook_list_local_zones_test();
+    printf("OK\n");
+
+    printf("ubhook_add_local_zone: ");
+    ubhook_add_local_zone();
+    printf("OK\n");
+
+    printf("ubhook_remove_local_zone: ");
+    ubhook_remove_local_zone();
+    printf("OK\n");
+
+    printf("nm_list_remove: ");
+    nm_list_remove();
+    printf("OK\n");
+
+    printf("string_list_extension: ");
+    string_list_extension();
+    printf("OK\n");
 
     printf("\n");
     printf("OK\n");
