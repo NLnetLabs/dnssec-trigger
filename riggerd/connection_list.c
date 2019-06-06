@@ -95,7 +95,8 @@ void nm_connection_list_copy_and_push_back(struct nm_connection_list *list, stru
 }
 
 bool nm_connection_list_contains_zone(const struct nm_connection_list *list, char *zone, size_t len) {
-    for (struct nm_connection_node *iter = list->first; NULL != iter; iter = iter->next) {
+    struct nm_connection_node *iter;
+    for (iter = list->first; NULL != iter; iter = iter->next) {
         if (string_list_contains(&(iter->self->zones), zone, len)) {
             return true;
         }
@@ -104,8 +105,9 @@ bool nm_connection_list_contains_zone(const struct nm_connection_list *list, cha
 }
 
 int nm_connection_list_remove(struct nm_connection_list *list, char *zone, size_t len) {
+    struct nm_connection_node *iter;
     struct nm_connection_node **prev = &(list->first);
-    for (struct nm_connection_node *iter = list->first; NULL != iter; prev = &(iter->next), iter = iter->next) {
+    for (iter = list->first; NULL != iter; prev = &(iter->next), iter = iter->next) {
         if (string_list_contains(&(iter->self->zones), zone, len)) {
             *prev = iter->next;
             nm_connection_clean_up_node(iter, list->ownership);
@@ -116,10 +118,11 @@ int nm_connection_list_remove(struct nm_connection_list *list, char *zone, size_
 }
 
 struct string_list nm_connection_list_get_servers_list(struct nm_connection_list *list) {
+    struct nm_connection_node *iter;
     struct string_list ret;
     string_list_init(&ret);
 
-    for (struct nm_connection_node *iter = list->first; NULL != iter; iter = iter->next) {
+    for (iter = list->first; NULL != iter; iter = iter->next) {
         string_list_copy_and_append(&ret, &iter->self->servers);
     }
 
@@ -129,6 +132,8 @@ struct string_list nm_connection_list_get_servers_list(struct nm_connection_list
 struct nm_connection_list nm_connection_list_filter(struct nm_connection_list *list,
         unsigned int count, ...)
 {
+    unsigned int i;
+    struct nm_connection_node *iter;
     struct nm_connection_list ret;
     filter_conn_fcn *fcn;
     va_list args;
@@ -140,12 +145,12 @@ struct nm_connection_list nm_connection_list_filter(struct nm_connection_list *l
     va_start(args, count);
     // Load functions into a temporary array
     fcn = (filter_conn_fcn *)calloc_or_die(sizeof(filter_conn_fcn *)*count);
-    for(unsigned int i = 0; i < count; ++i)
+    for(i = 0; i < count; ++i)
     {
         fcn[i] = va_arg(args, filter_conn_fcn);
     }
 
-    for (struct nm_connection_node *iter = list->first; NULL != iter; iter = iter->next) {
+    for (iter = list->first; NULL != iter; iter = iter->next) {
         if (count == 0) {
             // This is weird use case, but ok ...
             nm_connection_list_push_back(&ret, iter->self);
@@ -153,7 +158,7 @@ struct nm_connection_list nm_connection_list_filter(struct nm_connection_list *l
             // TODO: implement the same for OR instead of AND ?
             // Accumulate the result of each filter
             int acc = 1;
-            for(unsigned int i = 0; i < count; ++i)
+            for(i = 0; i < count; ++i)
             {
                 acc &= fcn[i](iter->self);
             }
@@ -170,11 +175,12 @@ struct nm_connection_list nm_connection_list_filter(struct nm_connection_list *l
 
 size_t nm_connection_list_length(struct nm_connection_list *list)
 {
+    struct nm_connection_node *iter;
     size_t counter = 0;
     if (NULL == list)
         return 0;
 
-    for (struct nm_connection_node *iter = list->first; NULL != iter; iter = iter->next) {
+    for (iter = list->first; NULL != iter; iter = iter->next) {
         counter++;
     }
 
