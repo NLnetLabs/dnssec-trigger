@@ -121,6 +121,7 @@ void string_list_copy_and_append(struct string_list* original, struct string_lis
 void string_list_remove(struct string_list* list, const char* value, const size_t buffer_size) {
 	size_t len;
 	struct string_entry* prev;
+	struct string_entry* iter;
 	int first;
 	if (NULL == list || NULL == value || buffer_size == 0) {
 		return;
@@ -133,7 +134,7 @@ void string_list_remove(struct string_list* list, const char* value, const size_
 	 */
 	prev = NULL;
 	first = 1;
-	for (struct string_entry* iter = list->first; NULL != iter; prev = iter, iter = iter->next) {
+	for (iter = list->first; NULL != iter; prev = iter, iter = iter->next) {
 		/*
 		 * We already know size of both buffers, so we take advantage of that
 		 * and also of short-cut evaluation.
@@ -174,6 +175,7 @@ size_t string_list_length(const struct string_list* list)
 
 int string_list_is_equal(const struct string_list* l1, const struct string_list* l2)
 {
+	struct string_entry* iter;
 	if (NULL == l1 && NULL == l2)
 		return 1;
 
@@ -185,7 +187,7 @@ int string_list_is_equal(const struct string_list* l1, const struct string_list*
 		return 0;
 	}
 
-	for (struct string_entry* iter = l1->first; NULL != iter; iter = iter->next) {
+	for (iter = l1->first; NULL != iter; iter = iter->next) {
 		if (!string_list_contains(l2, iter->string, iter->length))
 			return 0;
 	}
