@@ -11,6 +11,6 @@ addons:
     - libldns-dev
     - libcmocka-dev
 script:
-  - ./configure --enable-debug
+  - ./configure --enable-debug --with-forward-zones-support
   - make
   - make test
