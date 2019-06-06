@@ -84,7 +84,7 @@ from /etc/rc.d like regular daemons.  The tray icon communicates with
 the daemon over a persistent SSL connection over loopback (127.0.0.1).
 It is possible to have multiple tray icons connected over SSL.
 
-* unix - Netconfig
+### unix - Netconfig
 
 In /etc/netconfig.d a script sends DHCP changes to the daemon.  It greps
 the info out of /var/run/netconfig/* files.  It sends with
@@ -92,7 +92,7 @@ dnssec-trigger-control to the daemon.
 
 GTK like networkmanager.
 
-* OSX
+### OSX
 
 In /Library/LaunchDaemons two plist files exist.  One starts the daemon.
 The other watches the /Library/Preferences/SystemConfiguration for changes
@@ -107,7 +107,7 @@ is no connection until unbound is started during reboot.
 In /Library/LaunchAgents a plist file starts the tray icon (Cocoa app).
 It uses an SSL connection to the daemon over loopback (127.0.0.1).
 
-* Windows
+### Windows
 
 The daemon is a service.  It has a thread that listens to network changes
 and blocks on that, it notifies the main daemon when there is a change.
