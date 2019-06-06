@@ -3,8 +3,8 @@
 [![Travis Build Status](https://travis-ci.com/NLnetLabs/dnssec-trigger.svg?branch=master)](https://travis-ci.com/NLnetLabs/dnssec-trigger)
 [![Packaging status](https://repology.org/badge/tiny-repos/dnssec-trigger.svg)](https://repology.org/project/dnssec-trigger/versions)
 
-By Wouter Wijngaards, NLnet Labs, 2011
-BSD license is in the LICENSE file.
+By Wouter Wijngaards, NLnet Labs, 2011 \
+BSD license is in the LICENSE file. \
 Bugs or comments: labs@nlnetlabs.nl
 
 To install see the INSTALL instructions file.
@@ -66,12 +66,12 @@ scripts would also reprobe on a DHCP change.
 
 How the different platforms operate is described here.
 
-* Security
+### Security
 
 There used to be a race condition where DHCP info briefly overriddes
 the secure version, but this was fixed in 0.6.
 
-* unix - NetworkManager
+### unix - NetworkManager
 
 In /etc/NetworkManager/dispatcher.d a script sends DHCP changes to
 the daemon.  The script is a networkmanager dhcp hook script and uses
