@@ -9,7 +9,7 @@ addons:
     - libgtk2.0-dev
     - libglib2.0-dev
     - libldns-dev
-    - libcmocka-dev
+    - clang
 script:
   - ./configure --enable-debug --with-forward-zones-support
   - make
