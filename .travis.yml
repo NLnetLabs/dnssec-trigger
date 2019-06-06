@@ -1,0 +1,16 @@
+sudo: false
+language: c
+compiler:
+  - gcc
+addons:
+  apt:
+    packages:
+    - libssl-dev
+    - gtk2-dev
+    - glib-dev
+    - libldns-dev
+    - libcmocka-dev
+script:
+  - ./configure --enable-debug
+  - make
+  - make test
