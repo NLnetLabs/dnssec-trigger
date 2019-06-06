@@ -984,6 +984,7 @@ static void update_connection_zones(struct nm_connection_list *connections) {
          */
 	verbose(VERB_DEBUG, "Using private address ranges: %s", global_svr->cfg->use_private_address_ranges ? "yes" : "no");
 	if (global_svr->cfg->use_private_address_ranges) {
+		size_t i;
 		struct nm_connection_list global_forwarders;
 		struct string_buffer gf_string;
 		if (global_svr->cfg->use_vpn_forwarders) {
@@ -996,7 +997,7 @@ static void update_connection_zones(struct nm_connection_list *connections) {
 		verbose(VERB_DEBUG, "Selected global forwarders: %s", gf_string.string);
 		free(gf_string.string);
 
-		for (size_t i=0; i<reverse_zones_len; ++i) {
+		for (i=0; i<reverse_zones_len; ++i) {
 			const struct string_buffer *zone = &rfc1918_reverse_zones[i];
 			/*
                          * Ignore a connection provided zone as it's been already
