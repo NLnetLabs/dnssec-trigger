@@ -1,4 +1,7 @@
-Dnssec Trigger Readme
+# Dnssec-Trigger
+
+[![Travis Build Status](https://travis-ci.org/NLnetLabs/dnssec-trigger.svg?branch=master)](https://travis-ci.org/NLnetLabs/dnssec-trigger)
+[![Packaging status](https://repology.org/badge/tiny-repos/dnssec-trigger.svg)](https://repology.org/project/dnssec-trigger/versions)
 
 By Wouter Wijngaards, NLnet Labs, 2011
 BSD license is in the LICENSE file.
@@ -6,8 +9,7 @@ Bugs or comments: labs@nlnetlabs.nl
 
 To install see the INSTALL instructions file.
 
-Intro
------
+## Intro
 
 This package contains the dnssec-trigger tools.  It works together with
 a local validating resolver (unbound) and keeps DNSSEC enabled.  It does
@@ -37,9 +39,7 @@ The dnssec-trigger package thus runs alongside the unbound daemon.  It
 provides the user with the option to go to Insecure.  It selects DNSSEC
 service where possible.  This helps people run DNSSEC.
 
-
-Normal usage
-------------
+## Normal usage
 
 The user logs in and sees a status icon in the tray.  Most of the time
 it displays no ! (exclamation) but is quiet.  The icon can be ignored.
@@ -62,8 +62,7 @@ provide good access once logged in) the icon is restored to safe.  The
 scripts would also reprobe on a DHCP change.
 
 
-Operations on Platforms
------------------------
+## Operations on Platforms
 
 How the different platforms operate is described here.
 
