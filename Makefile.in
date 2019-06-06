@@ -194,16 +194,17 @@ test:	test/json-test test/other-test
 	@echo "Run tests!"
 	./test/json-test
 	./test/other-test
+	sh ./test/clang-analysis.sh
 
 test/json-test$(EXEEXT):	$(RIGGERD_OBJ) $(TESTS_OBJ)
 	$(INFO) Link $@
-	$Q$(LINK) -o $@ $(BUILD)test/json.o $(BUILD)riggerd/connection_list.o  $(BUILD)riggerd/fwd_zones.o $(BUILD)riggerd/string_list.o  $(BUILD)riggerd/log.o $(BUILD)vendor/ccan/json/json.o $(LDNSLIBS) $(LIBS) -lcmocka
+	$Q$(LINK) -o $@ $(BUILD)test/json.o $(BUILD)riggerd/connection_list.o  $(BUILD)riggerd/fwd_zones.o $(BUILD)riggerd/string_list.o  $(BUILD)riggerd/log.o $(BUILD)vendor/ccan/json/json.o $(LDNSLIBS) $(LIBS)
 
 RIGGERD_OBJ_WITHOUT_MAIN=$(filter-out build/riggerd/riggerd.o,$(RIGGERD_OBJ))
 test/other-test$(EXEEXT):	$(RIGGERD_OBJ) $(TESTS_OBJ)
 	$(INFO) Link $@
 	@echo "$(RIGGERD_OBJ_WITHOUT_MAIN)"
-	$Q$(LINK) -o $@ $(BUILD)test/other.o $(RIGGERD_OBJ_WITHOUT_MAIN) $(LDNSLIBS) $(LIBS) -lcmocka
+	$Q$(LINK) -o $@ $(BUILD)test/other.o $(RIGGERD_OBJ_WITHOUT_MAIN) $(LDNSLIBS) $(LIBS)
 
 example.conf:	$(srcdir)/example.conf.in Makefile
 	rm -f $@

@@ -85,6 +85,10 @@ static int parse_url(char* url, char** h, char** f)
 static int
 http_probe_setup_url(struct http_general* hg, struct http_probe* hp, size_t i)
 {
+	if(!hg->urls[i]) {
+		verbose(VERB_ALGO, "empty url skipped, urls[%d]", (int)i);
+		return 0;
+	}
 	hp->do_addr = 1;
 	hp->url_idx = i;
 	hp->url = strdup(hg->urls[i]);

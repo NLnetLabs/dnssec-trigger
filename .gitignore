@@ -1,7 +1,9 @@
 /Makefile
 /config.h
+/config.h.in~
 /config.log
 /config.status
+/autom4te.cache
 /01-dnssec-trigger
 /build
 /dnssec-trigger-control
@@ -13,3 +15,5 @@
 /dnssec-triggerd
 /dnssec-triggerd.service
 /example.conf
+/test/json-test
+/test/other-test

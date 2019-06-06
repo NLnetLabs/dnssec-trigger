@@ -2,7 +2,6 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <setjmp.h>
-#include <cmocka.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +13,38 @@
 #include "../riggerd/string_list.h"
 #include "../riggerd/ubhook.h"
 
-static void string_list_test_remove_at_the_beginning(void **state) {
+#define assert_true(x) assert_true_fp((x), __FILE__, __LINE__)
+static void assert_true_fp(int x, const char* f, int l)
+{
+	assert(x);
+	if(!x) {
+		printf("%s:%d: assert_true failed\n", f, l);
+		exit(1);
+	}
+}
+
+#define assert_false(x) assert_false_fp((x), __FILE__, __LINE__)
+static void assert_false_fp(int x, const char* f, int l)
+{
+	assert(!x);
+	if(x) {
+		printf("%s:%d: assert_false failed\n", f, l);
+		exit(1);
+	}
+}
+
+#define assert_int_equal(x, y) assert_int_equal_fp((x), (y), __FILE__, __LINE__)
+static void assert_int_equal_fp(int x, int y, const char* f, int l)
+{
+	assert(x == y);
+	if(x != y) {
+		printf("%s:%d: assert_int_equal(%d, %d) failed\n", f, l, x, y);
+		exit(1);
+	}
+}
+
+
+static void string_list_test_remove_at_the_beginning(void) {
     struct string_list test;
     string_list_init(&test);
     string_list_push_back(&test, "aaa", 3);
@@ -23,10 +53,9 @@ static void string_list_test_remove_at_the_beginning(void **state) {
     string_list_remove(&test, "aaa", 3);
     assert_int_equal((int) string_list_length(&test), 2);
     string_list_clear(&test);
-    (void) state; /* unused */
 }
 
-static void string_list_test_remove_in_the_middle(void **state) {
+static void string_list_test_remove_in_the_middle(void) {
     struct string_list test;
     string_list_init(&test);
     string_list_push_back(&test, "aaa", 3);
@@ -35,10 +64,9 @@ static void string_list_test_remove_in_the_middle(void **state) {
     string_list_remove(&test, "bbb", 3);
     assert_int_equal((int) string_list_length(&test), 2);
     string_list_clear(&test);
-    (void) state; /* unused */
 }
 
-static void string_list_test_remove_at_the_end(void **state) {
+static void string_list_test_remove_at_the_end(void) {
     struct string_list test;
     string_list_init(&test);
     string_list_push_back(&test, "aaa", 3);
@@ -47,26 +75,23 @@ static void string_list_test_remove_at_the_end(void **state) {
     string_list_remove(&test, "aaa", 3);
     assert_int_equal((int) string_list_length(&test), 2);
     string_list_clear(&test);
-    (void) state; /* unused */
 }
 
-static void lock_file_call_fn(void **state) {
+static void lock_file_call_fn(void) {
     lock_override("/tmp/dnssec0123456789", 21);
     lock_acquire();
     lock_release();
-    (void) state; /* unused */
 }
 
-static void lock_file_check_file_presence(void **state) {
+static void lock_file_check_file_presence(void) {
     const char *name = "/tmp/dnssec0002";
     lock_override(name, 15);
     lock_acquire();
     assert_true(access(name, F_OK) == 0);
     lock_release();
-    (void) state; /* unused */
 }
 
-static void lock_file_check_file_permissions(void **state) {
+static void lock_file_check_file_permissions(void) {
     const char *name = "/tmp/dnssec0002";
     lock_override(name, 15);
     lock_acquire();
@@ -78,18 +103,16 @@ static void lock_file_check_file_permissions(void **state) {
     assert_true(access(name, R_OK) == 0);
     assert_true(access(name, W_OK) == 0);
     assert_true(access(name, X_OK) == -1);
-    (void) state; /* unused */
 }
 
-static void store_macro_creation(void **state) {
+static void store_macro_creation(void) {
     struct store s = STORE_INIT("test");
     assert_true(strcmp(s.dir, "/var/run/dnssec-trigger") == 0);
     assert_true(strcmp(s.path, "/var/run/dnssec-trigger/test") == 0);
     assert_true(strcmp(s.path_tmp, "/var/run/dnssec-trigger/test.tmp") == 0);
-    (void) state; /* unused */
 }
 
-static void store_read_file_content(void **state) {
+static void store_read_file_content(void) {
     const char *file_name = "test/servers-list-ipv4";
     struct store s;
     assert_true(access(file_name, R_OK) == 0);
@@ -101,11 +124,9 @@ static void store_read_file_content(void **state) {
     assert_true(string_list_length(&s.cache) == 2);
 
     store_destroy(&s);
-    
-    (void) state; /* unused */
 }
 
-static void store_commit_cache(void **state) {
+static void store_commit_cache(void) {
     const char *dir_name = "test/tmp";
     const char *file_name = "test/tmp/commit-cache";
     const char *tmp_file_name = "test/tmp/commit-cache.tmp";
@@ -130,73 +151,67 @@ static void store_commit_cache(void **state) {
         assert_true(string_list_length(&s.cache) == 2);
         store_destroy(&s);
     }
-    
-    (void) state; /* unused */
 }
 
-static void ubhook_list_forwards_test(void **state) {
+static void ubhook_list_forwards_test(void) {
     FILE *fp;
     struct nm_connection_list ret;
     struct string_buffer zone = string_builder("ny.mylovelycorporate.io.");
     struct string_buffer zone2 = string_builder(".");
 
-	fp = fopen("test/list_forwards_example", "r");
-	ret = hook_unbound_list_forwards_inner(NULL, fp);
+    fp = fopen("test/list_forwards_example", "r");
+    ret = hook_unbound_list_forwards_inner(NULL, fp);
     //nm_connection_list_dbg_eprint(&ret);
     assert_true(nm_connection_list_contains_zone(&ret, zone.string, zone.length));
     assert_true(nm_connection_list_contains_zone(&ret, zone2.string, zone2.length));
     nm_connection_list_clear(&ret);
-	fclose(fp);    
-    (void) state; /* unused */
+	fclose(fp);
 }
 
-static void ubhook_list_local_zones_test(void **state) {
+static void ubhook_list_local_zones_test(void) {
     FILE *fp;
     struct string_buffer zone = string_builder("test.");
     struct string_buffer zone2 = string_builder("invalid.");
     struct string_list ret;
 
-	fp = fopen("test/list_local_zones_example", "r");
+    fp = fopen("test/list_local_zones_example", "r");
     if (!fp)
         assert_false(true);
 
-	ret = hook_unbound_list_local_zones_inner(NULL, fp);
+    ret = hook_unbound_list_local_zones_inner(NULL, fp);
     //string_list_dbg_eprint(&ret);
     assert_true(string_list_contains(&ret, zone.string, zone.length));
     assert_true(string_list_contains(&ret, zone2.string, zone2.length));
     string_list_clear(&ret);
 
-	fclose(fp);    
-    (void) state; /* unused */
+    fclose(fp);
 }
 
-static void ubhook_add_local_zone(void **state) {
+static void ubhook_add_local_zone(void) {
     struct string_buffer exe = string_builder("./test/unbound-control-fake.sh");
     struct string_buffer stat = string_builder("static");
     struct string_buffer zone = string_builder("test");
     int ret = hook_unbound_add_local_zone_inner(exe, zone, stat);
     assert_int_equal(ret, 0);
-    (void) state; /* unused */
 }
 
-static void ubhook_remove_local_zone(void **state) {
+static void ubhook_remove_local_zone(void) {
     struct string_buffer exe = string_builder("./test/unbound-control-fake.sh");
     struct string_buffer zone = string_builder("test");
     int ret = hook_unbound_remove_local_zone_inner(exe, zone);
     assert_int_equal(ret, 0);
-    (void) state; /* unused */
 }
 
-static void nm_list_remove(void **state) {
+static void nm_list_remove(void) {
     FILE *fp;
     struct nm_connection_list ret;
     struct string_buffer zone = string_builder("ny.mylovelycorporate.io.");
     struct string_buffer zone2 = string_builder(".");
 
-	fp = fopen("test/list_forwards_example", "r");
-	ret = hook_unbound_list_forwards_inner(NULL, fp);
+    fp = fopen("test/list_forwards_example", "r");
+    ret = hook_unbound_list_forwards_inner(NULL, fp);
     //nm_connection_list_dbg_eprint(&ret);
-    
+
     assert_true(nm_connection_list_contains_zone(&ret, zone.string, zone.length));
     nm_connection_list_remove(&ret, zone.string, zone.length);
     assert_false(nm_connection_list_contains_zone(&ret, zone.string, zone.length));
@@ -206,11 +221,10 @@ static void nm_list_remove(void **state) {
     assert_false(nm_connection_list_contains_zone(&ret, zone2.string, zone2.length));
 
     nm_connection_list_clear(&ret);
-	fclose(fp);  
-    (void) state; /* unused */
+    fclose(fp);
 }
 
-static void string_list_extension(void **state) {
+static void string_list_extension(void) {
     struct string_list new;
 
     /* You need to run this test with address sanitizer, otherwise it does nothing */
@@ -225,27 +239,37 @@ static void string_list_extension(void **state) {
     string_list_push_back(&new, "aaa", 3);
     new.first->extension = malloc(666);
     string_list_clear(&new);
+}
 
-    (void) state; /* unused */
+static void run_test(const char* name, void (*func)(void))
+{
+	printf("%s: ", name);
+	func();
+	printf("OK\n");
 }
 
 int main() {
-    const struct CMUnitTest tests[] = {
-        cmocka_unit_test(string_list_test_remove_at_the_beginning),
-        cmocka_unit_test(string_list_test_remove_in_the_middle),
-        cmocka_unit_test(string_list_test_remove_at_the_end),
-        cmocka_unit_test(lock_file_call_fn),
-        cmocka_unit_test(lock_file_check_file_presence),
-        cmocka_unit_test(lock_file_check_file_permissions),
-        cmocka_unit_test(store_macro_creation),
-        cmocka_unit_test(store_read_file_content),
-        cmocka_unit_test(store_commit_cache),
-        cmocka_unit_test(ubhook_list_forwards_test),
-        cmocka_unit_test(ubhook_list_local_zones_test),
-        cmocka_unit_test(ubhook_add_local_zone),
-        cmocka_unit_test(ubhook_remove_local_zone),
-        cmocka_unit_test(nm_list_remove),
-        cmocka_unit_test(string_list_extension)
-    };
-    return cmocka_run_group_tests(tests, NULL, NULL);
+    run_test("string_list_test_remove_at_the_beginning",
+	string_list_test_remove_at_the_beginning);
+    run_test("string_list_test_remove_in_the_middle",
+	string_list_test_remove_in_the_middle);
+    run_test("string_list_test_remove_at_the_end",
+        string_list_test_remove_at_the_end);
+    run_test("lock_file_call_fn", lock_file_call_fn);
+    run_test("lock_file_check_file_presence", lock_file_check_file_presence);
+    run_test("lock_file_check_file_permissions",
+        lock_file_check_file_permissions);
+    run_test("store_macro_creation", store_macro_creation);
+    run_test("store_read_file_content", store_read_file_content);
+    run_test("store_commit_cache", store_commit_cache);
+    run_test("ubhook_list_forwards_test", ubhook_list_forwards_test);
+    run_test("ubhook_list_local_zones_test", ubhook_list_local_zones_test);
+    run_test("ubhook_add_local_zone", ubhook_add_local_zone);
+    run_test("ubhook_remove_local_zone", ubhook_remove_local_zone);
+    run_test("nm_list_remove", nm_list_remove);
+    run_test("string_list_extension", string_list_extension);
+
+    printf("\n");
+    printf("OK\n");
+    return 0;
 }

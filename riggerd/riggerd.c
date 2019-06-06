@@ -370,7 +370,7 @@ int main(int argc, char *argv[])
 		}
 	}
 	argc -= optind;
-	argv += optind;
+	/* argv += optind;   unused */
 	if(argc != 0) {
 		usage();
 		return 1;

@@ -207,7 +207,7 @@ spawn_feed(struct cfg* cfg)
 	feed->alert = &feed_alert;
 	feed->update_alert = &feed_update_alert;
 
-	thr = g_thread_new("feedfromdaemon", &feed_thread, cfg);
+	thr = g_thread_try_new("feedfromdaemon", &feed_thread, cfg, &err);
 	if(!thr) fatal_exit("cannot create thread: %s", err->message);
 }
 

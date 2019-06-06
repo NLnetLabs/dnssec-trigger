@@ -144,7 +144,7 @@ void log_hex(const char* msg, void* data, size_t length);
  * Pass printf formatted arguments. No trailing newline is needed.
  * @param format: printf-style format string. Arguments follow.
  */
-void fatal_exit(const char* format, ...) ATTR_FORMAT(printf, 1, 2);
+void fatal_exit(const char* format, ...) ATTR_FORMAT(printf, 1, 2) ATTR_NORETURN;
 
 /**
  * va_list argument version of log_info.
@@ -159,11 +159,17 @@ void log_vmsg(int pri, const char* type, const char* format, va_list args);
  * an assertion that is thrown to the logfile.
  */
 #ifdef UNBOUND_DEBUG
+#ifdef __clang_analyzer__
+/* clang analyzer needs to know that log_assert is an assertion, otherwise
+ * it could complain about the nullptr the assert is guarding against. */
+#define log_assert(x) assert(x)
+#else
 #  define log_assert(x) \
 	do { if(!(x)) \
 		fatal_exit("%s:%d: %s: assertion %s failed", \
 			__FILE__, __LINE__, __func__, #x); \
 	} while(0);
+#endif
 #else
 #  define log_assert(x) /*nothing*/
 #endif

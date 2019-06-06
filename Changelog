@@ -2,6 +2,10 @@
 	- Move to github, at https://github.com/NLnetLabs/dnssec-trigger
 	- Added .gitignore.
 	- Move iterator declarations out of for statement.
+	- clang analysis unit test.
+	- removed cmocka dependency for test portability.
+	- clang analysis fixes: use g_thread_try_new to get error string,
+	  check for failed empty urls in http fetch, ignore unused argv.
 
 17 January 2019: Wouter
 	- Fix to remove keys that are too small during
