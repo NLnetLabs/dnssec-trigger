@@ -208,6 +208,11 @@ really_set_to_localhost(struct cfg* cfg) {
 		fclose(in);
 		return 0;
 	}
+	/* we want the second line to be 'options edns0' */
+	if(strcmp(line, "options edns0\n") != 0) {
+		fclose(in);
+		return 0;
+	}
 	/* must contain 127.0.0.1 and nothing else */
 	while(fgets(line, (int)sizeof(line), in)) {
 		line[sizeof(line)-1] = 0; /* robust end of string */
@@ -269,7 +274,8 @@ void hook_resolv_localhost(struct cfg* cfg)
 #  endif
 	out = open_rescf(cfg);
 	if(!out) return;
-	/* write the nameserver records */
+	/* write the edns0 option and nameserver records */
+	prline(out, "options edns0\n");
 	prline(out, "nameserver 127.0.0.1\n");
 	close_rescf(cfg, out);
 #endif /* not on windows */
