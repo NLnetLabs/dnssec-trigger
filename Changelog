@@ -1,3 +1,7 @@
+3 February 2020: Wouter
+	- Fix for #3: Allow @ character to make scripts work, which may
+	  fix resolv.conf lost in some situation bug.
+
 6 June 2019: Wouter
 	- Move to github, at https://github.com/NLnetLabs/dnssec-trigger
 	- Added .gitignore.

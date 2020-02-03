@@ -80,7 +80,7 @@ allowed_arg(const char* arg)
 		}
 		if( isalnum((unsigned char)*s) || *s == ' ' || *s == ':' ||
 			*s == '.' || *s == '_' || *s == '-' || *s == '+' ||
-			*s == '\t') {
+			*s == '\t' || *s == '@') {
 			continue;
 		} else 	{
 			log_err("command line string argument '%s' fails check on allowed characters", arg);
