@@ -269,8 +269,10 @@ void hook_resolv_localhost(struct cfg* cfg)
 #  endif
 	out = open_rescf(cfg);
 	if(!out) return;
-	/* write the nameserver records */
+	/* write the options and nameserver records */
 	prline(out, "nameserver 127.0.0.1\n");
+	prline(out, "options edns0\n");
+	prline(out, "options trust-ad\n");
 	close_rescf(cfg, out);
 #endif /* not on windows */
 }
