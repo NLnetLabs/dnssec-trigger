@@ -1,3 +1,6 @@
+13 October 2020: Wouter
+	- Merge #7: Add options edns
+
 14 August 2020: Wouter
 	- Add edns0 and trust-ad options when writing resolvconf to point
 	  to 127.0.0.1, because unbound is set up to validate and supports
