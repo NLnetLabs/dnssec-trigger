@@ -1,5 +1,6 @@
 13 October 2020: Wouter
 	- Merge #7: Add options edns
+	- Merge #8: Prefer $exec_prefix/lib for NM dispatcher.d
 
 14 August 2020: Wouter
 	- Add edns0 and trust-ad options when writing resolvconf to point
