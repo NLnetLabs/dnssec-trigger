@@ -1367,8 +1367,8 @@ Optional Packages:
                           'windows' or 'none'
   --with-networkmanager-dispatch
                           Set the networkmanager dhcp dispatcher dir, default
-                          tests prefix/etc/NetworkManager/dispatcher.d and
-                          /etc/NetworkManager/dispatcher.d
+                          tests
+                          {$exec_prefix/lib,$sysconfdir,/etc}/NetworkManager/dispatcher.d
   --with-netconfig-dispatch
                           Set the netconfig dhcp dispatcher dir, default tests
                           prefix/etc/netconfig.d and /etc/netconfig.d
@@ -6930,7 +6930,7 @@ if test -n "$withval"; then
 fi
 
 # hook settings
-networkmanager_dispatcher_dir="$sysconfdir/NetworkManager/dispatcher.d"
+networkmanager_dispatcher_dir="$exec_prefix/lib/NetworkManager/dispatcher.d"
 
 # Check whether --with-networkmanager-dispatch was given.
 if test "${with_networkmanager_dispatch+set}" = set; then :
@@ -6987,12 +6987,14 @@ $as_echo_n "checking for NetworkManager dispatch... " >&6; }
 	if test "$with_nm_dispatch" != ""; then
 		networkmanager_dispatcher_dir="$with_nm_dispatch"
 	else
-		if test -d "$networkmanager_dispatcher_dir" ; then
-			:
-		else if test -d /etc/NetworkManager/dispatcher.d; then
-			networkmanager_dispatcher_dir="/etc/NetworkManager/dispatcher.d"
+		# prefer /usr/lib/NetworkManager over /etc/NetworkManager, useful for packages
+		for D in ${exec_prefix}/lib $sysconfdir /etc
+		do
+			if test -d "$D/NetworkManager/dispatcher.d"; then
+				networkmanager_dispatcher_dir="$D/NetworkManager/dispatcher.d"
+				break
 			fi
-		fi
+		done
 	fi
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $networkmanager_dispatcher_dir" >&5
 $as_echo "$networkmanager_dispatcher_dir" >&6; }
