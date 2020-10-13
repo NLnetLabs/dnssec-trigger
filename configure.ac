@@ -268,9 +268,9 @@ if test -n "$withval"; then
 fi
 
 # hook settings
-networkmanager_dispatcher_dir="$sysconfdir/NetworkManager/dispatcher.d"
+networkmanager_dispatcher_dir="$exec_prefix/lib/NetworkManager/dispatcher.d"
 AC_ARG_WITH([networkmanager-dispatch], AC_HELP_STRING([--with-networkmanager-dispatch],
-	[Set the networkmanager dhcp dispatcher dir, default tests prefix/etc/NetworkManager/dispatcher.d and /etc/NetworkManager/dispatcher.d]),
+	[Set the networkmanager dhcp dispatcher dir, default tests {$exec_prefix/lib,$sysconfdir,/etc}/NetworkManager/dispatcher.d]),
 	, withval="")
 with_nm_dispatch="$withval"
 AC_SUBST(networkmanager_dispatcher_dir)
@@ -312,12 +312,14 @@ if test "$hooks" = "networkmanager"; then
 	if test "$with_nm_dispatch" != ""; then
 		networkmanager_dispatcher_dir="$with_nm_dispatch"
 	else
-		if test -d "$networkmanager_dispatcher_dir" ; then
-			:
-		else if test -d /etc/NetworkManager/dispatcher.d; then
-			networkmanager_dispatcher_dir="/etc/NetworkManager/dispatcher.d"
+		# prefer /usr/lib/NetworkManager over /etc/NetworkManager, useful for packages
+		for D in ${exec_prefix}/lib $sysconfdir /etc
+		do
+			if test -d "$D/NetworkManager/dispatcher.d"; then
+				networkmanager_dispatcher_dir="$D/NetworkManager/dispatcher.d"
+				break
 			fi
-		fi
+		done
 	fi
 	AC_MSG_RESULT([$networkmanager_dispatcher_dir])
 fi
