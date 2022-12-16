@@ -1,3 +1,7 @@
+16 December 2022: Wouter
+	- Merge #11: configure: Do not rely on implicit declaration for
+	  detecting daemon.
+
 13 October 2020: Wouter
 	- Merge #7: Add options edns
 	- Merge #8: Prefer $exec_prefix/lib for NM dispatcher.d
