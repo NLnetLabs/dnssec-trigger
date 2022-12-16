@@ -6802,6 +6802,7 @@ else
 
 echo '
 #include <stdlib.h>
+#include <unistd.h>
 ' >conftest.c
 echo 'void f(){ (void)daemon(0, 0); }' >>conftest.c
 if test -z "`$CC -c conftest.c 2>&1 | grep deprecated`"; then
