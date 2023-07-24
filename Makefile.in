@@ -405,6 +405,7 @@ networkmanager-hook-install:
 	$(INSTALL) -m 755 -d $(DESTDIR)$(networkmanager_dispatcher_dir)
 	$(INSTALL) -m 755 -d $(DESTDIR)/etc
 	$(INSTALL) -m 755 -d $(DESTDIR)/usr/lib/systemd/system
+	$(INSTALL) -m 755 -d $(DESTDIR)$(libexecdir)
 	$(INSTALL) -c -m 755 01-dnssec-trigger $(DESTDIR)$(networkmanager_dispatcher_dir)/01-dnssec-trigger
 	$(INSTALL) -c -m 755 dnssec-trigger-script $(DESTDIR)$(libexecdir)/dnssec-trigger-script
 	$(INSTALL) -c -m 644 dnssec.conf $(DESTDIR)/etc/dnssec.conf
