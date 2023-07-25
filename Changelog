@@ -1,3 +1,6 @@
+25 July 2023: Wouter
+	- Merge #13: Create libexec directory for NM hook
+
 16 December 2022: Wouter
 	- Merge #11: configure: Do not rely on implicit declaration for
 	  detecting daemon.
