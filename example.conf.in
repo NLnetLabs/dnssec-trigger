@@ -79,6 +79,11 @@ tcp80: 2a04:b900::10:0:0:67
 ssl443: 185.49.140.67 7E:CF:B4:BE:B9:9A:56:0D:F7:3B:40:51:A4:78:E6:A6:FD:66:0F:10:58:DC:A8:2E:C0:43:D4:77:5A:71:8A:CF
 ssl443: 2a04:b900::10:0:0:67 7E:CF:B4:BE:B9:9A:56:0D:F7:3B:40:51:A4:78:E6:A6:FD:66:0F:10:58:DC:A8:2E:C0:43:D4:77:5A:71:8A:CF
 
+# How to add your own record:
+# openssl s_client -connect example.com:443 -showcerts </dev/null > /tmp/dns.crt
+# openssl x509 -noout -in /tmp/dns.crt -fingerprint -sha256
+# Append returned sha256 Fingerprint after ssl443: IP-address section.
+
 # Use VPN servers for all traffic
 # use-vpn-forwarders: no
 
@@ -87,4 +92,3 @@ ssl443: 2a04:b900::10:0:0:67 7E:CF:B4:BE:B9:9A:56:0D:F7:3B:40:51:A4:78:E6:A6:FD:
 
 # Add domains provided by VPN connections into Unbound forward zones
 # add-wifi-provided-zones: no
-
