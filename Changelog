@@ -1,3 +1,7 @@
+10 April 2026: Wouter
+	- Remove the open DNSSEC resolver at NLnet Labs, that was
+	  on port 80 and 443, from the configuration, and the http service.
+
 25 July 2023: Wouter
 	- Merge #13: Create libexec directory for NM hook
 
